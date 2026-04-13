@@ -16,6 +16,9 @@ if db_url.startswith("postgres://"):
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///ministranci.db"
 app.permanent_session_lifetime = timedelta(minutes=15)
 
+admin_username = os.getenv("admin_name")
+admin_pass = os.getenv("admin_password")
+
 db = SQLAlchemy(app)
 
 # --- MODELE BAZY DANYCH ---
@@ -64,15 +67,20 @@ def auth_process():
             session.clear()
             session['user_id'] = user.id
             session['username'] = user.username
-            session['user_role'] = user.role 
-
-            if user.role == 'admin' or user.username == "AdminGreg" and user.password == "Lego2012":
+            
+            # SPRAWDZAMY CZY TO SZEF Z PLIKU .ENV
+            is_env_admin = (username == os.getenv("admin_name") and password == os.getenv("admin_password"))
+            
+            if user.role == 'admin' or is_env_admin:
+                session['user_role'] = 'admin' # WYMUSZAMY RANGĘ ADMINA W SESJI
                 flash("Witaj Szefie! System gotowy.", "success")
                 return redirect(url_for('admin_page'))
             elif user.role == 'ksiądz':
+                session['user_role'] = 'ksiądz'
                 flash("Szczęść Boże! Panel gotowy.", "success")
                 return redirect(url_for('ksDash'))
             else:
+                session['user_role'] = 'user'
                 flash(f"Cześć {user.imie}! Zaraz Cię wpuścimy...", "success")
                 return redirect(url_for('dashboard_page'))
         
