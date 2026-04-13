@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, flash, redirect, url_for, session
+from flask import Flask, render_template, request, flash, redirect, url_for, session, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, date
 import os
@@ -7,7 +7,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = "twoje_super_tajne_haslo_123"
+app.secret_key = os.getenv("TAJNE_HASLO")
+db_url = os.getenv("DATABASE_URL", "sqlite:///ministranci.db")
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///ministranci.db"
 app.permanent_session_lifetime = timedelta(minutes=15)
 
@@ -298,6 +301,14 @@ def logout():
 @app.route('/forget-password')
 def forget_password():
     return render_template('forget-password.html')
+
+@app.route('/robots.txt')
+def static_from_root():
+    return send_from_directory(app.static_folder, request.path[1:])
+
+@app.route('/sitemap.xml')
+def sitemap_from_root():
+    return send_from_directory(app.static_folder, request.path[1:])
 
 if __name__ == "__main__":
     with app.app_context(): 
