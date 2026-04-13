@@ -2,10 +2,15 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    {% block extra_styles %}{% endblock %}
-    <title>{% block title %}Ministranci{% endblock %}</title>
+    
+    <title>{% block title %}Aplikacja dla Ministrantów{% endblock %} | Parafia XYZ</title>
+    
+    <meta name="description" content="{% block meta_desc %}Zarządzaj służbami, sprawdzaj ogłoszenia i śledź ranking ministrantów. System dla nowoczesnej parafii.{% endblock %}">
+    <meta name="google-site-verification" content="nhiwChgufcNTntWjJNbdzFVGYl38uwJEKR_-1LiwD8o" />
+    <meta name="robots" content="index, follow">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
 </head>
 <body>
     <div class="container">
