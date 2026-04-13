@@ -358,15 +358,6 @@ def export_raport():
     nazwa_pliku = f"Raport_Ministranci_{date.today().strftime('%Y-%m-%d')}.xlsx"
     return send_file(output, download_name=nazwa_pliku, as_attachment=True)
 
-@app.route('/daj_mi_admina/<username>')
-def daj_mi_admina(username):
-    user = Users.query.filter_by(username=username).first()
-    if user:
-        user.role = 'admin'
-        db.session.commit()
-        return f"<h1>Sukces! Użytkownik {username} jest teraz Szefem.</h1> <p>Wróć do logowania i koniecznie usuń ten kod z main.py!</p>"
-    return "Najpierw musisz się zarejestrować na stronie głównej!"
-
 with app.app_context(): 
     db.create_all()
 
