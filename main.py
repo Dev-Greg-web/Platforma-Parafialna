@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, flash, redirect, url_for, session, send_from_directory, send_file
-from models import Users, Attendance, Announcement
+from models import Users, Attendance, Announcement, db
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, date
 import os
@@ -18,7 +18,7 @@ app.permanent_session_lifetime = timedelta(minutes=15)
 admin_username = os.getenv("admin_name")
 admin_pass = os.getenv("admin_password")
 
-db = SQLAlchemy(app)
+db.init_app(app)
 
 # --- TRASY WIDOKU ---
 
