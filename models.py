@@ -8,10 +8,9 @@ class Users(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     imie = db.Column(db.String(50), nullable=False)
     nazwisko = db.Column(db.String(50), nullable=False)
-    username = db.Column(db.String(50), nullable=False)
+    username = db.Column(db.String(50), nullable=False, unique=True)
     password = db.Column(db.String(100), nullable=False)
-    # NOWA KOLUMNA:
-    role = db.Column(db.String(20), default='user') 
+    role = db.Column(db.String(20), default='user')
 
 class Attendance(db.Model):
     id = db.Column(db.Integer, primary_key=True)
