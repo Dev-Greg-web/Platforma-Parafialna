@@ -15,8 +15,11 @@
             <button onclick="showSection('podsumowanie')" id="btn-podsumowanie" class="nav-btn">Podsumowanie</button>
             
             <!-- NOWE DRZWI DLA SZEFA (Zwykłe linki Flaskowe z wyglądem przycisków menu) -->
-            <a href="{{ url_for('dashboard_page') }}" class="nav-btn" style="background: #27ae60; color: white; text-align: center; text-decoration: none; margin-top: 30px;">Panel Ministranta</a>
-            <a href="{{ url_for('logout') }}" class="nav-btn" style="background: #eb4d4b; color: white; text-align: center; text-decoration: none;">Wyloguj</a>
+            <!-- NOWE DRZWI DLA SZEFA (Poprawiony wygląd) -->
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 30px;">
+                <a href="{{ url_for('dashboard_page') }}" style="background: #27ae60; color: white; text-align: center; text-decoration: none; padding: 12px; border-radius: 10px; font-weight: bold; width: 100%; box-sizing: border-box;">Panel Ministranta</a>
+                <a href="{{ url_for('logout') }}" style="background: #eb4d4b; color: white; text-align: center; text-decoration: none; padding: 12px; border-radius: 10px; font-weight: bold; width: 100%; box-sizing: border-box;">Wyloguj</a>
+            </div>
 
             <footer>
                 <h3>&copy All rights reserved, Grześ Gładysz 2026</h3>
