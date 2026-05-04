@@ -20,6 +20,12 @@
                 <footer>
                     <h3>&copy All rights reserved, Grześ Gładysz 2026</h3>
                 </footer>
+                <!-- DRZWI POWROTNE (Tylko dla Szefa) -->
+                {% if session.get('user_role') == 'admin' %}
+                    <a href="{{ url_for('admin_page') }}" style="background: #f39c12; color: black; text-align: center; text-decoration: none; padding: 15px; border-radius: 10px; font-weight: bold; margin-bottom: 10px; display: block;">
+                        Wróć do Panelu Szefa
+                    </a>
+                {% endif %}
             </nav>
         </aside>
 
