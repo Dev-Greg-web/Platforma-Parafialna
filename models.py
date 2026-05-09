@@ -26,6 +26,7 @@ class Announcement(db.Model):
     tresc = db.Column(db.String(500), nullable=False)
     data_wystawienia = db.Column(db.DateTime, default=datetime.now)
 
+# TEGO BRAKOWAŁO:
 class Schedule(db.Model):
     __tablename__ = "schedule"
     id = db.Column(db.Integer, primary_key=True)
