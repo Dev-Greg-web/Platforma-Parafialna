@@ -23,7 +23,7 @@
         </nav>
     </aside>
 
-    <main class="flex-grow p-4 md:p-10 bg-gray-100 dark:bg-darkbg overflow-y-auto pb-32">
+    <main class="flex-grow p-4 md:p-10 bg-gray-100 dark:bg-darkbg overflow-y-auto pb-32 w-full">
         
         <section id="section-sluzby" class="admin-section block">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -47,7 +47,7 @@
                         🗑️ Usuń zaznaczone
                     </button>
                 </div>
-                <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto">
+                <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto w-full max-w-full">
                     <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[600px]">
                         <thead>
                             <tr class="border-b-2 border-brand text-lg">
@@ -88,14 +88,20 @@
         </section>
 
         <section id="section-uzytkownicy" class="admin-section hidden">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 w-full">
                 <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Zarządzanie Użytkownikami</h1>
-                <div class="flex items-center gap-2 bg-white dark:bg-cardbg px-3 py-2 rounded-xl shadow border border-gray-200 dark:border-brand">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" class="text-brand dark:text-gray-300" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9M3 12h5m0 0v8m0 0l-3-3m3 3l3-3"></path></svg>
-                    <label class="font-bold text-gray-700 dark:text-white">Sortuj:</label>
-                    <select id="sortUsers" onchange="sortTable('tbody-users', this.value, 'users')" class="bg-transparent text-gray-900 dark:text-white outline-none font-semibold cursor-pointer">
-                        <option value="ranga" class="text-black">Po Randze (Admin->Ks->User)</option>
-                        <option value="alfa" class="text-black">Alfabetycznie (A-Z)</option>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-white dark:bg-cardbg px-3 py-2 rounded-xl shadow border border-gray-200 dark:border-brand w-full md:w-auto max-w-full overflow-hidden">
+                    <div class="flex items-center gap-2 shrink-0">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" class="text-brand dark:text-gray-300" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9M3 12h5m0 0v8m0 0l-3-3m3 3l3-3"></path></svg>
+                        <label class="font-bold text-gray-700 dark:text-white whitespace-nowrap">Sortuj:</label>
+                    </div>
+                    <select id="sortUsers" onchange="sortTable('tbody-users', this.value, 'users')" class="bg-transparent text-gray-900 dark:text-white outline-none font-semibold cursor-pointer w-full max-w-full truncate">
+                        <option value="ranga-nazwisko" class="text-black">Ranga + Nazwisko</option>
+                        <option value="ranga-imie" class="text-black">Ranga + Imię</option>
+                        <option value="ranga-user" class="text-black">Ranga + Login</option>
+                        <option value="alfa-nazwisko" class="text-black">Alfabetycznie (Nazwisko)</option>
+                        <option value="alfa-imie" class="text-black">Alfabetycznie (Imię)</option>
+                        <option value="alfa-user" class="text-black">Alfabetycznie (Login)</option>
                     </select>
                 </div>
             </div>
@@ -106,7 +112,7 @@
                         🗑️ Usuń zaznaczonych
                     </button>
                 </div>
-                <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto">
+                <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto w-full max-w-full">
                     <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[600px]">
                         <thead>
                             <tr class="border-b-2 border-brand text-lg">
@@ -116,7 +122,7 @@
                         </thead>
                         <tbody id="tbody-users">
                             {% for u in users %}
-                            <tr class="border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition">
+                            <tr class="border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition" data-imie="{{ u.imie|lower }}" data-nazwisko="{{ u.nazwisko|lower }}" data-user="{{ u.username|lower }}" data-role="{{ u.role|default('user')|lower }}">
                                 <td class="p-4"><input type="checkbox" name="user_ids" value="{{u.id}}" class="usr-chk w-6 h-6 accent-danger cursor-pointer"></td>
                                 <td class="p-4">{{ u.imie }}</td><td class="p-4">{{ u.nazwisko }}</td>
                                 <td class="p-4 font-bold">{{ u.username }}</td>
@@ -153,7 +159,7 @@
                     <button type="submit" class="bg-brand text-white px-8 py-4 rounded-xl font-bold hover:-translate-y-1 hover:shadow-lg transition">Opublikuj</button>
                 </form>
             </div>
-            <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto">
+            <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto w-full max-w-full">
                 <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[500px]">
                     <thead><tr class="border-b-2 border-brand text-lg"><th class="p-4">Treść</th><th class="p-4">Data</th><th class="p-4">Akcje</th></tr></thead>
                     <tbody>
@@ -181,18 +187,18 @@
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Plan Służb (Stałe Dyżury)</h1>
             
             <div class="bg-white dark:bg-cardbg rounded-2xl p-6 shadow-xl mb-8 border border-brand/30">
-                <form action="/admin/add_schedule" method="POST" class="flex flex-col md:flex-row gap-4 items-stretch md:items-end w-full">
+                <form action="/admin/add_schedule" method="POST" class="flex flex-col lg:flex-row gap-4 items-stretch lg:items-end w-full">
                     
-                    <div class="flex-grow flex flex-col gap-1 w-full md:w-auto">
+                    <div class="flex-grow flex flex-col gap-1 w-full lg:w-auto overflow-hidden">
                         <label class="font-bold dark:text-white text-gray-700">Wybierz ministranta:</label>
                         <select name="user_id" required class="w-full max-w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
                             {% for u in users %}<option value="{{ u.id }}">{{ u.username }} ({{ u.imie }} {{ u.nazwisko }})</option>{% endfor %}
                         </select>
                     </div>
                     
-                    <div class="flex flex-col gap-1 w-full md:w-1/4">
+                    <div class="flex flex-col gap-1 w-full lg:w-48 shrink-0 overflow-hidden">
                         <label class="font-bold dark:text-white text-gray-700">Dzień:</label>
-                        <select name="dzien" id="planDzien" onchange="updateGodziny()" class="w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand">
+                        <select name="dzien" id="planDzien" onchange="updateGodziny()" class="w-full max-w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
                             <option value="Poniedziałek">Poniedziałek</option><option value="Wtorek">Wtorek</option>
                             <option value="Środa">Środa</option><option value="Czwartek">Czwartek</option>
                             <option value="Piątek">Piątek</option><option value="Sobota">Sobota</option>
@@ -200,19 +206,19 @@
                         </select>
                     </div>
                     
-                    <div class="flex flex-col gap-1 w-full md:w-1/4">
+                    <div class="flex flex-col gap-1 w-full lg:w-40 shrink-0 overflow-hidden">
                         <label class="font-bold dark:text-white text-gray-700">Godzina:</label>
-                        <select name="godzina" id="planGodzina" class="w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand">
+                        <select name="godzina" id="planGodzina" class="w-full max-w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
                         </select>
                     </div>
 
-                    <button type="submit" class="w-full md:w-auto bg-success text-white px-8 py-3 h-[50px] rounded-xl font-bold shadow-lg hover:-translate-y-1 transition whitespace-nowrap">
+                    <button type="submit" class="w-full lg:w-auto bg-success text-white px-8 py-3 h-[50px] rounded-xl font-bold shadow-lg hover:-translate-y-1 transition whitespace-nowrap shrink-0">
                         + Dodaj dyżur
                     </button>
                 </form>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 w-full">
                 {% for dzien, dyzury in plan.items() %}
                 <div class="bg-white dark:bg-cardbg rounded-2xl p-5 shadow-lg border-t-4 border-brand">
                     <h2 class="text-xl font-extrabold text-gray-900 dark:text-white mb-4 flex justify-between">
@@ -227,7 +233,7 @@
                                     <span class="font-bold text-brand bg-brand/10 px-2 py-1 rounded shrink-0">{{ d.godzina }}</span> 
                                     <strong class="dark:text-white text-gray-800 truncate">
                                         {{ d.user.username }} 
-                                        <span class="text-xs text-gray-500 font-normal">({{ d.user.imie }} {{ d.user.nazwisko }})</span>
+                                        <span class="text-xs text-gray-500 font-normal hidden sm:inline-block">({{ d.user.imie }} {{ d.user.nazwisko }})</span>
                                     </strong>
                                 </div>
                                 <a href="{{ url_for('delete_schedule', id=d.id) }}" class="text-gray-400 hover:text-danger text-2xl font-bold transition px-2 shrink-0" onclick="return confirm('Usunąć ten dyżur?')">&times;</a>
@@ -243,24 +249,28 @@
         </section>
 
         <section id="section-podsumowanie" class="admin-section hidden">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 w-full">
                 <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Podsumowanie</h1>
-                <div class="flex items-center gap-4 flex-wrap">
-                    <div class="flex items-center gap-2 bg-white dark:bg-cardbg px-3 py-2 rounded-xl shadow border border-gray-200 dark:border-brand">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" class="text-brand dark:text-gray-300" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9M3 12h5m0 0v8m0 0l-3-3m3 3l3-3"></path></svg>
-                        <label class="font-bold text-gray-700 dark:text-white">Sortuj:</label>
-                        <select id="sortPodsumowanie" onchange="sortTable('tbody-podsumowanie', this.value, 'podsumowanie')" class="bg-transparent text-gray-900 dark:text-white outline-none font-semibold cursor-pointer">
-                            <option value="ranga" class="text-black">Po Randze (Punkty)</option>
-                            <option value="alfa" class="text-black">Alfabetycznie (A-Z)</option>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto max-w-full">
+                    <div class="flex items-center gap-2 bg-white dark:bg-cardbg px-3 py-2 rounded-xl shadow border border-gray-200 dark:border-brand w-full sm:w-auto overflow-hidden shrink-0">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" class="text-brand dark:text-gray-300 shrink-0" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9M3 12h5m0 0v8m0 0l-3-3m3 3l3-3"></path></svg>
+                        <label class="font-bold text-gray-700 dark:text-white whitespace-nowrap">Sortuj:</label>
+                        <select id="sortPodsumowanie" onchange="sortTable('tbody-podsumowanie', this.value, 'podsumowanie')" class="bg-transparent text-gray-900 dark:text-white outline-none font-semibold cursor-pointer w-full max-w-full truncate">
+                            <option value="ranga-nazwisko" class="text-black">Punkty + Nazwisko</option>
+                            <option value="ranga-imie" class="text-black">Punkty + Imię</option>
+                            <option value="ranga-user" class="text-black">Punkty + Login</option>
+                            <option value="alfa-nazwisko" class="text-black">Alfabetycznie (Nazwisko)</option>
+                            <option value="alfa-imie" class="text-black">Alfabetycznie (Imię)</option>
+                            <option value="alfa-user" class="text-black">Alfabetycznie (Login)</option>
                         </select>
                     </div>
-                    <a href="{{ url_for('export_raport') }}" class="bg-success text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:-translate-y-1 transition flex items-center gap-2">
-                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Pobierz Raport Excel
+                    <a href="{{ url_for('export_raport') }}" class="w-full sm:w-auto bg-success text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:-translate-y-1 transition flex items-center justify-center gap-2 shrink-0">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Pobierz Excel
                     </a>
                 </div>
             </div>
             
-            <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto">
+            <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto w-full max-w-full">
                 <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[600px]">
                     <thead>
                         <tr class="border-b-2 border-brand text-lg">
@@ -269,7 +279,7 @@
                     </thead>
                     <tbody id="tbody-podsumowanie">
                         {% for s in stats %}
-                        <tr class="border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition">
+                        <tr class="border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition" data-imie="{{ s.imie|lower }}" data-nazwisko="{{ s.nazwisko|lower }}" data-user="{{ s.username|lower }}" data-points="{{ s.total }}">
                             <td class="p-4"><strong>{{ s.username }}</strong><br><span class="text-sm text-gray-500 dark:text-gray-300">{{ s.full_name }}</span></td>
                             <td class="p-4 text-2xl font-bold text-warning">{{ s.total }}</td>
                             <td class="p-4">{{ s.morning }}</td><td class="p-4">{{ s.evening }}</td><td class="p-4">{{ s.other }}</td>
@@ -390,50 +400,37 @@
         });
     }
 
-    // --- MAGIA SORTOWANIA (UŻYTKOWNICY I PODSUMOWANIE) ---
+    // --- NOWY SYSTEM SORTOWANIA ---
     function sortTable(tbodyId, method, type) {
         const tbody = document.getElementById(tbodyId);
         if(!tbody) return;
         const rows = Array.from(tbody.querySelectorAll('tr'));
 
+        const [mainCrit, subCrit] = method.split('-');
+
         rows.sort((a, b) => {
-            if (type === 'podsumowanie') {
-                const nameA = a.cells[0].innerText.trim().toLowerCase();
-                const nameB = b.cells[0].innerText.trim().toLowerCase();
-                const sumaA = parseInt(a.cells[1].innerText.trim());
-                const sumaB = parseInt(b.cells[1].innerText.trim());
+            let valA, valB, subA, subB;
 
-                if (method === 'ranga') {
-                    if (sumaA !== sumaB) {
-                        return sumaB - sumaA; // Najwięcej służb wyżej
-                    }
-                    return nameA.localeCompare(nameB); // Remis -> alfabetycznie
-                } else if (method === 'alfa') {
-                    return nameA.localeCompare(nameB); // Od A do Z
+            subA = a.getAttribute('data-' + subCrit) || '';
+            subB = b.getAttribute('data-' + subCrit) || '';
+
+            if (mainCrit === 'ranga') {
+                if (type === 'podsumowanie') {
+                    valA = parseInt(a.getAttribute('data-points')) || 0;
+                    valB = parseInt(b.getAttribute('data-points')) || 0;
+                    if (valA !== valB) return valB - valA; 
+                } else {
+                    const weights = { 'admin': 3, 'ksiądz': 2, 'user': 1 };
+                    valA = weights[a.getAttribute('data-role')] || 0;
+                    valB = weights[b.getAttribute('data-role')] || 0;
+                    if (valA !== valB) return valB - valA; 
                 }
-            } else if (type === 'users') {
-                const nameA = a.cells[3].innerText.trim().toLowerCase(); // Login
-                const nameB = b.cells[3].innerText.trim().toLowerCase();
-                const rangaA = a.cells[5].innerText.trim().toLowerCase(); // Rola
-                const rangaB = b.cells[5].innerText.trim().toLowerCase();
-
-                // Przypisujemy moc rangom (Admin najwyżej)
-                const rankWeight = { 'admin': 3, 'ksiądz': 2, 'user': 1, 'użytkownik': 1 };
-
-                if (method === 'ranga') {
-                    const weightA = rankWeight[rangaA] || 0;
-                    const weightB = rankWeight[rangaB] || 0;
-                    if (weightA !== weightB) {
-                        return weightB - weightA; 
-                    }
-                    return nameA.localeCompare(nameB);
-                } else if (method === 'alfa') {
-                    return nameA.localeCompare(nameB);
-                }
+                return subA.localeCompare(subB);
+            } else {
+                return subA.localeCompare(subB);
             }
         });
 
-        // Wyczyść i wklej na nowo (to się dzieje w milisekundę)
         tbody.innerHTML = '';
         rows.forEach(row => tbody.appendChild(row));
     }
@@ -441,9 +438,8 @@
     document.addEventListener("DOMContentLoaded", function() {
         if(document.getElementById('planDzien')) updateGodziny();
         
-        // Odpal domyślne sortowanie od razu po załadowaniu
-        if(document.getElementById('tbody-podsumowanie')) sortTable('tbody-podsumowanie', 'ranga', 'podsumowanie');
-        if(document.getElementById('tbody-users')) sortTable('tbody-users', 'ranga', 'users');
+        if(document.getElementById('tbody-podsumowanie')) sortTable('tbody-podsumowanie', 'ranga-nazwisko', 'podsumowanie');
+        if(document.getElementById('tbody-users')) sortTable('tbody-users', 'ranga-nazwisko', 'users');
     });
 
     function filterUser(username, btnElement) {

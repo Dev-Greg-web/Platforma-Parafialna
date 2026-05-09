@@ -12,6 +12,7 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv("TAJNE_HASLO")
 db_url = os.getenv("DATABASE_URL", "sqlite:///ministranci.db")
+
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 
@@ -20,17 +21,13 @@ app.permanent_session_lifetime = timedelta(minutes=15)
 
 db.init_app(app)
 
-# --- WYMUSZANIE ŚWIEŻYCH DANYCH (Brak opóźnień w wyświetlaniu) ---
 @app.after_request
 def add_header(response):
-    # Wymuszamy na przeglądarce pobranie świeżego HTML-a za każdym razem
     if 'text/html' in response.content_type:
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '-1'
     return response
-
-# --- TRASY WIDOKU ---
 
 @app.route('/')
 def login_page():
@@ -38,38 +35,30 @@ def login_page():
         return redirect(url_for('dashboard_page'))
     return render_template('login.html')
 
-# --- LOGIKA PROCESOWA (AUTH & CRUD) ---
-
 @app.route("/auth_process", methods=['POST'])
 def auth_process():
     action = request.form.get("action")
     username = request.form.get("username")
     password = request.form.get("haslo")
     
-    # Odczyt danych Szefa prosto z pliku .env
     env_admin_name = os.getenv("admin_name")
     env_admin_pass = os.getenv("admin_password")
 
     if action == "login":
-        # 1. PRIORYTET: Logowanie Szefa z pliku .env
         if username == env_admin_name and password == env_admin_pass:
             session.clear()
-            
-            # Zabezpieczenie: Tworzymy awaryjne konto w bazie dla Szefa .env, 
-            # żeby miał swoje poprawne ID przy dodawaniu własnych służb!
             admin_in_db = Users.query.filter_by(username=username).first()
             if not admin_in_db:
-                admin_in_db = Users(imie="Grześ", nazwisko="Gładysz", username=username, password=password, role='admin')
+                admin_in_db = Users(imie="Główny", nazwisko="Szef", username=username, password=password, role='admin')
                 db.session.add(admin_in_db)
                 db.session.commit()
                 
             session['user_id'] = admin_in_db.id
             session['username'] = admin_in_db.username
             session['user_role'] = 'admin'
-            flash("Witaj Szefie! System gotowy.", "success")
+            flash("Witaj Szefie (Konto Główne .env)! System gotowy.", "success")
             return redirect(url_for('admin_page'))
 
-        # 2. Zwykłe logowanie z Bazy Danych
         user = Users.query.filter_by(username=username).first()
         if user and user.password == password:
             session.clear()
@@ -92,7 +81,6 @@ def auth_process():
 
     elif action == "register":
         user = Users.query.filter_by(username=username).first()
-        # Zabroniona rejestracja na login szefa z env
         if user or username == env_admin_name:
             flash("Ta nazwa jest zajęta!", "danger")
         else:
@@ -143,14 +131,12 @@ def add_attendance():
 
     return redirect(url_for('dashboard_page'))
 
-# --- ADMIN: Zarządzanie Użytkownikami ---
-
 @app.route('/admin/delete_user/<int:id>')
 def delete_user(id):
     if session.get('user_role') != 'admin': return redirect(url_for('login_page'))
     user_to_del = Users.query.get_or_404(id)
     Attendance.query.filter_by(user_id=id).delete()
-    Schedule.query.filter_by(user_id=id).delete() # Usunięcie z planu służb
+    Schedule.query.filter_by(user_id=id).delete()
     db.session.delete(user_to_del)
     db.session.commit()
     flash(f"Użytkownik {user_to_del.username} usunięty.", "success")
@@ -160,7 +146,6 @@ def delete_user(id):
 def edit_user(id):
     if session.get('user_role') != 'admin': return redirect(url_for('login_page'))
     u = Users.query.get_or_404(id)
-    
     u.imie = request.form.get('imie')
     u.nazwisko = request.form.get('nazwisko')
     u.username = request.form.get('username')
@@ -174,8 +159,6 @@ def edit_user(id):
         db.session.rollback()
         flash("Błąd podczas edycji użytkownika.", "danger")
     return redirect(url_for('admin_page'))
-
-# --- ADMIN: Zarządzanie Służbami ---
 
 @app.route('/admin/delete/<int:id>')
 def delete_entry(id):
@@ -209,7 +192,6 @@ def edit_entry(id):
 @app.route('/admin/add_attendance_admin', methods=['POST'])
 def add_attendance_admin():
     if session.get('user_role') != 'admin': return redirect(url_for('login_page'))
-
     user_id = request.form.get("user_id")
     data_str = request.form.get("date")
     typ_mszy = request.form.get("typ_mszy")
@@ -230,8 +212,6 @@ def add_attendance_admin():
         flash("Wystąpił błąd podczas dodawania służby.", "danger")
 
     return redirect(url_for('admin_page'))
-
-# --- ADMIN: Zarządzanie Ogłoszeniami ---
 
 @app.route('/admin/add_announcement', methods=['POST'])
 def add_announcement():
@@ -260,8 +240,6 @@ def delete_announcement(id):
     db.session.commit()
     return redirect(url_for('admin_page'))
 
-# --- PLAN SŁUŻB (DYŻURY) ---
-
 @app.route('/admin/add_schedule', methods=['POST'])
 def add_schedule():
     if session.get('user_role') not in ['admin', 'ksiądz']: return redirect(url_for('login_page'))
@@ -285,13 +263,10 @@ def delete_schedule(id):
         flash("Usunięto dyżur z planu.", "success")
     return redirect(request.referrer)
 
-# --- AKTUALIZACJA WIDOKÓW ---
-
 @app.route('/admin')
 def admin_page():
     if session.get('user_role') != 'admin': return redirect(url_for('login_page'))
     
-    # Sortujemy by najnowsze i najpóźniejsze w danym dniu były wyżej
     all_attendance = db.session.query(Attendance, Users).join(Users).order_by(
         Attendance.data_sluzby.desc(), Attendance.godzina.desc()
     ).all()
@@ -305,7 +280,6 @@ def admin_page():
     for dzien in plan_tygodnia:
         plan_tygodnia[dzien] = sorted(plan_tygodnia[dzien], key=lambda x: x['godzina'])
     
-    # ZOPTYMALIZOWANE ZLICZANIE (Eliminuje zacięcia serwera przy dużej liczbie wpisów)
     user_atts_map = {u.id: [] for u in all_users}
     for att, usr in all_attendance:
         if usr.id in user_atts_map:
@@ -320,13 +294,14 @@ def admin_page():
         other = total - (morning + evening)
         
         user_stats.append({
-            'username': u.username, 'full_name': f"{u.imie} {u.nazwisko}",
+            'username': u.username,
+            'imie': u.imie,
+            'nazwisko': u.nazwisko,
+            'full_name': f"{u.imie} {u.nazwisko}",
             'total': total, 'morning': morning, 'evening': evening, 'other': other
         })
     
     return render_template("admin.html", attendances=all_attendance, users=all_users, announcements=all_announcements, stats=user_stats, plan=plan_tygodnia)
-
-# --- ADMIN: Zbiorcze usuwanie ---
 
 @app.route('/admin/delete_bulk_users', methods=['POST'])
 def delete_bulk_users():
@@ -379,7 +354,6 @@ def ksDash():
     for dzien in plan_tygodnia:
         plan_tygodnia[dzien] = sorted(plan_tygodnia[dzien], key=lambda x: x['godzina'])
     
-    # ZOPTYMALIZOWANE ZLICZANIE
     user_atts_map = {u.id: [] for u in all_users}
     for att, usr in all_attendance:
         if usr.id in user_atts_map:
@@ -394,7 +368,10 @@ def ksDash():
         other = total - (morning + evening)
         
         user_stats.append({
-            'username': u.username, 'full_name': f"{u.imie} {u.nazwisko}",
+            'username': u.username, 
+            'imie': u.imie,
+            'nazwisko': u.nazwisko,
+            'full_name': f"{u.imie} {u.nazwisko}",
             'total': total, 'morning': morning, 'evening': evening, 'other': other
         })
 
@@ -414,8 +391,6 @@ def dashboard_page():
                            today=dzisiaj.strftime('%Y-%m-%d'), 
                            min_date=min_date.strftime('%Y-%m-%d'),
                            attendances=user_attendances)
-
-# --- MINISTRANT: Zarządzanie swoimi służbami ---
 
 @app.route('/delete_my_attendance/<int:id>')
 def delete_my_attendance(id):
@@ -493,7 +468,6 @@ def export_raport():
     all_attendance = db.session.query(Attendance, Users).join(Users).all()
     all_users = Users.query.all()
     
-    # ZOPTYMALIZOWANE ZLICZANIE DLA RAPORTU
     user_atts_map = {u.id: [] for u in all_users}
     for att, usr in all_attendance:
         if usr.id in user_atts_map:
