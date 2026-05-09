@@ -17,12 +17,21 @@
                     <label class="text-brand dark:text-white font-bold">Nazwa Użytkownika:</label>
                     <input type="text" name="username" required class="p-3 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-[#2a3a5a] dark:text-white focus:ring-2 focus:ring-brand outline-none transition">
                 </div>
-                <div class="flex flex-col gap-2">
+                
+                <div class="flex flex-col gap-2 relative">
                     <label class="text-brand dark:text-white font-bold">Hasło:</label>
-                    <input type="password" name="haslo" required class="p-3 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-[#2a3a5a] dark:text-white focus:ring-2 focus:ring-brand outline-none transition">
+                    <div class="relative w-full">
+                        <input type="password" name="haslo" id="haslo-log" required class="p-3 w-full rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-[#2a3a5a] dark:text-white focus:ring-2 focus:ring-brand outline-none transition pr-12">
+                        <button type="button" onclick="togglePass('haslo-log', 'eye-log')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-brand transition focus:outline-none">
+                            <svg id="eye-log" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 
-                <a href="forget-password" class="text-sm text-gray-500 hover:text-brand transition">Zapomniałeś hasła?</a>
+                <a href="{{ url_for('forget_password') }}" class="text-sm text-gray-500 hover:text-brand transition">Zapomniałeś hasła?</a>
                 
                 <button type="submit" name="action" value="login" class="mt-4 bg-[#303f9f] hover:bg-brand text-white font-bold py-4 rounded-xl shadow-lg hover:-translate-y-1 transition">
                     Zaloguj się!
@@ -44,9 +53,18 @@
                     <label class="text-white font-semibold">Nazwa Użytkownika:</label>
                     <input type="text" name="username" required class="p-3 rounded-xl bg-white text-black outline-none focus:ring-4 focus:ring-brand/50 transition">
                 </div>
-                <div class="flex flex-col gap-1">
+                
+                <div class="flex flex-col gap-1 relative">
                     <label class="text-white font-semibold">Hasło:</label>
-                    <input type="password" name="haslo" required class="p-3 rounded-xl bg-white text-black outline-none focus:ring-4 focus:ring-brand/50 transition">
+                    <div class="relative w-full">
+                        <input type="password" name="haslo" id="haslo-reg" required class="p-3 w-full rounded-xl bg-white text-black outline-none focus:ring-4 focus:ring-brand/50 transition pr-12">
+                        <button type="button" onclick="togglePass('haslo-reg', 'eye-reg')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-brand transition focus:outline-none">
+                            <svg id="eye-reg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 
                 <button type="submit" name="action" value="register" class="mt-4 bg-white text-brand font-bold py-4 rounded-xl shadow-lg hover:-translate-y-1 transition">
@@ -78,6 +96,19 @@
         document.getElementById('tab-register').className = "flex-1 py-4 bg-brand transition-colors text-white";
         document.getElementById('tab-login').className = "flex-1 py-4 hover:bg-brand/50 transition-colors text-gray-300";
         document.getElementById('login-footer').classList.add('hidden');
+    }
+
+    // MAGIA OKA: Odkrywanie i chowanie hasła
+    function togglePass(inputId, iconId) {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+        } else {
+            input.type = 'password';
+            icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+        }
     }
 
     const isSuccess = "{{ 'true' if success_login else 'false' }}" === "true";

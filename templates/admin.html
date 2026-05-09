@@ -88,7 +88,17 @@
         </section>
 
         <section id="section-uzytkownicy" class="admin-section hidden">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Zarządzanie Użytkownikami</h1>
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Zarządzanie Użytkownikami</h1>
+                <div class="flex items-center gap-2 bg-white dark:bg-cardbg px-3 py-2 rounded-xl shadow border border-gray-200 dark:border-brand">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" class="text-brand dark:text-gray-300" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9M3 12h5m0 0v8m0 0l-3-3m3 3l3-3"></path></svg>
+                    <label class="font-bold text-gray-700 dark:text-white">Sortuj:</label>
+                    <select id="sortUsers" onchange="sortTable('tbody-users', this.value, 'users')" class="bg-transparent text-gray-900 dark:text-white outline-none font-semibold cursor-pointer">
+                        <option value="ranga" class="text-black">Po Randze (Admin->Ks->User)</option>
+                        <option value="alfa" class="text-black">Alfabetycznie (A-Z)</option>
+                    </select>
+                </div>
+            </div>
             
             <form action="/admin/delete_bulk_users" method="POST">
                 <div class="flex justify-end mb-4">
@@ -104,7 +114,7 @@
                                 <th class="p-4">Imię</th><th class="p-4">Nazwisko</th><th class="p-4">User</th><th class="p-4">Hasło</th><th class="p-4">Ranga</th><th class="p-4">Akcje</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="tbody-users">
                             {% for u in users %}
                             <tr class="border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition">
                                 <td class="p-4"><input type="checkbox" name="user_ids" value="{{u.id}}" class="usr-chk w-6 h-6 accent-danger cursor-pointer"></td>
@@ -231,10 +241,21 @@
         <section id="section-podsumowanie" class="admin-section hidden">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                 <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Podsumowanie</h1>
-                <a href="{{ url_for('export_raport') }}" class="bg-success text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:-translate-y-1 transition flex items-center gap-2">
-                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Pobierz Raport Excel
-                </a>
+                <div class="flex items-center gap-4 flex-wrap">
+                    <div class="flex items-center gap-2 bg-white dark:bg-cardbg px-3 py-2 rounded-xl shadow border border-gray-200 dark:border-brand">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" class="text-brand dark:text-gray-300" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9M3 12h5m0 0v8m0 0l-3-3m3 3l3-3"></path></svg>
+                        <label class="font-bold text-gray-700 dark:text-white">Sortuj:</label>
+                        <select id="sortPodsumowanie" onchange="sortTable('tbody-podsumowanie', this.value, 'podsumowanie')" class="bg-transparent text-gray-900 dark:text-white outline-none font-semibold cursor-pointer">
+                            <option value="ranga" class="text-black">Po Randze (Punkty)</option>
+                            <option value="alfa" class="text-black">Alfabetycznie (A-Z)</option>
+                        </select>
+                    </div>
+                    <a href="{{ url_for('export_raport') }}" class="bg-success text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:-translate-y-1 transition flex items-center gap-2">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Pobierz Raport Excel
+                    </a>
+                </div>
             </div>
+            
             <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto">
                 <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[600px]">
                     <thead>
@@ -242,7 +263,7 @@
                             <th class="p-4">Ministrant</th><th class="p-4">Suma</th><th class="p-4">Poranne</th><th class="p-4">Wieczorne</th><th class="p-4">Inne</th><th class="p-4">Ranking</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="tbody-podsumowanie">
                         {% for s in stats %}
                         <tr class="border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition">
                             <td class="p-4"><strong>{{ s.username }}</strong><br><span class="text-sm text-gray-500 dark:text-gray-300">{{ s.full_name }}</span></td>
@@ -357,6 +378,7 @@
     function updateGodziny() {
         const dzien = document.getElementById('planDzien').value;
         const selectGodzina = document.getElementById('planGodzina');
+        if(!selectGodzina) return;
         selectGodzina.innerHTML = ''; 
         
         godzinyPlan[dzien].forEach(g => {
@@ -364,10 +386,60 @@
         });
     }
 
+    // --- MAGIA SORTOWANIA (UŻYTKOWNICY I PODSUMOWANIE) ---
+    function sortTable(tbodyId, method, type) {
+        const tbody = document.getElementById(tbodyId);
+        if(!tbody) return;
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+
+        rows.sort((a, b) => {
+            if (type === 'podsumowanie') {
+                const nameA = a.cells[0].innerText.trim().toLowerCase();
+                const nameB = b.cells[0].innerText.trim().toLowerCase();
+                const sumaA = parseInt(a.cells[1].innerText.trim());
+                const sumaB = parseInt(b.cells[1].innerText.trim());
+
+                if (method === 'ranga') {
+                    if (sumaA !== sumaB) {
+                        return sumaB - sumaA; // Najwięcej służb wyżej
+                    }
+                    return nameA.localeCompare(nameB); // Remis -> alfabetycznie
+                } else if (method === 'alfa') {
+                    return nameA.localeCompare(nameB); // Od A do Z
+                }
+            } else if (type === 'users') {
+                const nameA = a.cells[3].innerText.trim().toLowerCase(); // Login
+                const nameB = b.cells[3].innerText.trim().toLowerCase();
+                const rangaA = a.cells[5].innerText.trim().toLowerCase(); // Rola
+                const rangaB = b.cells[5].innerText.trim().toLowerCase();
+
+                // Przypisujemy moc rangom (Admin najwyżej)
+                const rankWeight = { 'admin': 3, 'ksiądz': 2, 'user': 1, 'użytkownik': 1 };
+
+                if (method === 'ranga') {
+                    const weightA = rankWeight[rangaA] || 0;
+                    const weightB = rankWeight[rangaB] || 0;
+                    if (weightA !== weightB) {
+                        return weightB - weightA; 
+                    }
+                    return nameA.localeCompare(nameB);
+                } else if (method === 'alfa') {
+                    return nameA.localeCompare(nameB);
+                }
+            }
+        });
+
+        // Wyczyść i wklej na nowo (to się dzieje w milisekundę)
+        tbody.innerHTML = '';
+        rows.forEach(row => tbody.appendChild(row));
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
-        if(document.getElementById('planDzien')) {
-            updateGodziny();
-        }
+        if(document.getElementById('planDzien')) updateGodziny();
+        
+        // Odpal domyślne sortowanie od razu po załadowaniu
+        if(document.getElementById('tbody-podsumowanie')) sortTable('tbody-podsumowanie', 'ranga', 'podsumowanie');
+        if(document.getElementById('tbody-users')) sortTable('tbody-users', 'ranga', 'users');
     });
 
     function filterUser(username, btnElement) {
