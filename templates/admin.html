@@ -23,10 +23,10 @@
         </nav>
     </aside>
 
-    <main class="flex-grow p-4 md:p-10 bg-gray-100 dark:bg-darkbg overflow-y-auto pb-32 w-full min-w-0">
+    <main class="flex-1 p-4 md:p-10 bg-gray-100 dark:bg-darkbg overflow-y-auto pb-32 min-w-0">
         
         <section id="section-sluzby" class="admin-section block">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+            <div class="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-8">
                 <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Zarządzanie Służbami</h1>
                 <button class="bg-gradient-to-r from-success to-green-400 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:-translate-y-1 transition flex items-center gap-2" onclick="openModal('addAttendanceModal')">
                     <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
@@ -41,7 +41,7 @@
                 {% endfor %}
             </div>
 
-            <form action="/admin/delete_bulk_attendances" method="POST" class="w-full">
+            <form action="/admin/delete_bulk_attendances" method="POST">
                 <div class="flex justify-end mb-4">
                     <button type="submit" class="bg-danger text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-red-700 hover:-translate-y-1 transition flex items-center gap-2" onclick="return confirm('Czy na pewno chcesz usunąć wszystkie ZAZNACZONE służby?')">
                         🗑️ Usuń zaznaczone
@@ -88,12 +88,14 @@
         </section>
 
         <section id="section-uzytkownicy" class="admin-section hidden">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 w-full">
+            <div class="flex flex-col xl:flex-row flex-wrap justify-between items-start xl:items-center gap-4 mb-8">
                 <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Zarządzanie Użytkownikami</h1>
-                <div class="flex items-center gap-2 bg-white dark:bg-cardbg px-3 py-2 rounded-xl shadow border border-gray-200 dark:border-brand w-full sm:w-auto">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" class="text-brand dark:text-gray-300 shrink-0" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9M3 12h5m0 0v8m0 0l-3-3m3 3l3-3"></path></svg>
-                    <label class="font-bold text-gray-700 dark:text-white shrink-0">Sortuj:</label>
-                    <select id="sortUsers" onchange="sortTable('tbody-users', this.value, 'users')" class="bg-transparent text-gray-900 dark:text-white outline-none font-semibold cursor-pointer w-full">
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-white dark:bg-cardbg px-3 py-2 rounded-xl shadow border border-gray-200 dark:border-brand w-full sm:w-auto max-w-full overflow-hidden">
+                    <div class="flex items-center gap-2 shrink-0">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" class="text-brand dark:text-gray-300" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9M3 12h5m0 0v8m0 0l-3-3m3 3l3-3"></path></svg>
+                        <label class="font-bold text-gray-700 dark:text-white whitespace-nowrap">Sortuj:</label>
+                    </div>
+                    <select id="sortUsers" onchange="sortTable('tbody-users', this.value, 'users')" class="bg-transparent text-gray-900 dark:text-white outline-none font-semibold cursor-pointer w-full max-w-full truncate">
                         <option value="ranga-nazwisko" class="text-black">Ranga + Nazwisko</option>
                         <option value="ranga-imie" class="text-black">Ranga + Imię</option>
                         <option value="ranga-user" class="text-black">Ranga + Login</option>
@@ -104,7 +106,7 @@
                 </div>
             </div>
             
-            <form action="/admin/delete_bulk_users" method="POST" class="w-full">
+            <form action="/admin/delete_bulk_users" method="POST">
                 <div class="flex justify-end mb-4">
                     <button type="submit" class="bg-danger text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-red-700 hover:-translate-y-1 transition flex items-center gap-2" onclick="return confirm('UWAGA: Zaznaczeni użytkownicy zostaną usunięci razem z wszystkimi ich służbami! Jesteś pewien?')">
                         🗑️ Usuń zaznaczonych
@@ -187,16 +189,16 @@
             <div class="bg-white dark:bg-cardbg rounded-2xl p-6 shadow-xl mb-8 border border-brand/30 w-full">
                 <form action="/admin/add_schedule" method="POST" class="flex flex-col lg:flex-row gap-4 items-stretch lg:items-end w-full">
                     
-                    <div class="flex-grow flex flex-col gap-1 w-full lg:w-auto min-w-0">
+                    <div class="flex-grow flex flex-col gap-1 w-full lg:w-auto overflow-hidden">
                         <label class="font-bold dark:text-white text-gray-700">Wybierz ministranta:</label>
-                        <select name="user_id" required class="w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
+                        <select name="user_id" required class="w-full max-w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
                             {% for u in users %}<option value="{{ u.id }}">{{ u.username }} ({{ u.imie }} {{ u.nazwisko }})</option>{% endfor %}
                         </select>
                     </div>
                     
-                    <div class="flex flex-col gap-1 w-full lg:w-48 shrink-0 min-w-0">
+                    <div class="flex flex-col gap-1 w-full lg:w-48 shrink-0 overflow-hidden">
                         <label class="font-bold dark:text-white text-gray-700">Dzień:</label>
-                        <select name="dzien" id="planDzien" onchange="updateGodziny()" class="w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
+                        <select name="dzien" id="planDzien" onchange="updateGodziny()" class="w-full max-w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
                             <option value="Poniedziałek">Poniedziałek</option><option value="Wtorek">Wtorek</option>
                             <option value="Środa">Środa</option><option value="Czwartek">Czwartek</option>
                             <option value="Piątek">Piątek</option><option value="Sobota">Sobota</option>
@@ -204,9 +206,9 @@
                         </select>
                     </div>
                     
-                    <div class="flex flex-col gap-1 w-full lg:w-40 shrink-0 min-w-0">
+                    <div class="flex flex-col gap-1 w-full lg:w-40 shrink-0 overflow-hidden">
                         <label class="font-bold dark:text-white text-gray-700">Godzina:</label>
-                        <select name="godzina" id="planGodzina" class="w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
+                        <select name="godzina" id="planGodzina" class="w-full max-w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
                         </select>
                     </div>
 
@@ -218,20 +220,20 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 w-full">
                 {% for dzien, dyzury in plan.items() %}
-                <div class="bg-white dark:bg-cardbg rounded-2xl p-5 shadow-lg border-t-4 border-brand flex flex-col w-full min-w-0">
-                    <h2 class="text-xl font-extrabold text-gray-900 dark:text-white mb-4 flex justify-between shrink-0">
+                <div class="bg-white dark:bg-cardbg rounded-2xl p-5 shadow-lg border-t-4 border-brand">
+                    <h2 class="text-xl font-extrabold text-gray-900 dark:text-white mb-4 flex justify-between">
                         {{ dzien }} <span class="bg-brand/20 text-brand px-2 rounded text-sm flex items-center">{{ dyzury|length }}</span>
                     </h2>
                     
                     {% if dyzury %}
-                        <ul class="flex flex-col gap-2 w-full">
+                        <ul class="flex flex-col gap-2">
                         {% for d in dyzury %}
-                            <li class="flex justify-between items-center bg-gray-50 dark:bg-darkbg p-3 rounded-xl border border-gray-200 dark:border-white/10 group transition hover:border-brand/50 w-full min-w-0">
+                            <li class="flex justify-between items-center bg-gray-50 dark:bg-darkbg p-3 rounded-xl border border-gray-200 dark:border-white/10 group transition hover:border-brand/50 overflow-hidden">
                                 <div class="flex items-center gap-2 min-w-0">
                                     <span class="font-bold text-brand bg-brand/10 px-2 py-1 rounded shrink-0">{{ d.godzina }}</span> 
                                     <strong class="dark:text-white text-gray-800 truncate">
                                         {{ d.user.username }} 
-                                        <span class="text-xs text-gray-500 font-normal">({{ d.user.imie }} {{ d.user.nazwisko }})</span>
+                                        <span class="text-xs text-gray-500 font-normal hidden sm:inline-block">({{ d.user.imie }} {{ d.user.nazwisko }})</span>
                                     </strong>
                                 </div>
                                 <a href="{{ url_for('delete_schedule', id=d.id) }}" class="text-gray-400 hover:text-danger text-2xl font-bold transition px-2 shrink-0" onclick="return confirm('Usunąć ten dyżur?')">&times;</a>
@@ -247,13 +249,13 @@
         </section>
 
         <section id="section-podsumowanie" class="admin-section hidden">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 w-full">
+            <div class="flex flex-col xl:flex-row flex-wrap justify-between items-start xl:items-center gap-4 mb-8">
                 <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Podsumowanie</h1>
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
-                    <div class="flex items-center gap-2 bg-white dark:bg-cardbg px-3 py-2 rounded-xl shadow border border-gray-200 dark:border-brand w-full sm:w-auto shrink-0">
+                <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-4 w-full xl:w-auto">
+                    <div class="flex items-center gap-2 bg-white dark:bg-cardbg px-3 py-2 rounded-xl shadow border border-gray-200 dark:border-brand w-full sm:w-auto shrink-0 min-w-0">
                         <svg width="20" height="20" fill="none" stroke="currentColor" class="text-brand dark:text-gray-300 shrink-0" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9M3 12h5m0 0v8m0 0l-3-3m3 3l3-3"></path></svg>
                         <label class="font-bold text-gray-700 dark:text-white shrink-0">Sortuj:</label>
-                        <select id="sortPodsumowanie" onchange="sortTable('tbody-podsumowanie', this.value, 'podsumowanie')" class="bg-transparent text-gray-900 dark:text-white outline-none font-semibold cursor-pointer w-full">
+                        <select id="sortPodsumowanie" onchange="sortTable('tbody-podsumowanie', this.value, 'podsumowanie')" class="bg-transparent text-gray-900 dark:text-white outline-none font-semibold cursor-pointer w-full truncate">
                             <option value="ranga-nazwisko" class="text-black">Punkty + Nazwisko</option>
                             <option value="ranga-imie" class="text-black">Punkty + Imię</option>
                             <option value="ranga-user" class="text-black">Punkty + Login</option>
@@ -436,7 +438,6 @@
         if(document.getElementById('planDzien')) updateGodziny();
         
         if(document.getElementById('tbody-podsumowanie')) sortTable('tbody-podsumowanie', 'ranga-nazwisko', 'podsumowanie');
-        if(document.getElementById('tbody-users')) sortTable('tbody-users', 'ranga-nazwisko', 'users');
     });
 
     function filterUser(username, btnElement) {
