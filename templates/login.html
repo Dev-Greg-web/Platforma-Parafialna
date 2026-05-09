@@ -1,58 +1,90 @@
 {% extends "base.html" %}
-
 {% block title %}System Ministranci - Logowanie{% endblock %}
 
 {% block content %}
-    <div class="signup-section">
-        <header>Rejestracja</header>
-        <form action="/auth_process" method="post">
-            <div class="field-group">
-                <label for="imie">Imię:</label>
-                <input type="text" name="imie" id="imie">
-            </div>
-            <div class="field-group">
-                <label for="nazwisko">Nazwisko:</label>
-                <input type="text" name="nazwisko" id="nazwisko">
-            </div>
-            <div class="field-group">
-                <label for="username_reg">Nazwa Użytkownika:</label>
-                <input type="text" name="username" id="username_reg" required>
-            </div>
-            <div class="field-group">
-                <label for="haslo_reg">Hasło:</label>
-                <input type="password" name="haslo" id="haslo_reg" required>
-            </div>
-            <button type="submit" class="btn" name="action" value="register">Zarejestruj się</button>
-        </form>
-    </div>
+<div class="flex-grow flex items-center justify-center p-4 min-h-screen">
+    
+    <div class="w-full max-w-md bg-cardbg rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+        
+        <div class="flex text-white font-bold text-center cursor-pointer bg-black/20">
+            <div id="tab-login" onclick="showLogin()" class="flex-1 py-4 bg-brand transition-colors">Logowanie</div>
+            <div id="tab-register" onclick="showRegister()" class="flex-1 py-4 hover:bg-brand/50 transition-colors text-gray-300">Rejestracja</div>
+        </div>
 
-    <div class="login-section">
-        <header>Logowanie</header>
-        <form action="/auth_process" method="post">
-            <div class="field-group">
-                <label for="user_log" class="purple-bold">Nazwa Użytkownika:</label>
-                <input type="text" name="username" id="user_log" required>
-            </div>
-            <div class="field-group">
-                <label for="pass_log" class="purple-bold">Hasło:</label>
-                <input type="password" name="haslo" id="pass_log" required>
-            </div>
-            <footer>
-                <h3>&copy All rights reserved, Grześ Gładysz 2026</h3>
-            </footer>
-            <a href="forget-password">Zapomniałeś hasła?</a>
-            <button type="submit" class="btn" name="action" value="login">Zaloguj się!</button>
-        </form>
+        <div id="form-login" class="p-8 flex flex-col bg-white dark:bg-[#1f2a44] transition-colors duration-300">
+            <form action="/auth_process" method="post" class="flex flex-col gap-5">
+                <div class="flex flex-col gap-2">
+                    <label class="text-brand dark:text-white font-bold">Nazwa Użytkownika:</label>
+                    <input type="text" name="username" required class="p-3 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-[#2a3a5a] dark:text-white focus:ring-2 focus:ring-brand outline-none transition">
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label class="text-brand dark:text-white font-bold">Hasło:</label>
+                    <input type="password" name="haslo" required class="p-3 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-[#2a3a5a] dark:text-white focus:ring-2 focus:ring-brand outline-none transition">
+                </div>
+                
+                <a href="forget-password" class="text-sm text-gray-500 hover:text-brand transition">Zapomniałeś hasła?</a>
+                
+                <button type="submit" name="action" value="login" class="mt-4 bg-[#303f9f] hover:bg-brand text-white font-bold py-4 rounded-xl shadow-lg hover:-translate-y-1 transition">
+                    Zaloguj się!
+                </button>
+            </form>
+        </div>
+
+        <div id="form-register" class="p-8 flex flex-col bg-cardbg hidden">
+            <form action="/auth_process" method="post" class="flex flex-col gap-4">
+                <div class="flex flex-col gap-1">
+                    <label class="text-white font-semibold">Imię:</label>
+                    <input type="text" name="imie" required class="p-3 rounded-xl bg-white text-black outline-none focus:ring-4 focus:ring-brand/50 transition">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-white font-semibold">Nazwisko:</label>
+                    <input type="text" name="nazwisko" required class="p-3 rounded-xl bg-white text-black outline-none focus:ring-4 focus:ring-brand/50 transition">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-white font-semibold">Nazwa Użytkownika:</label>
+                    <input type="text" name="username" required class="p-3 rounded-xl bg-white text-black outline-none focus:ring-4 focus:ring-brand/50 transition">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-white font-semibold">Hasło:</label>
+                    <input type="password" name="haslo" required class="p-3 rounded-xl bg-white text-black outline-none focus:ring-4 focus:ring-brand/50 transition">
+                </div>
+                
+                <button type="submit" name="action" value="register" class="mt-4 bg-white text-brand font-bold py-4 rounded-xl shadow-lg hover:-translate-y-1 transition">
+                    Zarejestruj się
+                </button>
+            </form>
+        </div>
+
+        <footer class="text-center py-4 text-xs font-bold bg-white dark:bg-[#1f2a44] text-gray-500 transition-colors" id="login-footer">
+            &copy All rights reserved, Grześ Gładysz 2026
+        </footer>
     </div>
+</div>
 {% endblock %}
+
 {% block scripts %}
-    {% if success_login %}
-    <script>
-        // Twoja mechanika delay 2s
+<script>
+    function showLogin() {
+        document.getElementById('form-login').classList.remove('hidden');
+        document.getElementById('form-register').classList.add('hidden');
+        document.getElementById('tab-login').className = "flex-1 py-4 bg-brand transition-colors text-white";
+        document.getElementById('tab-register').className = "flex-1 py-4 hover:bg-brand/50 transition-colors text-gray-300";
+        document.getElementById('login-footer').classList.remove('hidden');
+    }
+    
+    function showRegister() {
+        document.getElementById('form-login').classList.add('hidden');
+        document.getElementById('form-register').classList.remove('hidden');
+        document.getElementById('tab-register').className = "flex-1 py-4 bg-brand transition-colors text-white";
+        document.getElementById('tab-login').className = "flex-1 py-4 hover:bg-brand/50 transition-colors text-gray-300";
+        document.getElementById('login-footer').classList.add('hidden');
+    }
+
+    const isSuccess = "{{ 'true' if success_login else 'false' }}" === "true";
+    if (isSuccess) {
         setTimeout(function() {
             window.location.href = "{{ url_for('dashboard_page') }}";
         }, 2000); 
-    </script>
-    {% endif %}
-    <script src="{{ url_for('static', filename='js/login.js') }}"></script>
+    }
+</script>
 {% endblock %}

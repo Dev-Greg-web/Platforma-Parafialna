@@ -1,152 +1,162 @@
 {% extends "base.html" %}
 {% block title %}Panel Sterowania Szefa{% endblock %}
-{% block extra_styles %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-{% endblock %}
 
 {% block content %}
-<div class="admin-wrapper">
-    <aside class="sidebar">
-        <div class="sidebar-header">Szef Menu</div>
-        <nav class="sidebar-nav">
-            <button onclick="showSection('sluzby')" id="btn-sluzby" class="nav-btn active">Zarządzanie Służbami</button>
-            <button onclick="showSection('uzytkownicy')" id="btn-uzytkownicy" class="nav-btn">Zarządzanie Użytkownikami</button>
-            <button onclick="showSection('ogloszenia')" id="btn-ogloszenia" class="nav-btn">Tablica Ogłoszeń</button>
-            <button onclick="showSection('podsumowanie')" id="btn-podsumowanie" class="nav-btn">Podsumowanie</button>
+<div class="w-full min-h-screen flex flex-col md:flex-row">
+    
+    <aside class="w-full md:w-80 bg-[#16213e] border-b-2 md:border-b-0 md:border-r-2 border-brand p-6 md:p-8 flex flex-col shrink-0 overflow-y-auto">
+        <div class="text-white text-2xl md:text-3xl font-extrabold mb-10 text-center">Szef Menu</div>
+        <nav class="flex flex-col gap-3 flex-grow">
+            <button onclick="showSection('sluzby')" id="btn-sluzby" class="nav-btn bg-brand text-white p-4 text-left rounded-xl font-bold transition">Zarządzanie Służbami</button>
+            <button onclick="showSection('uzytkownicy')" id="btn-uzytkownicy" class="nav-btn text-gray-300 hover:bg-brand/50 p-4 text-left rounded-xl font-bold transition">Zarządzanie Użytkownikami</button>
+            <button onclick="showSection('ogloszenia')" id="btn-ogloszenia" class="nav-btn text-gray-300 hover:bg-brand/50 p-4 text-left rounded-xl font-bold transition">Tablica Ogłoszeń</button>
+            <button onclick="showSection('plan')" id="btn-plan" class="nav-btn text-gray-300 hover:bg-brand/50 p-4 text-left rounded-xl font-bold transition">Plan Służb (Dyżury)</button>
+            <button onclick="showSection('podsumowanie')" id="btn-podsumowanie" class="nav-btn text-gray-300 hover:bg-brand/50 p-4 text-left rounded-xl font-bold transition">Podsumowanie</button>
             
-            <!-- NOWE DRZWI DLA SZEFA (Zwykłe linki Flaskowe z wyglądem przycisków menu) -->
-            <!-- NOWE DRZWI DLA SZEFA (Poprawiony wygląd) -->
-            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 30px;">
-                <a href="{{ url_for('dashboard_page') }}" style="background: #27ae60; color: white; text-align: center; text-decoration: none; padding: 12px; border-radius: 10px; font-weight: bold; width: 100%; box-sizing: border-box;">Panel Ministranta</a>
+            <div class="flex flex-col gap-2 mt-8">
+                <a href="{{ url_for('dashboard_page') }}" class="bg-success text-white text-center p-4 rounded-xl font-bold hover:bg-green-600 transition">Panel Ministranta</a>
             </div>
 
-            <footer>
-                <h3>&copy All rights reserved, Grześ Gładysz 2026</h3>
+            <footer class="mt-auto pt-6 text-center text-sm text-gray-400">
+                &copy All rights reserved, Grześ Gładysz 2026
             </footer>
         </nav>
     </aside>
 
-    <main class="admin-content">
+    <main class="flex-grow p-4 md:p-10 bg-gray-100 dark:bg-darkbg overflow-y-auto pb-32">
         
-        <section id="section-sluzby" class="admin-section active">
-            <h1>Zarządzanie Służbami</h1>
-            <div class="user-filters">
-                <button class="filter-btn active" onclick="filterUser('all')">Wszyscy</button>
+        <section id="section-sluzby" class="admin-section block">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Zarządzanie Służbami</h1>
+                <button class="bg-gradient-to-r from-success to-green-400 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:-translate-y-1 transition flex items-center gap-2" onclick="openModal('addAttendanceModal')">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    Dodaj służbę
+                </button>
+            </div>
+            
+            <div class="flex flex-wrap gap-2 mb-6 p-4 bg-white dark:bg-cardbg rounded-2xl shadow-lg">
+                <button class="filter-btn bg-brand text-white border border-brand px-4 py-2 rounded-lg font-bold transition shadow-[0_0_10px_rgba(94,59,238,0.6)]" onclick="filterUser('all', this)">Wszyscy</button>
                 {% for u in users %}
-                    <button class="filter-btn" onclick="filterUser('{{ u.username }}')">{{ u.username }}</button>
+                    <button class="filter-btn bg-gray-200 dark:bg-darkbg text-gray-800 dark:text-white border border-gray-300 dark:border-brand px-4 py-2 rounded-lg font-bold hover:bg-brand/30 transition" onclick="filterUser('{{ u.username }}', this)">{{ u.username }}</button>
                 {% endfor %}
             </div>
 
-            <div class="table-wrapper">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Użytkownicy</th>
-                            <th>Data Służby</th>
-                            <th>Godzina Mszy</th>
-                            <th>Rodzaj Mszy</th>
-                            <th>Akcje</th>
-                        </tr>
-                    </thead>
-                    <tbody id="attendance-tbody">
-                        {% for att, user in attendances %}
-                        <tr class="attendance-row" data-username="{{ user.username }}">
-                            <td class="user-cell">
-                                <strong>{{ user.username }}</strong>
-                                <span>({{ user.imie }} {{ user.nazwisko }})</span>
-                            </td>
-                            <td>{{ att.data_sluzby.strftime('%d.%m.%Y') }}</td>
-                            <td>{{ att.godzina }}</td>
-                            <td>
-                                {% if att.typ_mszy == 'inna' %}
-                                    <span class="badge badge-other">{{ att.nazwa_inna }}</span>
-                                {% else %}
-                                    <span class="badge badge-standard">{{ att.typ_mszy|capitalize }}</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="dropdown">
-                                    <button class="dropbtn" onclick="toggleMenu('menu-att-{{att.id}}')">⋮</button>
-                                    <div id="menu-att-{{att.id}}" class="dropdown-content">
-                                        <a href="javascript:void(0)" onclick="openEditModal('{{att.id}}', '{{att.data_sluzby}}', '{{att.godzina}}', '{{att.typ_mszy}}', '{{att.nazwa_inna or ''}}')">Popraw wpis</a>
-                                        <a href="{{ url_for('delete_entry', id=att.id) }}" class="text-danger" onclick="return confirm('Usunąć?')">Usuń wpis</a>
+            <form action="/admin/delete_bulk_attendances" method="POST">
+                <div class="flex justify-end mb-4">
+                    <button type="submit" class="bg-danger text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-red-700 hover:-translate-y-1 transition flex items-center gap-2" onclick="return confirm('Czy na pewno chcesz usunąć wszystkie ZAZNACZONE służby?')">
+                        🗑️ Usuń zaznaczone
+                    </button>
+                </div>
+                <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto">
+                    <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[600px]">
+                        <thead>
+                            <tr class="border-b-2 border-brand text-lg">
+                                <th class="p-4 w-12"><input type="checkbox" class="w-6 h-6 accent-danger cursor-pointer" onclick="toggleAll(this, 'att-chk')"></th>
+                                <th class="p-4">Użytkownicy</th><th class="p-4">Data</th><th class="p-4">Godzina</th><th class="p-4">Rodzaj</th><th class="p-4">Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendance-tbody">
+                            {% for att, user in attendances %}
+                            <tr class="attendance-row border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition relative" data-username="{{ user.username }}">
+                                <td class="p-4"><input type="checkbox" name="att_ids" value="{{ att.id }}" class="att-chk w-6 h-6 accent-danger cursor-pointer"></td>
+                                <td class="p-4"><strong>{{ user.username }}</strong> <span class="text-sm text-gray-500 dark:text-gray-300">({{ user.imie }} {{ user.nazwisko }})</span></td>
+                                <td class="p-4">{{ att.data_sluzby.strftime('%d.%m.%Y') }}</td>
+                                <td class="p-4">{{ att.godzina }}</td>
+                                <td class="p-4">
+                                    {% if att.typ_mszy == 'inna' %}
+                                        <span class="bg-success text-white px-3 py-1 rounded-md font-bold text-xs">{{ att.nazwa_inna }}</span>
+                                    {% else %}
+                                        <span class="bg-[#4834d4] text-white px-3 py-1 rounded-md font-bold text-xs">{{ att.typ_mszy|capitalize }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="p-4">
+                                    <div class="relative inline-block text-left">
+                                        <button type="button" class="text-2xl font-bold px-2 py-1 hover:text-brand" onclick="toggleMenu('menu-att-{{att.id}}')">⋮</button>
+                                        <div id="menu-att-{{att.id}}" class="dropdown-content hidden absolute right-0 top-full mt-2 w-48 bg-white dark:bg-darkbg border border-gray-200 dark:border-brand rounded-xl shadow-2xl z-50 overflow-hidden">
+                                            {% set bezpieczna_nazwa = att.nazwa_inna if att.nazwa_inna else '' %}
+                                            <a href="javascript:void(0)" class="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-brand transition" onclick="openEditModal('{{att.id}}', '{{att.data_sluzby}}', '{{att.godzina}}', '{{att.typ_mszy}}', '{{bezpieczna_nazwa}}')">Popraw wpis</a>
+                                            <a href="{{ url_for('delete_entry', id=att.id) }}" class="block px-4 py-3 text-danger hover:bg-red-50 dark:hover:bg-red-900/30 transition" onclick="return confirm('Usunąć?')">Usuń wpis</a>
+                                        </div>
                                     </div>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </form>
         </section>
 
-        <section id="section-uzytkownicy" class="admin-section">
-            <h1>Zarządzanie Użytkownikami</h1>
-            <div class="table-wrapper">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Imię</th>
-                            <th>Nazwisko</th>
-                            <th>User</th>
-                            <th>Hasło</th>
-                            <th>Ranga</th>
-                            <th>Akcje</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for u in users %}
-                        <tr>
-                            <td>{{ u.imie }}</td>
-                            <td>{{ u.nazwisko }}</td>
-                            <td><strong>{{ u.username }}</strong></td>
-                            <td><code style="color: #00ff00;">{{ u.password }}</code></td>
-                            <td>
-                                <span class="badge" style="background: {{ 'var(--warning)' if u.role == 'admin' else '#673ab7' if u.role == 'ksiądz' else '#444' }}; color: {{ 'black' if u.role == 'admin' else 'white' }};">
-                                    {{ u.role|capitalize }}
-                                </span>
-                            </td>
-                            <td>
-                                <div class="dropdown">
-                                    <button class="dropbtn" onclick="toggleMenu('menu-usr-{{u.id}}')">⋮</button>
-                                    <div id="menu-usr-{{u.id}}" class="dropdown-content">
-                                        <a href="javascript:void(0)" onclick="openUserEditModal('{{u.id}}', '{{u.imie}}', '{{u.nazwisko}}', '{{u.username}}', '{{u.password}}', '{{u.role}}')">Popraw dane / Zmień Rangę</a>
-                                        <a href="{{ url_for('delete_user', id=u.id) }}" class="text-danger" onclick="return confirm('Usunąć?')">Usuń</a>
+        <section id="section-uzytkownicy" class="admin-section hidden">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Zarządzanie Użytkownikami</h1>
+            
+            <form action="/admin/delete_bulk_users" method="POST">
+                <div class="flex justify-end mb-4">
+                    <button type="submit" class="bg-danger text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-red-700 hover:-translate-y-1 transition flex items-center gap-2" onclick="return confirm('UWAGA: Zaznaczeni użytkownicy zostaną usunięci razem z wszystkimi ich służbami! Jesteś pewien?')">
+                        🗑️ Usuń zaznaczonych
+                    </button>
+                </div>
+                <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto">
+                    <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[600px]">
+                        <thead>
+                            <tr class="border-b-2 border-brand text-lg">
+                                <th class="p-4 w-12"><input type="checkbox" class="w-6 h-6 accent-danger cursor-pointer" onclick="toggleAll(this, 'usr-chk')"></th>
+                                <th class="p-4">Imię</th><th class="p-4">Nazwisko</th><th class="p-4">User</th><th class="p-4">Hasło</th><th class="p-4">Ranga</th><th class="p-4">Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in users %}
+                            <tr class="border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition">
+                                <td class="p-4"><input type="checkbox" name="user_ids" value="{{u.id}}" class="usr-chk w-6 h-6 accent-danger cursor-pointer"></td>
+                                <td class="p-4">{{ u.imie }}</td><td class="p-4">{{ u.nazwisko }}</td>
+                                <td class="p-4 font-bold">{{ u.username }}</td>
+                                <td class="p-4"><code class="text-green-600 dark:text-green-400 font-mono">{{ u.password }}</code></td>
+                                <td class="p-4">
+                                    <span class="px-3 py-1 rounded-md font-bold text-xs {{ 'bg-warning text-black' if u.role == 'admin' else 'bg-purple-600 text-white' if u.role == 'ksiądz' else 'bg-gray-600 text-white' }}">
+                                        {{ u.role|capitalize }}
+                                    </span>
+                                </td>
+                                <td class="p-4">
+                                    <div class="relative inline-block text-left">
+                                        <button type="button" class="text-2xl font-bold px-2 py-1 hover:text-brand" onclick="toggleMenu('menu-usr-{{u.id}}')">⋮</button>
+                                        <div id="menu-usr-{{u.id}}" class="dropdown-content hidden absolute right-0 top-full mt-2 w-56 bg-white dark:bg-darkbg border border-gray-200 dark:border-brand rounded-xl shadow-2xl z-50 overflow-hidden">
+                                            {% set bez_imie = u.imie if u.imie else '' %}
+                                            {% set bez_nazwisko = u.nazwisko if u.nazwisko else '' %}
+                                            <a href="javascript:void(0)" class="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-brand transition" onclick="openUserEditModal('{{u.id}}', '{{bez_imie}}', '{{bez_nazwisko}}', '{{u.username}}', '{{u.password}}', '{{u.role}}')">Popraw dane / Rangę</a>
+                                            <a href="{{ url_for('delete_user', id=u.id) }}" class="block px-4 py-3 text-danger hover:bg-red-50 dark:hover:bg-red-900/30 transition" onclick="return confirm('Usunąć?')">Usuń</a>
+                                        </div>
                                     </div>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </form>
         </section>
 
-        <section id="section-ogloszenia" class="admin-section">
-            <h1>Tablica Ogłoszeń</h1>
-            <div class="table-wrapper" style="margin-bottom: 30px;">
-                <form action="/admin/add_announcement" method="POST" style="display: flex; gap: 15px; padding: 15px;">
-                    <input type="text" name="tresc" placeholder="Co chcesz ogłosić?" required 
-                           style="flex-grow: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--accent); background: var(--bg-dark); color: white;">
-                    <button type="submit" class="btn-save" style="width: 200px; height: 45px;">Opublikuj</button>
+        <section id="section-ogloszenia" class="admin-section hidden">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Tablica Ogłoszeń</h1>
+            <div class="bg-white dark:bg-cardbg rounded-2xl p-6 shadow-xl mb-8">
+                <form action="/admin/add_announcement" method="POST" class="flex flex-col md:flex-row gap-4">
+                    <input type="text" name="tresc" placeholder="Co chcesz ogłosić?" required class="flex-grow p-4 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-brand">
+                    <button type="submit" class="bg-brand text-white px-8 py-4 rounded-xl font-bold hover:-translate-y-1 hover:shadow-lg transition">Opublikuj</button>
                 </form>
             </div>
-            <div class="table-wrapper">
-                <table class="admin-table">
-                    <thead>
-                        <tr><th>Treść Ogłoszenia</th><th>Data publikacji</th><th>Akcje</th></tr>
-                    </thead>
+            <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto">
+                <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[500px]">
+                    <thead><tr class="border-b-2 border-brand text-lg"><th class="p-4">Treść</th><th class="p-4">Data</th><th class="p-4">Akcje</th></tr></thead>
                     <tbody>
                         {% for og in announcements %}
-                        <tr>
-                            <td>{{ og.tresc }}</td>
-                            <td>{{ og.data_wystawienia.strftime('%d.%m %H:%M') }}</td>
-                            <td>
-                                <div class="dropdown">
-                                    <button class="dropbtn" onclick="toggleMenu('menu-og-{{og.id}}')">⋮</button>
-                                    <div id="menu-og-{{og.id}}" class="dropdown-content">
-                                        <a href="javascript:void(0)" onclick="openOgEditModal('{{og.id}}', '{{og.tresc}}')">Popraw treść</a>
-                                        <a href="{{ url_for('delete_announcement', id=og.id) }}" class="text-danger" onclick="return confirm('Usunąć?')">Usuń</a>
+                        <tr class="border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition">
+                            <td class="p-4">{{ og.tresc }}</td><td class="p-4">{{ og.data_wystawienia.strftime('%d.%m %H:%M') }}</td>
+                            <td class="p-4">
+                                <div class="relative inline-block text-left">
+                                    <button type="button" class="text-2xl font-bold px-2 py-1 hover:text-brand" onclick="toggleMenu('menu-og-{{og.id}}')">⋮</button>
+                                    <div id="menu-og-{{og.id}}" class="dropdown-content hidden absolute right-0 top-full mt-2 w-48 bg-white dark:bg-darkbg border border-gray-200 dark:border-brand rounded-xl shadow-2xl z-50 overflow-hidden">
+                                        {% set bez_tresc = og.tresc|replace("'", "\\'") %}
+                                        <a href="javascript:void(0)" class="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-brand transition" onclick="openOgEditModal('{{og.id}}', '{{bez_tresc}}')">Popraw treść</a>
+                                        <a href="{{ url_for('delete_announcement', id=og.id) }}" class="block px-4 py-3 text-danger hover:bg-red-50 dark:hover:bg-red-900/30 transition" onclick="return confirm('Usunąć?')">Usuń</a>
                                     </div>
                                 </div>
                             </td>
@@ -157,34 +167,91 @@
             </div>
         </section>
 
-        <section id="section-podsumowanie" class="admin-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <a href="{{ url_for('export_raport') }}" class="btn-save" style="text-decoration: none; padding: 10px 20px; background: #27ae60; display: inline-flex; align-items: center; gap: 10px;">
-                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-                    Pobierz Raport Excel
+        <section id="section-plan" class="admin-section hidden">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Plan Służb (Stałe Dyżury)</h1>
+            
+            <div class="bg-white dark:bg-cardbg rounded-2xl p-6 shadow-xl mb-8 border border-brand/30">
+                <form action="/admin/add_schedule" method="POST" class="flex flex-col md:flex-row gap-4 items-end">
+                    <div class="flex-grow flex flex-col gap-1">
+                        <label class="font-bold dark:text-white text-gray-700">Wybierz ministranta:</label>
+                        <select name="user_id" required class="p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand">
+                            {% for u in users %}<option value="{{ u.id }}">{{ u.username }} ({{ u.imie }} {{ u.nazwisko }})</option>{% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="flex flex-col gap-1 w-full md:w-1/4">
+                        <label class="font-bold dark:text-white text-gray-700">Dzień:</label>
+                        <select name="dzien" id="planDzien" onchange="updateGodziny()" class="p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand">
+                            <option value="Poniedziałek">Poniedziałek</option><option value="Wtorek">Wtorek</option>
+                            <option value="Środa">Środa</option><option value="Czwartek">Czwartek</option>
+                            <option value="Piątek">Piątek</option><option value="Sobota">Sobota</option>
+                            <option value="Niedziela">Niedziela</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex flex-col gap-1 w-full md:w-1/4">
+                        <label class="font-bold dark:text-white text-gray-700">Godzina:</label>
+                        <select name="godzina" id="planGodzina" class="p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand">
+                        </select>
+                    </div>
+
+                    <button type="submit" class="bg-success text-white px-8 py-3 h-[50px] rounded-xl font-bold shadow-lg hover:-translate-y-1 transition whitespace-nowrap">
+                        + Dodaj dyżur
+                    </button>
+                </form>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {% for dzien, dyzury in plan.items() %}
+                <div class="bg-white dark:bg-cardbg rounded-2xl p-5 shadow-lg border-t-4 border-brand">
+                    <h2 class="text-xl font-extrabold text-gray-900 dark:text-white mb-4 flex justify-between">
+                        {{ dzien }} <span class="bg-brand/20 text-brand px-2 rounded text-sm flex items-center">{{ dyzury|length }}</span>
+                    </h2>
+                    
+                    {% if dyzury %}
+                        <ul class="flex flex-col gap-2">
+                        {% for d in dyzury %}
+                            <li class="flex justify-between items-center bg-gray-50 dark:bg-darkbg p-3 rounded-xl border border-gray-200 dark:border-white/10 group transition hover:border-brand/50">
+                                <div>
+                                    <span class="font-bold text-brand bg-brand/10 px-2 py-1 rounded mr-2">{{ d.godzina }}</span> 
+                                    <strong class="dark:text-white text-gray-800">{{ d.user.username }}</strong>
+                                </div>
+                                <a href="{{ url_for('delete_schedule', id=d.id) }}" class="text-gray-400 hover:text-danger text-2xl font-bold transition px-2" onclick="return confirm('Usunąć ten dyżur?')">&times;</a>
+                            </li>
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-sm text-gray-500 dark:text-gray-400 italic">Brak zapisanych dyżurów.</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section id="section-podsumowanie" class="admin-section hidden">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Podsumowanie</h1>
+                <a href="{{ url_for('export_raport') }}" class="bg-success text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:-translate-y-1 transition flex items-center gap-2">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Pobierz Raport Excel
                 </a>
             </div>
-            <div class="table-wrapper">
-                <table class="admin-table">
+            <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto">
+                <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[600px]">
                     <thead>
-                        <tr><th>Ministrant</th><th>Suma Służb</th><th>Poranne</th><th>Wieczorne</th><th>Inne</th><th>Ranking</th></tr>
+                        <tr class="border-b-2 border-brand text-lg">
+                            <th class="p-4">Ministrant</th><th class="p-4">Suma</th><th class="p-4">Poranne</th><th class="p-4">Wieczorne</th><th class="p-4">Inne</th><th class="p-4">Ranking</th>
+                        </tr>
                     </thead>
                     <tbody>
                         {% for s in stats %}
-                        <tr>
-                            <td><strong>{{ s.username }}</strong><br><small>{{ s.full_name }}</small></td>
-                            <td style="font-size: 1.5em; color: var(--warning);">{{ s.total }}</td>
-                            <td>{{ s.morning }}</td>
-                            <td>{{ s.evening }}</td>
-                            <td>{{ s.other }}</td>
-                            <td>
-                                {% if s.total >= 20 %}
-                                    <span class="badge" style="background: gold; color: black;">LIDER</span>
-                                {% elif s.total >= 5 %}
-                                    <span class="badge" style="background: silver; color: black;">AKTYWNY</span>
-                                {% else %}
-                                    <span class="badge" style="background: #cd7f32;">POCZĄTKUJĄCY</span>
-                                {% endif %}
+                        <tr class="border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition">
+                            <td class="p-4"><strong>{{ s.username }}</strong><br><span class="text-sm text-gray-500 dark:text-gray-300">{{ s.full_name }}</span></td>
+                            <td class="p-4 text-2xl font-bold text-warning">{{ s.total }}</td>
+                            <td class="p-4">{{ s.morning }}</td><td class="p-4">{{ s.evening }}</td><td class="p-4">{{ s.other }}</td>
+                            <td class="p-4">
+                                {% if s.total >= 20 %} <span class="bg-yellow-400 text-black px-3 py-1 rounded-md font-bold text-xs">LIDER</span>
+                                {% elif s.total >= 5 %} <span class="bg-gray-300 text-black px-3 py-1 rounded-md font-bold text-xs">AKTYWNY</span>
+                                {% else %} <span class="bg-[#cd7f32] text-white px-3 py-1 rounded-md font-bold text-xs">POCZĄTKUJĄCY</span> {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
@@ -194,61 +261,80 @@
         </section>
     </main>
 
-    <div id="editModal" class="modal">
-        <div class="modal-content">
-            <header>Poprawianie wpisu</header>
-            <form id="editForm" method="POST">
-                <div class="field-group"><label>Data:</label><input type="date" name="date" id="editDate" required></div>
-                <div class="field-group"><label>Godzina:</label><input type="time" name="godzina" id="editTime" required></div>
-                <div class="field-group"><label>Rodzaj:</label>
-                    <select name="typ_mszy" id="editType" onchange="toggleInnaEdit()">
+    <div id="editModal" class="fixed inset-0 bg-black/80 hidden justify-center items-center z-[10000] p-4">
+        <div class="bg-white dark:bg-cardbg p-8 rounded-3xl w-full max-w-md shadow-2xl">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Poprawianie wpisu</h2>
+            <form id="editForm" method="POST" class="flex flex-col gap-4">
+                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Data:</label><input type="date" name="date" id="editDate" required class="p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50"></div>
+                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Godzina:</label><input type="time" name="godzina" id="editTime" required class="p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50"></div>
+                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Rodzaj:</label>
+                    <select name="typ_mszy" id="editType" onchange="toggleInna('editType', 'groupInnaEdit')" class="p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50">
                         <option value="poranna">Poranna</option><option value="wieczorna">Wieczorna</option><option value="inna">Inna</option>
                     </select>
                 </div>
-                <div class="field-group" id="groupInnaEdit" style="display:none;"><input type="text" name="nazwa_inna" id="editInna"></div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-cancel" onclick="closeModal('editModal')">Anuluj</button>
-                    <button type="submit" class="btn btn-save">Zapisz</button>
+                <div class="flex-col gap-1 hidden" id="groupInnaEdit"><label class="text-gray-700 dark:text-white font-bold">Nazwa:</label><input type="text" name="nazwa_inna" id="editInna" class="p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50"></div>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button type="button" class="px-6 py-3 rounded-xl font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10 transition" onclick="closeModal('editModal')">Anuluj</button>
+                    <button type="submit" class="bg-brand text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:-translate-y-1 transition">Zapisz</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div id="editUserModal" class="modal">
-        <div class="modal-content">
-            <header>Poprawianie Ministranta</header>
-            <form id="editUserForm" method="POST">
-                <div class="field-group"><label>Imię:</label><input type="text" name="imie" id="editUserImie" required></div>
-                <div class="field-group"><label>Nazwisko:</label><input type="text" name="nazwisko" id="editUserNazwisko" required></div>
-                <div class="field-group"><label>Login:</label><input type="text" name="username" id="editUserLogin" required></div>
-                <div class="field-group"><label>Hasło:</label><input type="text" name="password" id="editUserPass" required></div>
-                <div class="field-group">
-                    <label>Ranga w systemie:</label>
-                    <select name="role" id="editUserRole" style="width: 100%; background: var(--bg-dark); color: white; border: 1px solid var(--accent); padding: 10px; border-radius: 8px;">
-                        <option value="user">Użytkownik (Ministrant)</option>
-                        <option value="ksiądz">Ksiądz (Podgląd + Ogłoszenia)</option>
-                        <option value="admin">Admin (Szef Wszystkiego)</option>
+    <div id="editUserModal" class="fixed inset-0 bg-black/80 hidden justify-center items-center z-[10000] p-4">
+        <div class="bg-white dark:bg-cardbg p-8 rounded-3xl w-full max-w-md shadow-2xl">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Poprawianie Ministranta</h2>
+            <form id="editUserForm" method="POST" class="flex flex-col gap-4">
+                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Imię:</label><input type="text" name="imie" id="editUserImie" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50"></div>
+                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Nazwisko:</label><input type="text" name="nazwisko" id="editUserNazwisko" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50"></div>
+                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Login:</label><input type="text" name="username" id="editUserLogin" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50"></div>
+                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Hasło:</label><input type="text" name="password" id="editUserPass" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50"></div>
+                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Ranga:</label>
+                    <select name="role" id="editUserRole" class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50">
+                        <option value="user">Użytkownik</option><option value="ksiądz">Ksiądz</option><option value="admin">Admin</option>
                     </select>
                 </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-cancel" onclick="closeModal('editUserModal')">Anuluj</button>
-                    <button type="submit" class="btn btn-save">Zapisz zmiany</button>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button type="button" class="px-6 py-3 rounded-xl font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10" onclick="closeModal('editUserModal')">Anuluj</button>
+                    <button type="submit" class="bg-brand text-white px-6 py-3 rounded-xl font-bold shadow-lg">Zapisz</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div id="editOgModal" class="modal">
-        <div class="modal-content">
-            <header>Poprawianie Ogłoszenia</header>
-            <form id="editOgForm" method="POST">
-                <div class="field-group">
-                    <label>Treść:</label>
-                    <textarea name="tresc" id="editOgTresc" rows="4" required style="width: 100%; background: var(--bg-dark); color: white; border: 1px solid var(--accent); border-radius: 8px; padding: 10px;"></textarea>
+    <div id="addAttendanceModal" class="fixed inset-0 bg-black/80 hidden justify-center items-center z-[10000] p-4">
+        <div class="bg-white dark:bg-cardbg p-8 rounded-3xl w-full max-w-md shadow-2xl">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Dodaj służbę</h2>
+            <form action="/admin/add_attendance_admin" method="POST" class="flex flex-col gap-4">
+                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Wybierz ministranta:</label>
+                    <select name="user_id" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50">
+                        {% for u in users %}<option value="{{ u.id }}">{{ u.username }} ({{ u.imie }} {{ u.nazwisko }})</option>{% endfor %}
+                    </select>
                 </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-cancel" onclick="closeModal('editOgModal')">Anuluj</button>
-                    <button type="submit" class="btn btn-save">Zapisz zmiany</button>
+                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Data:</label><input type="date" name="date" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black"></div>
+                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Godzina:</label><input type="time" name="godzina" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black"></div>
+                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Rodzaj:</label>
+                    <select name="typ_mszy" id="addType" onchange="toggleInna('addType', 'groupInnaAdd')" class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black">
+                        <option value="poranna">Poranna</option><option value="wieczorna">Wieczorna</option><option value="inna">Inna</option>
+                    </select>
+                </div>
+                <div class="flex-col gap-1 hidden" id="groupInnaAdd"><label class="text-gray-700 dark:text-white font-bold">Nazwa:</label><input type="text" name="nazwa_inna" id="addInna" class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black"></div>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button type="button" class="px-6 py-3 rounded-xl font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10" onclick="closeModal('addAttendanceModal')">Anuluj</button>
+                    <button type="submit" class="bg-success text-white px-6 py-3 rounded-xl font-bold shadow-lg">Dodaj służbę</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="editOgModal" class="fixed inset-0 bg-black/80 hidden justify-center items-center z-[10000] p-4">
+        <div class="bg-white dark:bg-cardbg p-8 rounded-3xl w-full max-w-md shadow-2xl">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Poprawianie Ogłoszenia</h2>
+            <form id="editOgForm" method="POST" class="flex flex-col gap-4">
+                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Treść:</label><textarea name="tresc" id="editOgTresc" rows="4" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50"></textarea></div>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button type="button" class="px-6 py-3 rounded-xl font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10" onclick="closeModal('editOgModal')">Anuluj</button>
+                    <button type="submit" class="bg-brand text-white px-6 py-3 rounded-xl font-bold shadow-lg">Zapisz</button>
                 </div>
             </form>
         </div>
@@ -258,25 +344,53 @@
 
 {% block scripts %}
 <script>
-    function filterUser(username) {
-        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-        event.currentTarget.classList.add('active');
+    const godzinyPlan = {
+        'Poniedziałek': ['06:30', '18:00'],
+        'Wtorek': ['06:30', '18:00'],
+        'Środa': ['06:30', '18:00'],
+        'Czwartek': ['06:30', '18:00'],
+        'Piątek': ['06:30', '18:00'],
+        'Sobota': ['07:30', '08:00', '17:30', '18:00'],
+        'Niedziela': ['07:00', '09:00', '09:30', '10:30', '11:00', '12:00', '14:00', '19:00']
+    };
+
+    function updateGodziny() {
+        const dzien = document.getElementById('planDzien').value;
+        const selectGodzina = document.getElementById('planGodzina');
+        selectGodzina.innerHTML = ''; 
+        
+        godzinyPlan[dzien].forEach(g => {
+            selectGodzina.innerHTML += `<option value="${g}">${g}</option>`;
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        if(document.getElementById('planDzien')) {
+            updateGodziny();
+        }
+    });
+
+    function filterUser(username, btnElement) {
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.className = "filter-btn bg-gray-200 dark:bg-darkbg text-gray-800 dark:text-white border border-gray-300 dark:border-brand px-4 py-2 rounded-lg font-bold hover:bg-brand/30 transition";
+        });
+        btnElement.className = "filter-btn bg-brand text-white border border-brand px-4 py-2 rounded-lg font-bold transition shadow-[0_0_10px_rgba(94,59,238,0.6)]";
+        
         const rows = document.querySelectorAll('.attendance-row');
         rows.forEach(row => {
-            if (username === 'all' || row.dataset.username === username) {
-                row.style.display = ''; 
-            } else {
-                row.style.display = 'none'; 
-            }
+            row.style.display = (username === 'all' || row.dataset.username === username) ? '' : 'none';
         });
     }
 
     function toggleMenu(id) {
         document.querySelectorAll('.dropdown-content').forEach(m => {
-            if(m.id !== id) m.classList.remove('show');
+            if(m.id !== id) m.classList.add('hidden');
         });
-        document.getElementById(id).classList.toggle('show');
+        document.getElementById(id).classList.toggle('hidden');
     }
+
+    function openModal(modalId) { document.getElementById(modalId).style.display = "flex"; }
+    function closeModal(modalId) { document.getElementById(modalId).style.display = "none"; }
 
     function openEditModal(id, date, time, type, inna) {
         document.getElementById('editForm').action = "/admin/edit/" + id;
@@ -284,8 +398,8 @@
         document.getElementById('editTime').value = time;
         document.getElementById('editType').value = type;
         document.getElementById('editInna').value = inna;
-        toggleInnaEdit();
-        document.getElementById('editModal').style.display = "flex";
+        toggleInna('editType', 'groupInnaEdit');
+        openModal('editModal');
     }
 
     function openUserEditModal(id, imie, nazwisko, login, pass, role) {
@@ -295,37 +409,57 @@
         document.getElementById('editUserLogin').value = login;
         document.getElementById('editUserPass').value = pass;
         document.getElementById('editUserRole').value = role; 
-        document.getElementById('editUserModal').style.display = "flex";
+        openModal('editUserModal');
     }
 
     function openOgEditModal(id, tresc) {
         document.getElementById('editOgForm').action = "/admin/edit_announcement/" + id;
         document.getElementById('editOgTresc').value = tresc;
-        document.getElementById('editOgModal').style.display = "flex";
+        openModal('editOgModal');
     }
-
-    function closeModal(modalId) { document.getElementById(modalId).style.display = "none"; }
     
-    function toggleInnaEdit() {
-        const type = document.getElementById('editType').value;
-        document.getElementById('groupInnaEdit').style.display = (type === 'inna') ? 'block' : 'none';
+    function toggleInna(selectId, groupId) {
+        const type = document.getElementById(selectId).value;
+        const group = document.getElementById(groupId);
+        if (type === 'inna') {
+            group.classList.remove('hidden');
+            group.classList.add('flex');
+        } else {
+            group.classList.add('hidden');
+            group.classList.remove('flex');
+        }
     }
 
     function showSection(name) {
-        document.getElementById('section-sluzby').style.display = 'none';
-        document.getElementById('section-uzytkownicy').style.display = 'none';
-        document.getElementById('section-ogloszenia').style.display = 'none';
-        document.getElementById('section-podsumowanie').style.display = 'none'; 
+        document.querySelectorAll('.admin-section').forEach(s => {
+            s.classList.remove('block');
+            s.classList.add('hidden');
+        });
+        document.querySelectorAll('.nav-btn').forEach(b => {
+            b.classList.remove('bg-brand', 'text-white');
+            b.classList.add('text-gray-300', 'hover:bg-brand/50');
+        });
         
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('section-' + name).classList.remove('hidden');
+        document.getElementById('section-' + name).classList.add('block');
         
-        document.getElementById('section-' + name).style.display = 'block';
-        document.getElementById('btn-' + name).classList.add('active');
+        let activeBtn = document.getElementById('btn-' + name);
+        activeBtn.classList.remove('text-gray-300', 'hover:bg-brand/50');
+        activeBtn.classList.add('bg-brand', 'text-white');
+    }
+
+    function toggleAll(sourceCheckbox, targetClass) {
+        const checkboxes = document.querySelectorAll('.' + targetClass);
+        checkboxes.forEach(cb => {
+            if(cb.closest('tr').style.display !== 'none') {
+                cb.checked = sourceCheckbox.checked;
+            }
+        });
     }
 
     window.onclick = function(event) {
-        if (!event.target.matches('.dropbtn')) {
-            document.querySelectorAll('.dropdown-content').forEach(m => m.classList.remove('show'));
+        if (!event.target.matches('button') && !event.target.closest('button')) {
+            document.querySelectorAll('.dropdown-content').forEach(m => m.classList.add('hidden'));
         }
     }
 </script>

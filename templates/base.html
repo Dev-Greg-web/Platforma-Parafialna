@@ -1,39 +1,53 @@
 <!DOCTYPE html>
-<html lang="pl">
-<head>
+<html lang="pl" class="dark"> <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <title>{% block title %}Aplikacja dla Ministrantów{% endblock %} | Parafia WNMP</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     
-    <meta name="description" content="{% block meta_desc %}Zarządzaj służbami, sprawdzaj ogłoszenia i śledź ranking ministrantów. System dla nowoczesnej parafii.{% endblock %}">
-    <meta name="google-site-verification" content="nhiwChgufcNTntWjJNbdzFVGYl38uwJEKR_-1LiwD8o" /> 
-    <meta name="robots" content="index, follow">
-    
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '#5e3bee',
+                        darkbg: '#1a1a2e',
+                        cardbg: '#2f3e9e',
+                        danger: '#eb4d4b',
+                        success: '#27ae60',
+                        warning: '#f1c40f'
+                    }
+                }
+            }
+        }
+    </script>
     {% block extra_styles %}{% endblock %}
 </head>
-<body>
-    <div class="container">
+<body class="bg-gray-100 dark:bg-darkbg text-gray-900 dark:text-white transition-colors duration-300 min-h-screen flex flex-col font-sans">
+    
+    <div class="fixed top-5 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-[9999] flex flex-col gap-2 pointer-events-none">
         {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            <div class="flash-container">
-              {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
-              {% endfor %}
-            </div>
-          {% endif %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="p-4 rounded-xl shadow-2xl text-center font-bold pointer-events-auto animate-bounce 
+                        {{ 'bg-red-100 border border-red-400 text-red-800' if category == 'danger' else 'bg-green-100 border border-green-400 text-green-800' }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
         {% endwith %}
-        {% block content %}{% endblock %}
     </div>
-    {% block scripts %}{% endblock %}
-    <div style="position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 10000;">
-        <button id="theme-btn" onclick="toggleTheme()" style="background: #5e3bee; color: white; border: none; padding: 12px 20px; border-radius: 50px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+
+    {% block content %}{% endblock %}
+
+    <div class="fixed bottom-5 right-5 flex flex-col gap-3 z-[9000]">
+        <button id="theme-btn" onclick="toggleTheme()" class="bg-brand text-white px-6 py-3 rounded-full font-bold shadow-xl hover:-translate-y-1 transition-transform">
             ☀️ Jasny Motyw
         </button>
-        
         {% if request.path != url_for('login_page') and request.path != '/' %}
-            <a href="{{ url_for('logout') }}" style="background: #eb4d4b; color: white; padding: 12px 20px; border-radius: 50px; text-decoration: none; text-align: center; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+            <a href="{{ url_for('logout') }}" class="bg-danger text-white px-6 py-3 rounded-full text-center font-bold shadow-xl hover:-translate-y-1 transition-transform">
                 Wyloguj się
             </a>
         {% endif %}
@@ -41,11 +55,11 @@
 
     <script>
         function toggleTheme() {
-            const body = document.body;
+            const html = document.documentElement;
             const btn = document.getElementById('theme-btn');
-            body.classList.toggle('dark-mode');
+            html.classList.toggle('dark');
             
-            if(body.classList.contains('dark-mode')) {
+            if(html.classList.contains('dark')) {
                 btn.innerText = "☀️ Jasny Motyw";
                 localStorage.setItem('theme', 'dark');
             } else {
@@ -54,12 +68,11 @@
             }
         }
 
-        // Przywróć wybrany motyw po odświeżeniu
-        if(localStorage.getItem('theme') === 'dark' || !localStorage.getItem('theme')) {
-            document.body.classList.add('dark-mode');
-        } else {
+        if(localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.remove('dark');
             document.getElementById('theme-btn').innerText = "🌙 Ciemny Motyw";
         }
     </script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

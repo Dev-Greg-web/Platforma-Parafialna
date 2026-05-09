@@ -25,3 +25,10 @@ class Announcement(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     tresc = db.Column(db.String(500), nullable=False)
     data_wystawienia = db.Column(db.DateTime, default=datetime.now)
+
+class Schedule(db.Model):
+    __tablename__ = "schedule"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    dzien_tygodnia = db.Column(db.String(20), nullable=False)
+    godzina = db.Column(db.String(10), nullable=False)
