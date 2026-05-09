@@ -59,14 +59,14 @@ def auth_process():
             # żeby miał swoje poprawne ID przy dodawaniu własnych służb!
             admin_in_db = Users.query.filter_by(username=username).first()
             if not admin_in_db:
-                admin_in_db = Users(imie="Główny", nazwisko="Szef", username=username, password=password, role='admin')
+                admin_in_db = Users(imie="Grześ", nazwisko="Gładysz", username=username, password=password, role='admin')
                 db.session.add(admin_in_db)
                 db.session.commit()
                 
             session['user_id'] = admin_in_db.id
             session['username'] = admin_in_db.username
             session['user_role'] = 'admin'
-            flash("Witaj Szefie (Konto Główne .env)! System gotowy.", "success")
+            flash("Witaj Szefie! System gotowy.", "success")
             return redirect(url_for('admin_page'))
 
         # 2. Zwykłe logowanie z Bazy Danych
