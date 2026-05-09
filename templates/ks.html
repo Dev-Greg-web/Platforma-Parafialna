@@ -87,14 +87,14 @@
                     
                     <div class="flex-grow flex flex-col gap-1 w-full lg:w-auto min-w-0">
                         <label class="font-bold dark:text-white text-gray-700">Wybierz ministranta:</label>
-                        <select name="user_id" required class="w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
+                        <select name="user_id" required class="w-full max-w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
                             {% for u in users %}<option value="{{ u.id }}">{{ u.username }} ({{ u.imie }} {{ u.nazwisko }})</option>{% endfor %}
                         </select>
                     </div>
                     
                     <div class="flex flex-col gap-1 w-full lg:w-48 shrink-0 min-w-0">
                         <label class="font-bold dark:text-white text-gray-700">Dzień:</label>
-                        <select name="dzien" id="planDzien" onchange="updateGodziny()" class="w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
+                        <select name="dzien" id="planDzien" onchange="updateGodziny()" class="w-full max-w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
                             <option value="Poniedziałek">Poniedziałek</option><option value="Wtorek">Wtorek</option>
                             <option value="Środa">Środa</option><option value="Czwartek">Czwartek</option>
                             <option value="Piątek">Piątek</option><option value="Sobota">Sobota</option>
@@ -104,7 +104,7 @@
                     
                     <div class="flex flex-col gap-1 w-full lg:w-40 shrink-0 min-w-0">
                         <label class="font-bold dark:text-white text-gray-700">Godzina:</label>
-                        <select name="godzina" id="planGodzina" class="w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
+                        <select name="godzina" id="planGodzina" class="w-full max-w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
                         </select>
                     </div>
 
@@ -125,14 +125,14 @@
                         <ul class="flex flex-col gap-2 w-full">
                         {% for d in dyzury %}
                             <li class="flex justify-between items-center bg-gray-50 dark:bg-darkbg p-3 rounded-xl border border-gray-200 dark:border-white/10 group transition hover:border-brand/50 w-full min-w-0">
-                                <div class="flex items-center gap-2 min-w-0">
+                                <div class="flex items-center gap-3 min-w-0">
                                     <span class="font-bold text-brand bg-brand/10 px-2 py-1 rounded shrink-0">{{ d.godzina }}</span> 
-                                    <strong class="dark:text-white text-gray-800 truncate">
-                                        {{ d.user.username }} 
-                                        <span class="text-xs text-gray-500 font-normal">({{ d.user.imie }} {{ d.user.nazwisko }})</span>
-                                    </strong>
+                                    <div class="flex flex-col min-w-0">
+                                        <strong class="dark:text-white text-gray-800 truncate leading-tight">{{ d.user.username }}</strong>
+                                        <span class="text-xs text-gray-500 font-normal truncate leading-tight">({{ d.user.imie }} {{ d.user.nazwisko }})</span>
+                                    </div>
                                 </div>
-                                <a href="{{ url_for('delete_schedule', id=d.id) }}" class="text-gray-400 hover:text-danger text-2xl font-bold transition px-2 shrink-0" onclick="return confirm('Usunąć ten dyżur?')">&times;</a>
+                                <a href="{{ url_for('delete_schedule', id=d.id) }}" class="text-gray-400 hover:text-danger text-2xl font-bold transition px-2 shrink-0 ml-2" onclick="return confirm('Usunąć ten dyżur?')">&times;</a>
                             </li>
                         {% endfor %}
                         </ul>
@@ -145,7 +145,7 @@
         </section>
 
         <section id="section-podsumowanie" class="admin-section hidden">
-            <div class="flex flex-col xl:flex-row flex-wrap justify-between items-start xl:items-center gap-4 mb-8">
+            <div class="flex flex-col xl:flex-row flex-wrap justify-between items-start xl:items-center gap-4 mb-8 w-full">
                 <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Podsumowanie Statystyk</h1>
                 <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-4 w-full xl:w-auto">
                     <div class="flex items-center gap-2 bg-white dark:bg-cardbg px-3 py-2 rounded-xl shadow border border-gray-200 dark:border-brand w-full sm:w-auto shrink-0 min-w-0">
@@ -217,6 +217,7 @@
         });
     }
 
+    // --- NOWY SYSTEM SORTOWANIA ---
     function sortTable(tbodyId, method, type) {
         const tbody = document.getElementById(tbodyId);
         if(!tbody) return;
@@ -254,6 +255,7 @@
     document.addEventListener("DOMContentLoaded", function() {
         if(document.getElementById('planDzien')) updateGodziny();
         
+        // Odpalenie sortowania przy starcie
         if(document.getElementById('tbody-podsumowanie')) sortTable('tbody-podsumowanie', 'ranga-nazwisko', 'podsumowanie');
     });
 

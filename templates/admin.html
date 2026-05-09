@@ -189,16 +189,16 @@
             <div class="bg-white dark:bg-cardbg rounded-2xl p-6 shadow-xl mb-8 border border-brand/30 w-full">
                 <form action="/admin/add_schedule" method="POST" class="flex flex-col lg:flex-row gap-4 items-stretch lg:items-end w-full">
                     
-                    <div class="flex-grow flex flex-col gap-1 w-full lg:w-auto overflow-hidden">
+                    <div class="flex-grow flex flex-col gap-1 w-full lg:w-auto min-w-0">
                         <label class="font-bold dark:text-white text-gray-700">Wybierz ministranta:</label>
-                        <select name="user_id" required class="w-full max-w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
+                        <select name="user_id" required class="w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
                             {% for u in users %}<option value="{{ u.id }}">{{ u.username }} ({{ u.imie }} {{ u.nazwisko }})</option>{% endfor %}
                         </select>
                     </div>
                     
-                    <div class="flex flex-col gap-1 w-full lg:w-48 shrink-0 overflow-hidden">
+                    <div class="flex flex-col gap-1 w-full lg:w-48 shrink-0 min-w-0">
                         <label class="font-bold dark:text-white text-gray-700">Dzień:</label>
-                        <select name="dzien" id="planDzien" onchange="updateGodziny()" class="w-full max-w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
+                        <select name="dzien" id="planDzien" onchange="updateGodziny()" class="w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
                             <option value="Poniedziałek">Poniedziałek</option><option value="Wtorek">Wtorek</option>
                             <option value="Środa">Środa</option><option value="Czwartek">Czwartek</option>
                             <option value="Piątek">Piątek</option><option value="Sobota">Sobota</option>
@@ -206,9 +206,9 @@
                         </select>
                     </div>
                     
-                    <div class="flex flex-col gap-1 w-full lg:w-40 shrink-0 overflow-hidden">
+                    <div class="flex flex-col gap-1 w-full lg:w-40 shrink-0 min-w-0">
                         <label class="font-bold dark:text-white text-gray-700">Godzina:</label>
-                        <select name="godzina" id="planGodzina" class="w-full max-w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
+                        <select name="godzina" id="planGodzina" class="w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
                         </select>
                     </div>
 
@@ -220,23 +220,23 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 w-full">
                 {% for dzien, dyzury in plan.items() %}
-                <div class="bg-white dark:bg-cardbg rounded-2xl p-5 shadow-lg border-t-4 border-brand">
-                    <h2 class="text-xl font-extrabold text-gray-900 dark:text-white mb-4 flex justify-between">
+                <div class="bg-white dark:bg-cardbg rounded-2xl p-5 shadow-lg border-t-4 border-brand flex flex-col w-full min-w-0">
+                    <h2 class="text-xl font-extrabold text-gray-900 dark:text-white mb-4 flex justify-between shrink-0">
                         {{ dzien }} <span class="bg-brand/20 text-brand px-2 rounded text-sm flex items-center">{{ dyzury|length }}</span>
                     </h2>
                     
                     {% if dyzury %}
-                        <ul class="flex flex-col gap-2">
+                        <ul class="flex flex-col gap-2 w-full">
                         {% for d in dyzury %}
-                            <li class="flex justify-between items-center bg-gray-50 dark:bg-darkbg p-3 rounded-xl border border-gray-200 dark:border-white/10 group transition hover:border-brand/50 overflow-hidden">
-                                <div class="flex items-center gap-2 min-w-0">
+                            <li class="flex justify-between items-center bg-gray-50 dark:bg-darkbg p-3 rounded-xl border border-gray-200 dark:border-white/10 group transition hover:border-brand/50 w-full min-w-0">
+                                <div class="flex items-center gap-3 min-w-0">
                                     <span class="font-bold text-brand bg-brand/10 px-2 py-1 rounded shrink-0">{{ d.godzina }}</span> 
-                                    <strong class="dark:text-white text-gray-800 truncate">
-                                        {{ d.user.username }} 
-                                        <span class="text-xs text-gray-500 font-normal hidden sm:inline-block">({{ d.user.imie }} {{ d.user.nazwisko }})</span>
-                                    </strong>
+                                    <div class="flex flex-col min-w-0">
+                                        <strong class="dark:text-white text-gray-800 truncate leading-tight">{{ d.user.username }}</strong>
+                                        <span class="text-xs text-gray-500 font-normal truncate leading-tight">({{ d.user.imie }} {{ d.user.nazwisko }})</span>
+                                    </div>
                                 </div>
-                                <a href="{{ url_for('delete_schedule', id=d.id) }}" class="text-gray-400 hover:text-danger text-2xl font-bold transition px-2 shrink-0" onclick="return confirm('Usunąć ten dyżur?')">&times;</a>
+                                <a href="{{ url_for('delete_schedule', id=d.id) }}" class="text-gray-400 hover:text-danger text-2xl font-bold transition px-2 shrink-0 ml-2" onclick="return confirm('Usunąć ten dyżur?')">&times;</a>
                             </li>
                         {% endfor %}
                         </ul>
