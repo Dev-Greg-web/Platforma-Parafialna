@@ -83,17 +83,18 @@
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Plan Służb (Stałe Dyżury)</h1>
             
             <div class="bg-white dark:bg-cardbg rounded-2xl p-6 shadow-xl mb-8 border border-brand/30">
-                <form action="/admin/add_schedule" method="POST" class="flex flex-col md:flex-row gap-4 items-end">
-                    <div class="flex-grow flex flex-col gap-1">
+                <form action="/admin/add_schedule" method="POST" class="flex flex-col md:flex-row gap-4 items-stretch md:items-end w-full">
+                    
+                    <div class="flex-grow flex flex-col gap-1 w-full md:w-auto">
                         <label class="font-bold dark:text-white text-gray-700">Wybierz ministranta:</label>
-                        <select name="user_id" required class="p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand">
+                        <select name="user_id" required class="w-full max-w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
                             {% for u in users %}<option value="{{ u.id }}">{{ u.username }} ({{ u.imie }} {{ u.nazwisko }})</option>{% endfor %}
                         </select>
                     </div>
                     
                     <div class="flex flex-col gap-1 w-full md:w-1/4">
                         <label class="font-bold dark:text-white text-gray-700">Dzień:</label>
-                        <select name="dzien" id="planDzien" onchange="updateGodziny()" class="p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand">
+                        <select name="dzien" id="planDzien" onchange="updateGodziny()" class="w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand">
                             <option value="Poniedziałek">Poniedziałek</option><option value="Wtorek">Wtorek</option>
                             <option value="Środa">Środa</option><option value="Czwartek">Czwartek</option>
                             <option value="Piątek">Piątek</option><option value="Sobota">Sobota</option>
@@ -103,11 +104,11 @@
                     
                     <div class="flex flex-col gap-1 w-full md:w-1/4">
                         <label class="font-bold dark:text-white text-gray-700">Godzina:</label>
-                        <select name="godzina" id="planGodzina" class="p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand">
+                        <select name="godzina" id="planGodzina" class="w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand">
                         </select>
                     </div>
 
-                    <button type="submit" class="bg-success text-white px-8 py-3 h-[50px] rounded-xl font-bold shadow-lg hover:-translate-y-1 transition whitespace-nowrap">
+                    <button type="submit" class="w-full md:w-auto bg-success text-white px-8 py-3 h-[50px] rounded-xl font-bold shadow-lg hover:-translate-y-1 transition whitespace-nowrap">
                         + Dodaj dyżur
                     </button>
                 </form>
@@ -123,12 +124,15 @@
                     {% if dyzury %}
                         <ul class="flex flex-col gap-2">
                         {% for d in dyzury %}
-                            <li class="flex justify-between items-center bg-gray-50 dark:bg-darkbg p-3 rounded-xl border border-gray-200 dark:border-white/10 group transition hover:border-brand/50">
-                                <div>
-                                    <span class="font-bold text-brand bg-brand/10 px-2 py-1 rounded mr-2">{{ d.godzina }}</span> 
-                                    <strong class="dark:text-white text-gray-800">{{ d.user.username }}</strong>
+                            <li class="flex justify-between items-center bg-gray-50 dark:bg-darkbg p-3 rounded-xl border border-gray-200 dark:border-white/10 group transition hover:border-brand/50 overflow-hidden">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <span class="font-bold text-brand bg-brand/10 px-2 py-1 rounded shrink-0">{{ d.godzina }}</span> 
+                                    <strong class="dark:text-white text-gray-800 truncate">
+                                        {{ d.user.username }} 
+                                        <span class="text-xs text-gray-500 font-normal">({{ d.user.imie }} {{ d.user.nazwisko }})</span>
+                                    </strong>
                                 </div>
-                                <a href="{{ url_for('delete_schedule', id=d.id) }}" class="text-gray-400 hover:text-danger text-2xl font-bold transition px-2" onclick="return confirm('Usunąć ten dyżur?')">&times;</a>
+                                <a href="{{ url_for('delete_schedule', id=d.id) }}" class="text-gray-400 hover:text-danger text-2xl font-bold transition px-2 shrink-0" onclick="return confirm('Usunąć ten dyżur?')">&times;</a>
                             </li>
                         {% endfor %}
                         </ul>
