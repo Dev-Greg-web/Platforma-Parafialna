@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Panel Sterowania Szefa{% endblock %}
 
+{% block extra_styles %}
+<style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background-color: #1a1a2e; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb { background-color: rgba(94, 59, 238, 0.3); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background-color: rgba(94, 59, 238, 0.6); }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="w-full min-h-screen flex flex-col md:flex-row">
     
@@ -41,7 +50,7 @@
                 {% endfor %}
             </div>
 
-            <form action="/admin/delete_bulk_attendances" method="POST">
+            <form action="/admin/delete_bulk_attendances" method="POST" class="w-full">
                 <div class="flex justify-end mb-4">
                     <button type="submit" class="bg-danger text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-red-700 hover:-translate-y-1 transition flex items-center gap-2" onclick="return confirm('Czy na pewno chcesz usunąć wszystkie ZAZNACZONE służby?')">
                         🗑️ Usuń zaznaczone
@@ -106,7 +115,7 @@
                 </div>
             </div>
             
-            <form action="/admin/delete_bulk_users" method="POST">
+            <form action="/admin/delete_bulk_users" method="POST" class="w-full">
                 <div class="flex justify-end mb-4">
                     <button type="submit" class="bg-danger text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-red-700 hover:-translate-y-1 transition flex items-center gap-2" onclick="return confirm('UWAGA: Zaznaczeni użytkownicy zostaną usunięci razem z wszystkimi ich służbami! Jesteś pewien?')">
                         🗑️ Usuń zaznaczonych
@@ -138,7 +147,7 @@
                                         <div id="menu-usr-{{u.id}}" class="dropdown-content hidden absolute right-0 top-full mt-2 w-56 bg-white dark:bg-darkbg border border-gray-200 dark:border-brand rounded-xl shadow-2xl z-50 overflow-hidden">
                                             {% set bez_imie = u.imie if u.imie else '' %}
                                             {% set bez_nazwisko = u.nazwisko if u.nazwisko else '' %}
-                                            <a href="javascript:void(0)" class="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-brand transition" onclick="openUserEditModal('{{u.id}}', '{{bez_imie}}', '{{bez_nazwisko}}', '{{u.username}}', '{{u.password}}', '{{u.role}}')">Popraw dane / Rangę</a>
+                                            <a href="javascript:void(0)" class="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-brand transition" onclick="openUserEditModal('{{u.id}}', '{{bez_imie}}', '{{bez_nazwisko}}', '{{u.username}}', '{{u.password}}', '{{u.role}}', '{{u.uproszczony}}')">Popraw dane / Rangę</a>
                                             <a href="{{ url_for('delete_user', id=u.id) }}" class="block px-4 py-3 text-danger hover:bg-red-50 dark:hover:bg-red-900/30 transition" onclick="return confirm('Usunąć?')">Usuń</a>
                                         </div>
                                     </div>
@@ -184,21 +193,26 @@
         </section>
 
         <section id="section-plan" class="admin-section hidden">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Plan Służb (Stałe Dyżury)</h1>
+            <div class="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Plan Służb (Stałe Dyżury)</h1>
+                <a href="{{ url_for('export_schedule') }}" class="w-full sm:w-auto bg-success text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:-translate-y-1 transition flex items-center justify-center gap-2 shrink-0">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Pobierz Plan Służb (Excel)
+                </a>
+            </div>
             
-            <div class="bg-white dark:bg-cardbg rounded-2xl p-6 shadow-xl mb-8 border border-brand/30 w-full">
-                <form action="/admin/add_schedule" method="POST" class="flex flex-col lg:flex-row gap-4 items-stretch lg:items-end w-full">
+            <div class="bg-white dark:bg-cardbg rounded-3xl p-8 shadow-2xl mb-12 border border-brand/30">
+                <form action="/admin/add_schedule" method="POST" class="flex flex-col lg:flex-row gap-6 items-stretch lg:items-end w-full">
                     
-                    <div class="flex-grow flex flex-col gap-1 w-full lg:w-auto min-w-0">
+                    <div class="flex-grow flex flex-col gap-2 w-full lg:w-auto min-w-0">
                         <label class="font-bold dark:text-white text-gray-700">Wybierz ministranta:</label>
-                        <select name="user_id" required class="w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
+                        <select name="user_id" required class="w-full max-w-full p-4 rounded-2xl border-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:border-brand focus:ring-2 focus:ring-brand truncate">
                             {% for u in users %}<option value="{{ u.id }}">{{ u.username }} ({{ u.imie }} {{ u.nazwisko }})</option>{% endfor %}
                         </select>
                     </div>
                     
-                    <div class="flex flex-col gap-1 w-full lg:w-48 shrink-0 min-w-0">
-                        <label class="font-bold dark:text-white text-gray-700">Dzień:</label>
-                        <select name="dzien" id="planDzien" onchange="updateGodziny()" class="w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
+                    <div class="flex flex-col gap-2 w-full lg:w-60 shrink-0 min-w-0">
+                        <label class="font-bold dark:text-white text-gray-700">Dzień tygodnia:</label>
+                        <select name="dzien" id="planDzien" onchange="updateGodziny()" class="w-full max-w-full p-4 rounded-2xl border-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:border-brand focus:ring-2 focus:ring-brand truncate">
                             <option value="Poniedziałek">Poniedziałek</option><option value="Wtorek">Wtorek</option>
                             <option value="Środa">Środa</option><option value="Czwartek">Czwartek</option>
                             <option value="Piątek">Piątek</option><option value="Sobota">Sobota</option>
@@ -206,40 +220,53 @@
                         </select>
                     </div>
                     
-                    <div class="flex flex-col gap-1 w-full lg:w-40 shrink-0 min-w-0">
-                        <label class="font-bold dark:text-white text-gray-700">Godzina:</label>
-                        <select name="godzina" id="planGodzina" class="w-full p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:ring-2 focus:ring-brand truncate">
+                    <div class="flex flex-col gap-2 w-full lg:w-48 shrink-0 min-w-0">
+                        <label class="font-bold dark:text-white text-gray-700">Godzina mszy:</label>
+                        <select name="godzina" id="planGodzina" class="w-full max-w-full p-4 rounded-2xl border-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:border-brand focus:ring-2 focus:ring-brand truncate">
                         </select>
                     </div>
 
-                    <button type="submit" class="w-full lg:w-auto bg-success text-white px-8 py-3 h-[50px] rounded-xl font-bold shadow-lg hover:-translate-y-1 transition whitespace-nowrap shrink-0">
+                    <button type="submit" class="w-full lg:w-auto bg-gradient-to-r from-success to-green-400 text-white px-10 py-4 h-[65px] rounded-2xl font-extrabold shadow-lg hover:scale-105 active:scale-95 transition whitespace-nowrap shrink-0 flex items-center justify-center gap-2">
                         + Dodaj dyżur
                     </button>
                 </form>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 w-full">
-                {% for dzien, dyzury in plan.items() %}
-                <div class="bg-white dark:bg-cardbg rounded-2xl p-5 shadow-lg border-t-4 border-brand flex flex-col w-full min-w-0">
-                    <h2 class="text-xl font-extrabold text-gray-900 dark:text-white mb-4 flex justify-between shrink-0">
-                        {{ dzien }} <span class="bg-brand/20 text-brand px-2 rounded text-sm flex items-center">{{ dyzury|length }}</span>
-                    </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
+                {% for dzien, godziny_grupy in plan.items() %}
+                <div class="bg-white dark:bg-cardbg rounded-3xl p-6 shadow-xl flex flex-col w-full min-w-0 border-t-4 border-brand">
                     
-                    {% if dyzury %}
-                        <ul class="flex flex-col gap-2 w-full">
-                        {% for d in dyzury %}
-                            <li class="flex justify-between items-center bg-gray-50 dark:bg-darkbg p-3 rounded-xl border border-gray-200 dark:border-white/10 group transition hover:border-brand/50 w-full min-w-0">
-                                <div class="flex items-center gap-3 min-w-0">
-                                    <span class="font-bold text-brand bg-brand/10 px-2 py-1 rounded shrink-0">{{ d.godzina }}</span> 
-                                    <div class="flex flex-col min-w-0">
-                                        <strong class="dark:text-white text-gray-800 truncate leading-tight">{{ d.user.username }}</strong>
-                                        <span class="text-xs text-gray-500 font-normal truncate leading-tight">({{ d.user.imie }} {{ d.user.nazwisko }})</span>
+                    <div class="flex justify-between items-center mb-5 shrink-0">
+                        <h2 class="text-2xl font-extrabold text-gray-900 dark:text-white m-0 truncate">{{ dzien }}</h2>
+                        <span class="bg-brand/20 text-brand px-3 py-1 rounded-lg text-sm font-bold">{{ liczniki[dzien] }} osób</span>
+                    </div>
+                    
+                    {% if godziny_grupy %}
+                        <div class="flex flex-col gap-4 w-full">
+                            {% for godzina, ministranci in godziny_grupy.items() %}
+                                <div class="bg-gray-50 dark:bg-darkbg p-4 rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden">
+                                    
+                                    <div class="bg-brand/10 p-2 rounded-lg mb-3 shrink-0">
+                                        <span class="font-extrabold text-brand flex items-center gap-2">
+                                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                                            Godzina: {{ godzina }}
+                                        </span>
                                     </div>
+
+                                    <ul class="flex flex-col gap-1 w-full min-w-0">
+                                        {% for m in ministranci %}
+                                            <li class="flex justify-between items-center w-full min-w-0 group hover:bg-white/10 px-2 py-1.5 rounded-lg transition overflow-hidden">
+                                                <div class="flex flex-col sm:flex-row sm:items-center gap-0 sm:gap-2 min-w-0 truncate">
+                                                    <strong class="text-gray-800 dark:text-white truncate">{{ m.user.username }}</strong>
+                                                    <span class="text-xs text-gray-500 font-normal truncate">({{ m.user.imie }} {{ m.user.nazwisko }})</span>
+                                                </div>
+                                                <a href="{{ url_for('delete_schedule', id=m.id) }}" class="text-gray-400 group-hover:text-danger text-2xl font-bold transition px-2 shrink-0 ml-2" onclick="return confirm('Usunąć ten dyżur?')">&times;</a>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
                                 </div>
-                                <a href="{{ url_for('delete_schedule', id=d.id) }}" class="text-gray-400 hover:text-danger text-2xl font-bold transition px-2 shrink-0 ml-2" onclick="return confirm('Usunąć ten dyżur?')">&times;</a>
-                            </li>
-                        {% endfor %}
-                        </ul>
+                            {% endfor %}
+                        </div>
                     {% else %}
                         <p class="text-sm text-gray-500 dark:text-gray-400 italic">Brak zapisanych dyżurów.</p>
                     {% endif %}
@@ -249,7 +276,7 @@
         </section>
 
         <section id="section-podsumowanie" class="admin-section hidden">
-            <div class="flex flex-col xl:flex-row flex-wrap justify-between items-start xl:items-center gap-4 mb-8">
+            <div class="flex flex-col xl:flex-row flex-wrap justify-between items-start xl:items-center gap-4 mb-8 w-full">
                 <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Podsumowanie</h1>
                 <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-4 w-full xl:w-auto">
                     <div class="flex items-center gap-2 bg-white dark:bg-cardbg px-3 py-2 rounded-xl shadow border border-gray-200 dark:border-brand w-full sm:w-auto shrink-0 min-w-0">
@@ -329,6 +356,12 @@
                         <option value="user">Użytkownik</option><option value="ksiądz">Ksiądz</option><option value="admin">Admin</option>
                     </select>
                 </div>
+                
+                <div class="flex items-center gap-3 bg-brand/10 p-4 rounded-xl mt-2 border border-brand/20">
+                    <input type="checkbox" name="uproszczony" id="editUserUproszczony" class="w-6 h-6 accent-brand cursor-pointer">
+                    <label for="editUserUproszczony" class="text-gray-900 dark:text-white font-bold cursor-pointer">Włącz "Tryb Uproszczony" dla tego konta</label>
+                </div>
+
                 <div class="flex justify-end gap-3 mt-4">
                     <button type="button" class="px-6 py-3 rounded-xl font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10" onclick="closeModal('editUserModal')">Anuluj</button>
                     <button type="submit" class="bg-brand text-white px-6 py-3 rounded-xl font-bold shadow-lg">Zapisz</button>
@@ -400,7 +433,7 @@
         });
     }
 
-    function sortTable(tbodyId, method, type) {
+    function sortTable(tbodyId, method, type, save = true) {
         const tbody = document.getElementById(tbodyId);
         if(!tbody) return;
         const rows = Array.from(tbody.querySelectorAll('tr'));
@@ -432,12 +465,28 @@
 
         tbody.innerHTML = '';
         rows.forEach(row => tbody.appendChild(row));
+
+        if (save) {
+            localStorage.setItem('sort_' + tbodyId, method);
+        }
     }
 
     document.addEventListener("DOMContentLoaded", function() {
         if(document.getElementById('planDzien')) updateGodziny();
         
-        if(document.getElementById('tbody-podsumowanie')) sortTable('tbody-podsumowanie', 'ranga-nazwisko', 'podsumowanie');
+        const savedUsers = localStorage.getItem('sort_tbody-users') || 'ranga-nazwisko';
+        const selectUsers = document.getElementById('sortUsers');
+        if (selectUsers) {
+            selectUsers.value = savedUsers;
+            sortTable('tbody-users', savedUsers, 'users', false);
+        }
+
+        const savedPod = localStorage.getItem('sort_tbody-podsumowanie') || 'ranga-nazwisko';
+        const selectPod = document.getElementById('sortPodsumowanie');
+        if (selectPod) {
+            selectPod.value = savedPod;
+            sortTable('tbody-podsumowanie', savedPod, 'podsumowanie', false);
+        }
     });
 
     function filterUser(username, btnElement) {
@@ -472,13 +521,14 @@
         openModal('editModal');
     }
 
-    function openUserEditModal(id, imie, nazwisko, login, pass, role) {
+    function openUserEditModal(id, imie, nazwisko, login, pass, role, uproszczony) {
         document.getElementById('editUserForm').action = "/admin/edit_user/" + id;
         document.getElementById('editUserImie').value = imie;
         document.getElementById('editUserNazwisko').value = nazwisko;
         document.getElementById('editUserLogin').value = login;
         document.getElementById('editUserPass').value = pass;
         document.getElementById('editUserRole').value = role; 
+        document.getElementById('editUserUproszczony').checked = (uproszczony === 'True');
         openModal('editUserModal');
     }
 

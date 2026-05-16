@@ -16,6 +16,9 @@
             <button onclick="switchTab('historia')" id="tab-btn-historia" class="nav-btn text-gray-300 hover:bg-brand/50 p-4 text-left rounded-xl font-bold transition">
                 Moja Historia
             </button>
+            <button onclick="switchTab('plan')" id="tab-btn-plan" class="nav-btn text-gray-300 hover:bg-brand/50 p-4 text-left rounded-xl font-bold transition">
+                Plan Służb (Dyżury)
+            </button>
             
             <footer class="mt-auto text-center text-sm text-gray-400 py-4">
                 &copy All rights reserved, Grześ Gładysz 2026
@@ -29,10 +32,10 @@
         </nav>
     </aside>
 
-    <main class="flex-grow p-6 md:p-12 overflow-y-auto pb-32">
+    <main class="flex-1 p-4 md:p-12 overflow-y-auto pb-32 min-w-0">
         
         <section id="section-ogloszenia" class="dashboard-tab block">
-            <h1 class="text-3xl font-bold text-white mb-8">Tablica Ogłoszeń</h1>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Tablica Ogłoszeń</h1>
             {% if announcements %}
                 <div class="flex flex-col gap-6">
                     {% for og in announcements %}
@@ -46,39 +49,32 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <div class="text-gray-400 italic text-lg">Brak nowych ogłoszeń od Szefa.</div>
+                <div class="text-gray-400 italic text-lg bg-white dark:bg-cardbg p-6 rounded-2xl shadow">Brak nowych ogłoszeń od Szefa.</div>
             {% endif %}
         </section>
 
         <section id="section-sluzby" class="dashboard-tab hidden">
-            <h1 class="text-3xl font-bold text-white mb-8">Zgłoś nową służbę</h1>
-            <div class="bg-cardbg p-8 rounded-3xl max-w-lg border border-white/10 shadow-xl">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Zgłoś nową służbę</h1>
+            <div class="bg-white dark:bg-cardbg p-8 rounded-3xl max-w-lg border border-gray-200 dark:border-white/10 shadow-xl">
                 <form action="/add_attendance" method="POST" id="attendance-form" class="flex flex-col gap-6">
-                    
                     <div class="flex flex-col gap-2">
-                        <label for="date" class="text-white font-bold">Data służby:</label>
-                        <input type="date" name="date" id="date" min="{{ min_date }}" max="{{ today }}" value="{{ today }}" required class="p-3 rounded-xl bg-white text-black w-full outline-none focus:ring-4 focus:ring-brand/50">
+                        <label for="date" class="text-gray-700 dark:text-white font-bold">Data służby:</label>
+                        <input type="date" name="date" id="date" min="{{ min_date }}" max="{{ today }}" value="{{ today }}" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black w-full outline-none focus:ring-4 focus:ring-brand/50 border border-gray-300 dark:border-none">
                     </div>
-
                     <div class="flex flex-col gap-2">
-                        <label for="typ_mszy" class="text-white font-bold">Rodzaj mszy:</label>
-                        <select name="typ_mszy" id="typ_mszy" onchange="toggleInna('typ_mszy', 'group_inna', 'nazwa_inna')" required class="p-3 rounded-xl bg-white text-black w-full outline-none focus:ring-4 focus:ring-brand/50">
-                            <option value="poranna">Poranna</option>
-                            <option value="wieczorna">Wieczorna</option>
-                            <option value="inna">Inna (np. Ślub, Pogrzeb)</option>
+                        <label for="typ_mszy" class="text-gray-700 dark:text-white font-bold">Rodzaj mszy:</label>
+                        <select name="typ_mszy" id="typ_mszy_normal" onchange="toggleInna('typ_mszy_normal', 'group_inna_normal', 'nazwa_inna_normal')" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black w-full outline-none focus:ring-4 focus:ring-brand/50 border border-gray-300 dark:border-none">
+                            <option value="poranna">Poranna</option><option value="wieczorna">Wieczorna</option><option value="inna">Inna (np. Ślub, Pogrzeb)</option>
                         </select>
                     </div>
-
-                    <div class="flex flex-col gap-2 hidden" id="group_inna">
-                        <label for="nazwa_inna" class="text-white font-bold">Nazwa mszy:</label>
-                        <input type="text" name="nazwa_inna" id="nazwa_inna" placeholder="Wpisz nazwę..." class="p-3 rounded-xl bg-white text-black w-full outline-none focus:ring-4 focus:ring-brand/50">
+                    <div class="flex flex-col gap-2 hidden" id="group_inna_normal">
+                        <label for="nazwa_inna_normal" class="text-gray-700 dark:text-white font-bold">Nazwa mszy:</label>
+                        <input type="text" name="nazwa_inna" id="nazwa_inna_normal" placeholder="Wpisz nazwę..." class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black w-full outline-none focus:ring-4 focus:ring-brand/50 border border-gray-300 dark:border-none">
                     </div>
-
                     <div class="flex flex-col gap-2">
-                        <label for="godzina" class="text-white font-bold">Godzina:</label>
-                        <input type="time" name="godzina" id="godzina" required class="p-3 rounded-xl bg-white text-black w-full outline-none focus:ring-4 focus:ring-brand/50">
+                        <label for="godzina" class="text-gray-700 dark:text-white font-bold">Godzina:</label>
+                        <input type="time" name="godzina" id="godzina_normal" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black w-full outline-none focus:ring-4 focus:ring-brand/50 border border-gray-300 dark:border-none">
                     </div>
-
                     <button type="submit" class="w-full bg-brand text-white p-4 rounded-xl font-bold text-lg hover:-translate-y-1 hover:shadow-[0_5px_15px_rgba(94,59,238,0.4)] transition">
                         Zapisz moją obecność
                     </button>
@@ -86,11 +82,11 @@
             </div>
         </section>
 
-        <section id="section-historia" class="dashboard-tab hidden">
-            <h1 class="text-3xl font-bold text-white mb-8">Moja historia służb</h1>
+        <section id="section-historia" class="dashboard-tab hidden w-full">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Moja historia służb</h1>
             
             {% if attendances %}
-            <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto">
+            <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto w-full">
                 <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[500px]">
                     <thead>
                         <tr class="border-b-2 border-brand text-lg">
@@ -113,9 +109,7 @@
                                 <div class="relative inline-block text-left">
                                     <button class="text-2xl font-bold px-2 py-1 hover:text-brand" onclick="toggleMenu('menu-my-att-{{att.id}}')">⋮</button>
                                     <div id="menu-my-att-{{att.id}}" class="dropdown-content hidden absolute right-0 top-full mt-2 w-48 bg-white dark:bg-darkbg border border-gray-200 dark:border-brand rounded-xl shadow-2xl z-50 overflow-hidden">
-                                        
                                         {% set bezpieczna_nazwa = att.nazwa_inna if att.nazwa_inna else '' %}
-                                        
                                         <a href="javascript:void(0)" class="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-brand transition" onclick="openMyEditModal('{{att.id}}', '{{att.data_sluzby}}', '{{att.godzina}}', '{{att.typ_mszy}}', '{{bezpieczna_nazwa}}')">Popraw wpis</a>
                                         <a href="{{ url_for('delete_my_attendance', id=att.id) }}" class="block px-4 py-3 text-danger hover:bg-red-50 dark:hover:bg-red-900/30 transition" onclick="return confirm('Czy na pewno chcesz usunąć tę służbę?')">Usuń wpis</a>
                                     </div>
@@ -127,8 +121,87 @@
                 </table>
             </div>
             {% else %}
-                <div class="text-gray-400 italic text-lg">Jeszcze nie masz żadnych zgłoszonych służb. Czas to zmienić!</div>
+                <div class="text-gray-400 italic text-lg bg-white dark:bg-cardbg p-6 rounded-2xl shadow">Jeszcze nie masz żadnych zgłoszonych służb. Czas to zmienić!</div>
             {% endif %}
+        </section>
+
+        <section id="section-plan" class="dashboard-tab hidden w-full">
+            <div class="mb-12">
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">Moje przypisane dyżury</h2>
+                {% if moje_dyzury %}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {% for md in moje_dyzury %}
+                            <div class="bg-gradient-to-br from-success to-green-600 rounded-xl p-5 shadow-lg flex items-center gap-4 hover:-translate-y-1 transition border border-green-400">
+                                <div class="bg-white/20 p-3 rounded-xl shrink-0">
+                                    <svg width="28" height="28" fill="white" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-white font-extrabold text-xl truncate">{{ md.dzien }}</div>
+                                    <div class="text-green-100 font-bold text-lg">{{ md.godzina }}</div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="bg-white dark:bg-cardbg rounded-xl p-6 shadow border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-300 italic text-lg">
+                        Szef nie przypisał Cię jeszcze do żadnego stałego dyżuru.
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-6">
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Pełny plan na ten tydzień</h2>
+                <a href="{{ url_for('export_schedule') }}" class="w-full sm:w-auto bg-success text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:-translate-y-1 transition flex items-center justify-center gap-2 shrink-0">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Pobierz Plan Służb (Excel)
+                </a>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
+                {% for dzien, godziny_grupy in plan.items() %}
+                <div class="bg-white dark:bg-cardbg rounded-3xl shadow-lg border-t-4 border-brand flex flex-col w-full min-w-0 overflow-hidden">
+                    <div class="p-5 pb-3">
+                        <h3 class="text-xl font-extrabold text-gray-900 dark:text-white flex justify-between items-center m-0 shrink-0">
+                            {{ dzien }} <span class="bg-brand/20 text-brand px-3 py-1 rounded-lg text-sm font-bold">{{ liczniki[dzien] }} osób</span>
+                        </h3>
+                    </div>
+                    {% if godziny_grupy %}
+                        <div class="flex flex-col gap-0 w-full bg-gray-50 dark:bg-black/10">
+                            {% set zablokowane_godziny = [] %}
+                            {% for d in godziny_grupy.values() %}
+                                {% for item in d %}
+                                    {% if item.godzina not in zablokowane_godziny %}
+                                        {% set _ = zablokowane_godziny.append(item.godzina) %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+
+                            {% for godzina, ministranci in godziny_grupy.items() %}
+                                <div class="border-t border-gray-200 dark:border-white/5">
+                                    <div class="bg-gray-200/50 dark:bg-brand/10 px-5 py-2">
+                                        <span class="font-extrabold text-brand flex items-center gap-2">
+                                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg> Godzina: {{ godzina }}
+                                        </span>
+                                    </div>
+                                    <ul class="px-5 py-3 flex flex-col gap-2">
+                                        {% for m in ministranci %}
+                                            <li class="flex items-center gap-3 w-full min-w-0 group">
+                                                <div class="w-2 h-2 rounded-full bg-gray-400 group-hover:bg-brand transition shrink-0"></div>
+                                                <div class="flex flex-col sm:flex-row sm:items-center gap-0 sm:gap-2 min-w-0">
+                                                    <strong class="text-gray-800 dark:text-white truncate">{{ m.user.username }}</strong>
+                                                    <span class="text-sm text-gray-500 dark:text-gray-400 truncate">({{ m.user.imie }} {{ m.user.nazwisko }})</span>
+                                                </div>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="p-5 pt-0 text-gray-500 dark:text-gray-400 italic">Brak dyżurów.</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
         </section>
 
     </main>
@@ -138,21 +211,21 @@
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Poprawianie służby</h2>
             <form id="editMyForm" method="POST" class="flex flex-col gap-4">
                 <div class="flex flex-col gap-1">
-                    <label class="text-gray-700 dark:text-white font-bold">Data (Zabezpieczona):</label>
-                    <input type="date" name="date" id="editMyDate" min="{{ min_date }}" max="{{ today }}" required class="p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50">
+                    <label class="text-gray-700 dark:text-white font-bold">Data:</label>
+                    <input type="date" name="date" id="editMyDate" min="{{ min_date }}" max="{{ today }}" required class="p-3 rounded-xl border border-gray-300 dark:border-none bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50">
                 </div>
                 <div class="flex flex-col gap-1">
                     <label class="text-gray-700 dark:text-white font-bold">Godzina:</label>
-                    <input type="time" name="godzina" id="editMyTime" required class="p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50">
+                    <input type="time" name="godzina" id="editMyTime" required class="p-3 rounded-xl border border-gray-300 dark:border-none bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50">
                 </div>
                 <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Rodzaj:</label>
-                    <select name="typ_mszy" id="editMyType" onchange="toggleInna('editMyType', 'groupInnaMy', 'editMyInna')" class="p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50">
+                    <select name="typ_mszy" id="editMyType" onchange="toggleInna('editMyType', 'groupInnaMy', 'editMyInna')" class="p-3 rounded-xl border border-gray-300 dark:border-none bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50">
                         <option value="poranna">Poranna</option><option value="wieczorna">Wieczorna</option><option value="inna">Inna</option>
                     </select>
                 </div>
                 <div class="flex-col gap-1 hidden" id="groupInnaMy">
                     <label class="text-gray-700 dark:text-white font-bold">Nazwa mszy:</label>
-                    <input type="text" name="nazwa_inna" id="editMyInna" class="p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50">
+                    <input type="text" name="nazwa_inna" id="editMyInna" class="p-3 rounded-xl border border-gray-300 dark:border-none bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50">
                 </div>
                 <div class="flex justify-end gap-3 mt-4">
                     <button type="button" class="px-6 py-3 rounded-xl font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10 transition" onclick="closeModal('editMyModal')">Anuluj</button>
@@ -161,7 +234,6 @@
             </form>
         </div>
     </div>
-
 </div>
 {% endblock %}
 
@@ -185,17 +257,16 @@
         activeBtn.classList.add('bg-brand', 'text-white');
     }
 
-    // Nowa, uniwersalna funkcja do włączania/wyłączania inputu "Inna"
     function toggleInna(selectId, groupId, inputId) {
         var select = document.getElementById(selectId);
         var groupInna = document.getElementById(groupId);
         var inputInna = document.getElementById(inputId);
 
-        if (select.value === "inna") {
+        if (select && select.value === "inna") {
             groupInna.classList.remove("hidden");
             groupInna.classList.add("flex");
             inputInna.required = true;
-        } else {
+        } else if(groupInna) {
             groupInna.classList.add("hidden");
             groupInna.classList.remove("flex");
             inputInna.required = false;
@@ -223,7 +294,6 @@
         document.getElementById(modalId).style.display = "none"; 
     }
 
-    // Zamykanie menu jak klikniesz gdziekolwiek indziej
     window.onclick = function(event) {
         if (!event.target.matches('button') && !event.target.closest('button')) {
             document.querySelectorAll('.dropdown-content').forEach(m => m.classList.add('hidden'));

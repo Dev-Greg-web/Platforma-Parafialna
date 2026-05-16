@@ -17,7 +17,6 @@ if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = db_url
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
 app.permanent_session_lifetime = timedelta(minutes=15)
 
 db.init_app(app)
@@ -29,6 +28,14 @@ def add_header(response):
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '-1'
     return response
+
+def format_datetime_pl(dt):
+    if not dt: return ""
+    dni = ["pon.", "wt.", "śr.", "czw.", "pt.", "sob.", "nd."]
+    godz_min = dt.strftime("%H:%M")
+    return f"{dni[dt.weekday()]} {dt.day}.{dt.month} o {godz_min}"
+
+app.jinja_env.filters['datetime_pl'] = format_datetime_pl
 
 @app.route('/')
 def login_page():
@@ -50,13 +57,14 @@ def auth_process():
             session.clear()
             admin_in_db = Users.query.filter_by(username=username).first()
             if not admin_in_db:
-                admin_in_db = Users(imie="Główny", nazwisko="Szef", username=username, password=password, role='admin')
+                admin_in_db = Users(imie="Główny", nazwisko="Szef", username=username, password=password, role='admin', uproszczony=False)
                 db.session.add(admin_in_db)
                 db.session.commit()
                 
             session['user_id'] = admin_in_db.id
             session['username'] = admin_in_db.username
             session['user_role'] = 'admin'
+            session['uproszczony'] = False
             flash("Witaj Szefie (Konto Główne .env)! System gotowy.", "success")
             return redirect(url_for('admin_page'))
 
@@ -66,6 +74,7 @@ def auth_process():
             session['user_id'] = user.id
             session['username'] = user.username
             session['user_role'] = user.role
+            session['uproszczony'] = user.uproszczony
             
             if user.role == 'admin':
                 flash("Witaj Szefie! System gotowy.", "success")
@@ -74,7 +83,9 @@ def auth_process():
                 flash("Szczęść Boże! Panel gotowy.", "success")
                 return redirect(url_for('ksDash'))
             else:
-                flash(f"Cześć {user.imie}! Zaraz Cię wpuścimy...", "success")
+                powitanie = f"Cześć {user.imie}! Zaraz Cię wpuścimy..."
+                if user.uproszczony: powitanie = f"Cześć {user.imie}! Witaj w uproszczonym panelu."
+                flash(powitanie, "success")
                 return redirect(url_for('dashboard_page'))
         
         flash("Błędna nazwa użytkownika lub hasło.", "danger")
@@ -90,7 +101,8 @@ def auth_process():
                 nazwisko=request.form.get("nazwisko"), 
                 username=username, 
                 password=password,
-                role='user' 
+                role='user',
+                uproszczony=False
             )
             db.session.add(new_user)
             db.session.commit()
@@ -116,6 +128,16 @@ def add_attendance():
             flash("Nieprawidłowa data!", "danger")
             return redirect(url_for('dashboard_page'))
 
+        istniejaca = Attendance.query.filter_by(
+            user_id=session['user_id'], 
+            data_sluzby=wybrana_data, 
+            godzina=godzina
+        ).first()
+
+        if istniejaca:
+            flash("Nie możesz służyć w dwóch miejscach naraz! Masz już zgłoszoną służbę w ten dzień o tej samej godzinie.", "danger")
+            return redirect(url_for('dashboard_page'))
+
         nowa = Attendance(
             user_id=session['user_id'],
             data_sluzby=wybrana_data,
@@ -128,7 +150,7 @@ def add_attendance():
         flash("Obecność zapisana!", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"Wystąpił błąd: {e}", "danger")
+        flash("Wystąpił błąd podczas dodawania wpisu.", "danger")
 
     return redirect(url_for('dashboard_page'))
 
@@ -152,6 +174,7 @@ def edit_user(id):
     u.username = request.form.get('username')
     u.password = request.form.get('password')
     u.role = request.form.get('role') 
+    u.uproszczony = True if request.form.get('uproszczony') == 'on' else False
     
     try:
         db.session.commit()
@@ -252,7 +275,9 @@ def add_schedule():
     db.session.add(nowy_dyzur)
     db.session.commit()
     flash("Dodano dyżur do planu!", "success")
-    return redirect(request.referrer)
+    if session.get('user_role') == 'ksiądz':
+        return redirect(url_for('ksDash'))
+    return redirect(url_for('admin_page'))
 
 @app.route('/admin/delete_schedule/<int:id>')
 def delete_schedule(id):
@@ -262,7 +287,9 @@ def delete_schedule(id):
         db.session.delete(dyzur)
         db.session.commit()
         flash("Usunięto dyżur z planu.", "success")
-    return redirect(request.referrer)
+    if session.get('user_role') == 'ksiądz':
+        return redirect(url_for('ksDash'))
+    return redirect(url_for('admin_page'))
 
 @app.route('/admin')
 def admin_page():
@@ -275,11 +302,20 @@ def admin_page():
     all_announcements = Announcement.query.order_by(Announcement.data_wystawienia.desc()).all()
     schedules = db.session.query(Schedule, Users).join(Users, Schedule.user_id == Users.id).all()
     
-    plan_tygodnia = {'Poniedziałek': [], 'Wtorek': [], 'Środa': [], 'Czwartek': [], 'Piątek': [], 'Sobota': [], 'Niedziela': []}
+    plan_tygodnia = {'Poniedziałek': {}, 'Wtorek': {}, 'Środa': {}, 'Czwartek': {}, 'Piątek': {}, 'Sobota': {}, 'Niedziela': {}}
+    plan_liczniki = {}
+
     for sch, u in schedules:
-        plan_tygodnia[sch.dzien_tygodnia].append({'id': sch.id, 'user': u, 'godzina': sch.godzina})
+        dzien = sch.dzien_tygodnia
+        godzina = sch.godzina
+        if godzina not in plan_tygodnia[dzien]:
+            plan_tygodnia[dzien][godzina] = []
+        plan_tygodnia[dzien][godzina].append({'id': sch.id, 'user': u})
+        
     for dzien in plan_tygodnia:
-        plan_tygodnia[dzien] = sorted(plan_tygodnia[dzien], key=lambda x: x['godzina'])
+        plan_tygodnia[dzien] = dict(sorted(plan_tygodnia[dzien].items()))
+        count = sum(len(servers) for servers in plan_tygodnia[dzien].values())
+        plan_liczniki[dzien] = count
     
     user_atts_map = {u.id: [] for u in all_users}
     for att, usr in all_attendance:
@@ -299,10 +335,11 @@ def admin_page():
             'imie': u.imie,
             'nazwisko': u.nazwisko,
             'full_name': f"{u.imie} {u.nazwisko}",
+            'uproszczony': u.uproszczony,
             'total': total, 'morning': morning, 'evening': evening, 'other': other
         })
     
-    return render_template("admin.html", attendances=all_attendance, users=all_users, announcements=all_announcements, stats=user_stats, plan=plan_tygodnia)
+    return render_template("admin.html", attendances=all_attendance, users=all_users, announcements=all_announcements, stats=user_stats, plan=plan_tygodnia, liczniki=plan_liczniki)
 
 @app.route('/admin/delete_bulk_users', methods=['POST'])
 def delete_bulk_users():
@@ -349,11 +386,20 @@ def ksDash():
     all_announcements = Announcement.query.order_by(Announcement.data_wystawienia.desc()).all()
     schedules = db.session.query(Schedule, Users).join(Users, Schedule.user_id == Users.id).all()
     
-    plan_tygodnia = {'Poniedziałek': [], 'Wtorek': [], 'Środa': [], 'Czwartek': [], 'Piątek': [], 'Sobota': [], 'Niedziela': []}
+    plan_tygodnia = {'Poniedziałek': {}, 'Wtorek': {}, 'Środa': {}, 'Czwartek': {}, 'Piątek': {}, 'Sobota': {}, 'Niedziela': {}}
+    plan_liczniki = {}
+
     for sch, u in schedules:
-        plan_tygodnia[sch.dzien_tygodnia].append({'id': sch.id, 'user': u, 'godzina': sch.godzina})
+        dzien = sch.dzien_tygodnia
+        godzina = sch.godzina
+        if godzina not in plan_tygodnia[dzien]:
+            plan_tygodnia[dzien][godzina] = []
+        plan_tygodnia[dzien][godzina].append({'id': sch.id, 'user': u})
+        
     for dzien in plan_tygodnia:
-        plan_tygodnia[dzien] = sorted(plan_tygodnia[dzien], key=lambda x: x['godzina'])
+        plan_tygodnia[dzien] = dict(sorted(plan_tygodnia[dzien].items()))
+        count = sum(len(servers) for servers in plan_tygodnia[dzien].values())
+        plan_liczniki[dzien] = count
     
     user_atts_map = {u.id: [] for u in all_users}
     for att, usr in all_attendance:
@@ -376,7 +422,7 @@ def ksDash():
             'total': total, 'morning': morning, 'evening': evening, 'other': other
         })
 
-    return render_template('ks.html', attendances=all_attendance, users=all_users, announcements=all_announcements, stats=user_stats, plan=plan_tygodnia)
+    return render_template('ks.html', attendances=all_attendance, users=all_users, announcements=all_announcements, stats=user_stats, plan=plan_tygodnia, liczniki=plan_liczniki)
 
 @app.route('/dashboard_view')
 def dashboard_page():
@@ -386,12 +432,54 @@ def dashboard_page():
     min_date = max(dzisiaj - timedelta(days=1), date(2026, 4, 12))
     user_attendances = Attendance.query.filter_by(user_id=session['user_id']).order_by(Attendance.data_sluzby.desc()).all()
 
-    return render_template('dashboard.html', 
-                           user=session.get('username'), 
-                           announcements=announcements,
-                           today=dzisiaj.strftime('%Y-%m-%d'), 
-                           min_date=min_date.strftime('%Y-%m-%d'),
-                           attendances=user_attendances)
+    schedules = db.session.query(Schedule, Users).join(Users, Schedule.user_id == Users.id).all()
+    
+    plan_tygodnia = {'Poniedziałek': {}, 'Wtorek': {}, 'Środa': {}, 'Czwartek': {}, 'Piątek': {}, 'Sobota': {}, 'Niedziela': {}}
+    plan_liczniki = {}
+    moje_dyzury = []
+    
+    for sch, u in schedules:
+        dzien = sch.dzien_tygodnia
+        godzina = sch.godzina
+        
+        if godzina not in plan_tygodnia[dzien]:
+            plan_tygodnia[dzien][godzina] = []
+        
+        plan_tygodnia[dzien][godzina].append({'id': sch.id, 'user': u})
+        
+        if u.id == session['user_id']:
+            moje_dyzury.append({'dzien': sch.dzien_tygodnia, 'godzina': sch.godzina})
+            
+    for dzien in plan_tygodnia:
+        plan_tygodnia[dzien] = dict(sorted(plan_tygodnia[dzien].items()))
+        count = sum(len(servers) for servers in plan_tygodnia[dzien].values())
+        plan_liczniki[dzien] = count
+        
+    dni_tygodnia_kolejnosc = {'Poniedziałek': 1, 'Wtorek': 2, 'Środa': 3, 'Czwartek': 4, 'Piątek': 5, 'Sobota': 6, 'Niedziela': 7}
+    moje_dyzury = sorted(moje_dyzury, key=lambda x: (dni_tygodnia_kolejnosc.get(x['dzien'], 8), x['godzina']))
+
+    jest_uproszczony = session.get('uproszczony', False)
+
+    if jest_uproszczony:
+        return render_template('dash_uproszczony.html', 
+                               user=session.get('username'), 
+                               announcements=announcements,
+                               min_date=min_date.strftime('%Y-%m-%d'),
+                               today=dzisiaj.strftime('%Y-%m-%d'),
+                               attendances=user_attendances,
+                               plan=plan_tygodnia,
+                               liczniki=plan_liczniki,
+                               moje_dyzury=moje_dyzury)
+    else:
+        return render_template('dashboard.html', 
+                               user=session.get('username'), 
+                               announcements=announcements,
+                               today=dzisiaj.strftime('%Y-%m-%d'), 
+                               min_date=min_date.strftime('%Y-%m-%d'),
+                               attendances=user_attendances,
+                               plan=plan_tygodnia,
+                               liczniki=plan_liczniki,
+                               moje_dyzury=moje_dyzury)
 
 @app.route('/delete_my_attendance/<int:id>')
 def delete_my_attendance(id):
@@ -430,6 +518,17 @@ def edit_my_attendance(id):
 
         if wybrana_data > dzisiaj or wybrana_data < max(wczoraj, hard_limit):
             flash("Nieprawidłowa data!", "danger")
+            return redirect(url_for('dashboard_page'))
+
+        istniejaca = Attendance.query.filter(
+            Attendance.user_id == session['user_id'], 
+            Attendance.data_sluzby == wybrana_data, 
+            Attendance.godzina == godzina,
+            Attendance.id != id
+        ).first()
+
+        if istniejaca:
+            flash("Masz już zgłoszoną inną służbę o tej godzinie!", "danger")
             return redirect(url_for('dashboard_page'))
 
         entry.data_sluzby = wybrana_data
@@ -500,6 +599,42 @@ def export_raport():
     
     output.seek(0)
     nazwa_pliku = f"Raport_Ministranci_{date.today().strftime('%Y-%m-%d')}.xlsx"
+    return send_file(output, download_name=nazwa_pliku, as_attachment=True)
+
+
+@app.route('/export_schedule')
+def export_schedule():
+    if 'user_id' not in session: 
+        flash("Musisz być zalogowany, aby pobrać plan.", "danger")
+        return redirect(url_for('login_page'))
+
+    schedules = db.session.query(Schedule, Users).join(Users, Schedule.user_id == Users.id).all()
+    
+    data = []
+    dni_kolejnosc = {'Poniedziałek': 1, 'Wtorek': 2, 'Środa': 3, 'Czwartek': 4, 'Piątek': 5, 'Sobota': 6, 'Niedziela': 7}
+    
+    for sch, u in schedules:
+        data.append({
+            'Dzień Tygodnia': sch.dzien_tygodnia,
+            'Kolejność': dni_kolejnosc.get(sch.dzien_tygodnia, 8),
+            'Godzina': sch.godzina,
+            'Imię i Nazwisko': f"{u.imie} {u.nazwisko}",
+            'Pseudonim (Login)': u.username
+        })
+
+    df = pd.DataFrame(data)
+    if not df.empty:
+        df = df.sort_values(by=['Kolejność', 'Godzina'])
+        df = df.drop(columns=['Kolejność'])
+    else:
+        df = pd.DataFrame(columns=['Dzień Tygodnia', 'Godzina', 'Imię i Nazwisko', 'Pseudonim (Login)'])
+
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Plan_Sluzb')
+    
+    output.seek(0)
+    nazwa_pliku = f"Plan_Sluzb_{date.today().strftime('%Y-%m-%d')}.xlsx"
     return send_file(output, download_name=nazwa_pliku, as_attachment=True)
 
 with app.app_context(): 

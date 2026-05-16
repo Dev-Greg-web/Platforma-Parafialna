@@ -11,6 +11,8 @@ class Users(db.Model):
     username = db.Column(db.String(50), nullable=False, unique=True)
     password = db.Column(db.String(100), nullable=False)
     role = db.Column(db.String(20), default='user')
+    # NOWE: Flaga trybu uproszczonego
+    uproszczony = db.Column(db.Boolean, default=False)
 
 class Attendance(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -26,7 +28,6 @@ class Announcement(db.Model):
     tresc = db.Column(db.String(500), nullable=False)
     data_wystawienia = db.Column(db.DateTime, default=datetime.now)
 
-# TEGO BRAKOWAŁO:
 class Schedule(db.Model):
     __tablename__ = "schedule"
     id = db.Column(db.Integer, primary_key=True)
