@@ -64,7 +64,7 @@
         <h2 class="text-2xl font-bold text-center mb-6 dark:text-white">Twoje 3 ostatnie służby:</h2>
         {% if attendances %}
             <div class="flex flex-col gap-3">
-            {% for att in attendances[:3] %}
+            {% for att in attendances|slice(3) %}
                 <div class="bg-gray-100 dark:bg-darkbg p-4 rounded-xl flex justify-between items-center">
                     <span class="font-bold dark:text-white text-lg">{{ att.data_sluzby.strftime('%d.%m.%Y') }} o {{ att.godzina }}</span>
                     <a href="{{ url_for('delete_my_attendance', id=att.id) }}" class="text-danger font-bold text-2xl px-3 py-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition" onclick="return confirm('Czy na pewno chcesz usunąć tę służbę?')">&times;</a>
