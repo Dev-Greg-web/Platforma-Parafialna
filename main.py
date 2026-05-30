@@ -19,6 +19,12 @@ if db_url.startswith("postgres://"):
 app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 app.permanent_session_lifetime = timedelta(minutes=15)
 
+# Zabezpieczenie połączenia przed zamykaniem przez Neona
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_recycle": 280,
+    "pool_pre_ping": True
+}
+
 db.init_app(app)
 
 @app.after_request
