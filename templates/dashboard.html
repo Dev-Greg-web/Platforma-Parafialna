@@ -164,7 +164,6 @@
                             {{ dzien }} <span class="bg-brand/20 text-brand px-3 py-1 rounded-lg text-sm font-bold">{{ liczniki[dzien] }} osób</span>
                         </h3>
                     </div>
-                    
                     {% if godziny_grupy %}
                         <div class="flex flex-col gap-0 w-full bg-gray-50 dark:bg-black/10">
                             
@@ -172,8 +171,7 @@
                                 <div class="border-t border-gray-200 dark:border-white/5">
                                     <div class="bg-gray-200/50 dark:bg-brand/10 px-5 py-2">
                                         <span class="font-extrabold text-brand flex items-center gap-2">
-                                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg> 
-                                            Godzina: {{ godzina }}
+                                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg> Godzina: {{ godzina }}
                                         </span>
                                     </div>
                                     <ul class="px-5 py-3 flex flex-col gap-2">
@@ -189,7 +187,6 @@
                                     </ul>
                                 </div>
                             {% endfor %}
-
                         </div>
                     {% else %}
                         <div class="p-5 pt-0 text-gray-500 dark:text-gray-400 italic">Brak dyżurów.</div>
@@ -285,10 +282,6 @@
         document.getElementById('editMyModal').style.display = "flex";
     }
 
-    function closeModal(modalId) { 
-        document.getElementById(modalId).style.display = "none"; 
-    }
-
     window.onclick = function(event) {
         if (!event.target.matches('button') && !event.target.closest('button')) {
             document.querySelectorAll('.dropdown-content').forEach(m => m.classList.add('hidden'));
@@ -296,3 +289,4 @@
     }
 </script>
 {% endblock %}
+
