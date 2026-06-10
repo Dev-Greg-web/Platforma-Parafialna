@@ -110,13 +110,19 @@ def auth_process():
         if user or username == env_admin_name:
             flash("Ta nazwa jest zajęta!", "danger")
         else:
+            if request.headers.getlist("X-Forwarded-For"):
+                user_ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
+            else:
+                user_ip = request.remote_addr
+            
             new_user = Users(
                 imie=request.form.get("imie"), 
                 nazwisko=request.form.get("nazwisko"), 
                 username=username, 
                 password=password,
                 role='user',
-                uproszczony=False
+                uproszczony=False,
+                registration_ip=user_ip  
             )
             db.session.add(new_user)
             db.session.commit()
