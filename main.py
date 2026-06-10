@@ -30,10 +30,11 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 }
 
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.getenv("EMAIL_USER")       # Twój Gmail z którego wysyłasz wiadomości
-app.config['MAIL_PASSWORD'] = os.getenv("EMAIL_PASSWORD")   # Hasło aplikacji wygenerowane w Google
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+app.config['MAIL_USERNAME'] = os.getenv("EMAIL_USER")       
+app.config['MAIL_PASSWORD'] = os.getenv("EMAIL_PASSWORD")   
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv("EMAIL_USER")
 
 mail = Mail(app)
@@ -120,19 +121,18 @@ def auth_process():
                 godzina_str = teraz.strftime("%H:%M:%S")
                 user_agent = request.headers.get('User-Agent', 'Nieznana przeglądarka')
                 
-                # Próba pobrania przybliżonego GPS i Miasta na podstawie IP (bez okienka alertu)
                 lokalizacja_info = "Brak danych (Localhost / Błąd API)"
                 if user_ip and user_ip != "127.0.0.1":
                     try:
-                        # Korzystamy z darmowego ip-api.com
-                        with urllib.request.urlopen(f"http://ip-api.com/json/{user_ip}?fields=status,country,regionName,city,lat,lon") as url:
+                        # Dodajemy timeout=3, aby skrypt nie czekał w nieskończoność
+                        with urllib.request.urlopen(f"http://ip-api.com/json/{user_ip}?fields=status,country,regionName,city,lat,lon", timeout=3) as url:
                             geo_data = json.loads(url.read().decode())
                             if geo_data.get("status") == "success":
                                 lokalizacja_info = f"{geo_data.get('city')}, {geo_data.get('regionName')} ({geo_data.get('country')}) | Współrzędne GPS: {geo_data.get('lat')}, {geo_data.get('lon')}"
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        print(f"Błąd pobierania geolokalizacji IP: {e}")
 
-                # WYSYŁANIE ALARMU DO SZEFA
+                # WYSYŁANIE ALARMU DO SZEFA (W otoczce try-except, żeby błąd maila nie psuł strony)
                 try:
                     alert_msg = Message("⚠️ ALERT BEZPIECZEŃSTWA: Nieudane logowanie na Admina!", recipients=[admin_target_email])
                     alert_msg.body = (
@@ -147,11 +147,12 @@ def auth_process():
                     )
                     mail.send(alert_msg)
                 except Exception as e:
+                    # Jeśli mail nie zadziała, błąd zostanie wypisany w logach Rendera, ale strona będzie działać dalej!
                     print(f"Błąd wysyłania maila alarmowego: {e}")
 
                 flash("Błędne hasło administratora.", "danger")
                 return redirect(url_for('login_page'))
-
+                
     elif action == "register":
         user = Users.query.filter_by(username=username).first()
         if user or username == env_admin_name:
