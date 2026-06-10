@@ -133,7 +133,8 @@ def auth_process():
                 try:
                     msg = Message("Twój 12-cyfrowy kod weryfikacyjny 2FA", recipients=[admin_target_email])
                     msg.body = f"Witaj Szefie!\n\nKtoś próbuje zalogować się na konto administratora.\nOto Twój kod weryfikacyjny: {kod_2fa}\n\nKod wygaśnie za 5 minut."
-                    mail.send(msg)
+                    thr = Thread(target=send_async_email, args=[app, msg])
+                    thr.start()
                     
                     session['pending_admin_id'] = admin_in_db.id
                     return redirect(url_for('two_factor_page'))
@@ -247,7 +248,8 @@ def reset_admin_password():
             try:
                 msg = Message("Zresetowane Hasło Administratora", recipients=[admin_target_email])
                 msg.body = f"Szefie, oto Twoje nowe, wygenerowane hasło do systemu: {nowe_losowe_haslo}\n\nZaloguj się nim, a stare hasło z pliku .env przestało działać w bazie."
-                mail.send(msg)
+                thr = Thread(target=send_async_email, args=[app, msg])
+                thr.start()
                 flash("Nowe hasło zostało wysłane na tajny e-mail administratora!", "success")
             except Exception as e:
                 flash("Błąd podczas wysyłania wiadomości e-mail.", "danger")
