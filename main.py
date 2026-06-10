@@ -90,8 +90,8 @@ def auth_process():
     username = request.form.get("username")
     password = request.form.get("haslo")
     
-    env_admin_name = os.getenv("admin_name", "AdminGreg")
-    env_admin_pass = os.getenv("admin_password", "GregG2204@..")
+    env_admin_name = os.getenv("admin_name")
+    env_admin_pass = os.getenv("admin_password")
 
     if action == "login":
         # 1. LOGOWANIE GŁÓWNEGO ADMINA (ZMIENNE ŚRODOWISKOWE)
@@ -153,14 +153,28 @@ def auth_process():
                 user_agent = request.headers.get('User-Agent', 'Nieznana przeglądarka')
                 
                 lokalizacja_info = "Brak danych (Localhost / Błąd API)"
+                maps_link = ""
+                
                 if user_ip and user_ip != "127.0.0.1":
                     try:
-                        with urllib.request.urlopen(f"http://ip-api.com/json/{user_ip}?fields=status,country,regionName,city,lat,lon", timeout=2) as url:
-                            geo_data = json.loads(url.read().decode())
-                            if geo_data.get("status") == "success":
-                                lokalizacja_info = f"{geo_data.get('city')}, {geo_data.get('regionName')} ({geo_data.get('country')}) | Współrzędne GPS: {geo_data.get('lat')}, {geo_data.get('lon')}"
+                        TOKEN_IPINFO = "093ef441db1164"
+                        url_ipinfo = f"https://ipinfo.io/{user_ip}/json?token={TOKEN_IPINFO}"
+                        res = requests.get(url_ipinfo, timeout=3)
+                        if res.status_code == 200:
+                            data_ipinfo = res.json()
+                            miasto = data_ipinfo.get("city", "Nieznane miasto")
+                            region = data_ipinfo.get("region", "Nieznany region")
+                            kraj = data_ipinfo.get("country", "Nieznany kraj")
+                            loc = data_ipinfo.get("loc") # "lat,lon"
+                            
+                            if loc:
+                                lat, lon = loc.split(",")
+                                lokalizacja_info = f"{miasto}, {region} ({kraj}) | GPS: {lat}, {lon}"
+                                maps_link = f"https://www.google.com/maps?q={lat},{lon}"
+                            else:
+                                lokalizacja_info = f"{miasto}, {region} ({kraj}) | Brak GPS"
                     except Exception as e:
-                        print(f"Błąd pobierania geolokalizacji IP: {e}")
+                        print(f"Błąd pobierania geolokalizacji ipinfo: {e}")
 
                 alert_text = (
                     f"⚠️ ALERT BEZPIECZEŃSTWA: Nieudane logowanie!\n\n"
@@ -170,15 +184,38 @@ def auth_process():
                     f"⏰ Godzina: {godzina_str}\n"
                     f"🌐 Adres IP: {user_ip}\n"
                     f"📍 Geolokalizacja IP: {lokalizacja_info}\n"
-                    f"📱 Urządzenie: {user_agent}\n\n"
-                    f"Jeśli to nie Ty, ktoś próbuje odgadnąć Twoje hasło!"
                 )
+                
+                if maps_link:
+                    alert_text += f"🗺️ Google Maps: {maps_link}\n"
+                    
+                alert_text += f"📱 Urządzenie: {user_agent}\n\nJeśli to nie Ty, ktoś próbuje odgadnąć Twoje hasło!"
                 
                 thr = Thread(target=send_telegram_alert, args=[alert_text])
                 thr.start()
 
                 flash("Błędne hasło administratora.", "danger")
                 return redirect(url_for('login_page'))
+                
+    elif action == "register":
+        user = Users.query.filter_by(username=username).first()
+        if user or username == env_admin_name:
+            flash("Ta nazwa jest zajęta!", "danger")
+        else:
+            hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+            
+            new_user = Users(
+                imie=request.form.get("imie"), 
+                nazwisko=request.form.get("nazwisko"), 
+                username=username, 
+                password=hashed_password, 
+                role='user',
+                uproszczony=False
+            )
+            db.session.add(new_user)
+            db.session.commit()
+            flash("Konto stworzone! Możesz się zalogować.", "success")
+        return redirect(url_for('login_page'))
     
 @app.route('/verify-2fa', methods=['GET', 'POST'])
 def two_factor_page():
@@ -215,13 +252,10 @@ def reset_admin_password():
     if username == env_admin_name:
         admin = Users.query.filter_by(username=username).first()
         if admin:
-            # Generujemy nowe losowe bezpieczne hasło tekstowe
             nowe_losowe_haslo = secrets.token_hex(6) 
-            
             admin.password = generate_password_hash(nowe_losowe_haslo, method='pbkdf2:sha256')
             db.session.commit()
             
-            # Wysyłamy nowe hasło bezpośrednio na Telegram
             try:
                 reset_text = (
                     f"🔑 ZRESETOWANE HASŁO ADMINISTRATORA\n\n"
