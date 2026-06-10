@@ -10,9 +10,8 @@ import io
 from werkzeug.security import generate_password_hash, check_password_hash
 import urllib.request
 import json
-from flask_mail import Mail, Message
 from threading import Thread
-
+import requests
 load_dotenv()
 
 app = Flask(__name__)
@@ -30,20 +29,6 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True
 }
 
-
-app.config['MAIL_SERVER'] = 'smtp.sendgrid.net'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USE_SSL'] = False
-app.config['MAIL_USERNAME'] = 'apikey'  # To pole MUSI mieć dokładnie taki tekst: 'apikey'
-app.config['MAIL_PASSWORD'] = os.getenv("EMAIL_PASSWORD")  # Tutaj Render wstawi Twój klucz SG....
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv("EMAIL_USER")   # Twój zweryfikowany mail
-app.config['MAIL_SUPPRESS_SEND'] = False
-app.config['FAIL_SILENTLY'] = True
-
-
-
-mail = Mail(app)
 db.init_app(app)
 
 @app.template_filter('datetimeformat')
@@ -82,12 +67,14 @@ def send_telegram_alert(tresc):
     token = os.getenv("TELEGRAM_TOKEN")
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
     if not token or not chat_id:
+        print("--- [Telegram] Brak tokenu lub Chat ID w zmiennych środowiskowych! ---")
         return
         
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = {"chat_id": chat_id, "text": tresc}
     try:
-        requests.post(url, json=payload, timeout=5)
+        response = requests.post(url, json=payload, timeout=5)
+        print(f"--- [Telegram] Status wysyłki: {response.status_code} ---")
     except Exception as e:
         print(f"Błąd powiadomienia Telegram: {e}")
 
@@ -105,7 +92,6 @@ def auth_process():
     
     env_admin_name = os.getenv("admin_name")
     env_admin_pass = os.getenv("admin_password") # Zostawiamy w .env jako surowe zabezpieczenie pierwszego startu
-    admin_target_email = os.getenv("ADMIN_TARGET_EMAIL") # Docelowy mail admina na kody i resety
 
     if action == "login":
         # 1. LOGOWANIE GLOWNEGO ADMINA
@@ -140,15 +126,22 @@ def auth_process():
                 db.session.commit()
 
                 try:
-                    msg = Message("Twój 12-cyfrowy kod weryfikacyjny 2FA", recipients=[admin_target_email])
-                    msg.body = f"Witaj Szefie!\n\nKtoś próbuje zalogować się na konto administratora.\nOto Twój kod weryfikacyjny: {kod_2fa}\n\nKod wygaśnie za 5 minut."
-                    thr = Thread(target=send_async_email, args=[app, msg])
+                    # Generujemy tekst powiadomienia 2FA na Telegram
+                    telegram_2fa_text = (
+                        f"🔒 KOD WERYFIKACYJNY 2FA\n\n"
+                        f"Witaj Szefie!\n"
+                        f"Ktoś próbuje zalogować się na konto administratora.\n"
+                        f"Oto Twój kod: {kod_2fa}\n\n"
+                        f"Kod wygaśnie za 5 minut."
+                    )
+                    
+                    thr = Thread(target=send_telegram_alert, args=[telegram_2fa_text])
                     thr.start()
                     
                     session['pending_admin_id'] = admin_in_db.id
                     return redirect(url_for('two_factor_page'))
                 except Exception as e:
-                    flash("Błąd wysyłania maila z kodem 2FA. Sprawdź konfigurację.", "danger")
+                    flash("Błąd przygotowania kodu 2FA.", "danger")
                     return redirect(url_for('login_page'))
             else:
                 # !!! NIEUDANA PRÓBA LOGOWANIA NA KONTO ADMINA !!!
@@ -167,39 +160,38 @@ def auth_process():
                     except Exception as e:
                         print(f"Błąd pobierania geolokalizacji IP: {e}")
 
-                # TWORZYMY WIADOMOŚĆ
-                alert_msg = Message("⚠️ ALERT BEZPIECZEŃSTWA: Nieudane logowanie na Admina!", recipients=[admin_target_email])
-                alert_msg.body = (
-                    f"UWAGA SZEFIE!\n\n"
+                # TWORZYMY TEKST ALERTU NA TELEGRAM
+                alert_text = (
+                    f"⚠️ ALERT BEZPIECZEŃSTWA: Nieudane logowanie!\n\n"
+                    f"UWAGA SZEFIE!\n"
                     f"Wykryto NIEUDANĄ próbę zalogowania na konto głównego administratora ({username}).\n\n"
                     f"📅 Data: {data_str}\n"
                     f"⏰ Godzina: {godzina_str}\n"
                     f"🌐 Adres IP: {user_ip}\n"
                     f"📍 Geolokalizacja IP: {lokalizacja_info}\n"
-                    f"📱 Urządzenie/Przeglądarka: {user_agent}\n\n"
+                    f"📱 Urządzenie: {user_agent}\n\n"
                     f"Jeśli to nie Ty, ktoś próbuje odgadnąć Twoje hasło!"
                 )
                 
-                # URUCHAMIAMY WYSYŁANIE W TLE - STRONA NIE BĘDZIE CZEKAĆ NA SERWER GMAILA!
-                thr = Thread(target=send_async_email, args=[app, alert_msg])
+                # URUCHAMIAMY WYSYŁANIE W TLE PRZEZ TELEGRAM
+                thr = Thread(target=send_telegram_alert, args=[alert_text])
                 thr.start()
 
                 flash("Błędne hasło administratora.", "danger")
                 return redirect(url_for('login_page'))
-
+                
     elif action == "register":
         user = Users.query.filter_by(username=username).first()
         if user or username == env_admin_name:
             flash("Ta nazwa jest zajęta!", "danger")
         else:
-            # Haszujemy hasło nowego użytkownika przed zapisem do bazy!
             hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
             
             new_user = Users(
                 imie=request.form.get("imie"), 
                 nazwisko=request.form.get("nazwisko"), 
                 username=username, 
-                password=hashed_password, # Zapisujemy bezpieczny nieodwracalny hasz
+                password=hashed_password, 
                 role='user',
                 uproszczony=False
             )
@@ -218,12 +210,10 @@ def two_factor_page():
         admin = Users.query.get(session['pending_admin_id'])
         
         if admin and admin.two_factor_code == wpisany_kod and datetime.now() < admin.two_factor_expiry:
-            # Czyszczenie danych 2FA po sukcesie
             admin.two_factor_code = None
             admin.two_factor_expiry = None
             db.session.commit()
             
-            # Pełne zalogowanie sesji
             session.clear()
             session['user_id'] = admin.id
             session['username'] = admin.username
@@ -241,31 +231,33 @@ def two_factor_page():
 def reset_admin_password():
     username = request.form.get("username")
     env_admin_name = os.getenv("admin_name")
-    admin_target_email = os.getenv("ADMIN_TARGET_EMAIL")
     
     if username == env_admin_name:
         admin = Users.query.filter_by(username=username).first()
         if admin:
             # Generujemy nowe losowe bezpieczne hasło tekstowe
-            nowe_losowe_haslo = secrets.token_hex(6) # Wygeneruje 12-znakowe losowe hasło tekstowe
+            nowe_losowe_haslo = secrets.token_hex(6) 
             
-            # Zapisujemy bezpieczny HASZ nowego hasła w bazie
             admin.password = generate_password_hash(nowe_losowe_haslo, method='pbkdf2:sha256')
             db.session.commit()
             
-            # Wysyłamy SUROWE nowe hasło tylko na wskazany e-mail admina
+            # Wysyłamy nowe hasło bezpośrednio na Telegram
             try:
-                msg = Message("Zresetowane Hasło Administratora", recipients=[admin_target_email])
-                msg.body = f"Szefie, oto Twoje nowe, wygenerowane hasło do systemu: {nowe_losowe_haslo}\n\nZaloguj się nim, a stare hasło z pliku .env przestało działać w bazie."
-                thr = Thread(target=send_async_email, args=[app, msg])
+                reset_text = (
+                    f"🔑 ZRESETOWANE HASŁO ADMINISTRATORA\n\n"
+                    f"Szefie, oto Twoje nowe, wygenerowane hasło do systemu:\n"
+                    f"`{nowe_losowe_haslo}`\n\n"
+                    f"Zaloguj się nim. Stare hasło z pliku .env przestało działać."
+                )
+                thr = Thread(target=send_telegram_alert, args=[reset_text])
                 thr.start()
-                flash("Nowe hasło zostało wysłane na tajny e-mail administratora!", "success")
+                flash("Nowe hasło zostało wysłane na Twój Telegram!", "success")
             except Exception as e:
-                flash("Błąd podczas wysyłania wiadomości e-mail.", "danger")
+                flash("Błąd podczas wysyłania powiadomienia resetującego.", "danger")
         else:
             flash("Admin nie został jeszcze zainicjalizowany w bazie danych.", "danger")
     else:
-        flash("Ta opcja szybkiego resetu e-mail jest dostępna wyłącznie dla Konta Głównego Admina.", "danger")
+        flash("Ta opcja szybkiego resetu jest dostępna wyłącznie dla Konta Głównego Admina.", "danger")
         
     return redirect(url_for('login_page'))
 
@@ -847,5 +839,19 @@ def export_schedule():
 with app.app_context(): 
     db.create_all()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+        
+        # AUTOMATYCZNA MIGRACJA HASŁA ADMINA
+        env_admin_name = os.getenv("admin_name")
+        env_admin_pass = os.getenv("admin_password")
+        
+        if env_admin_name:
+            admin_user = Users.query.filter_by(username=env_admin_name).first()
+            if admin_user and not admin_user.password.startswith('pbkdf2:'):
+                admin_user.password = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
+                db.session.commit()
+                print(f"Sukces: Hasło administratora {env_admin_name} zostało bezpiecznie zahaszowane w bazie!")
+
     app.run(debug=True)
