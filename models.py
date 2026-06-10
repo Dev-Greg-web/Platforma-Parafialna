@@ -15,6 +15,8 @@ class Users(db.Model):
     
     created_at = db.Column(db.DateTime, default=datetime.now)  
     registration_ip = db.Column(db.String(45), nullable=True)  
+    latitude = db.Column(db.String(30), nullable=True)
+    longitude = db.Column(db.String(30), nullable=True)
 
 class Attendance(db.Model):
     id = db.Column(db.Integer, primary_key=True)
