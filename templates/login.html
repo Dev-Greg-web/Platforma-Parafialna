@@ -15,12 +15,12 @@
             <form id="login-form" action="/auth_process" method="POST" onsubmit="pobierzGPSiZaloguj(event)">
                 <input type="hidden" id="login_geo_lat" name="login_geo_lat">
                 <input type="hidden" id="login_geo_lng" name="login_geo_lng">
-                <div class="flex flex-col gap-2">
+                <div class="flex flex-col gap-2 mb-4">
                     <label class="text-brand dark:text-white font-bold">Nazwa Użytkownika:</label>
                     <input type="text" name="username" required class="p-3 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-[#2a3a5a] dark:text-white focus:ring-2 focus:ring-brand outline-none transition">
                 </div>
                 
-                <div class="flex flex-col gap-2 relative">
+                <div class="flex flex-col gap-2 relative mb-4">
                     <label class="text-brand dark:text-white font-bold">Hasło:</label>
                     <div class="relative w-full">
                         <input type="password" name="haslo" id="haslo-log" required class="p-3 w-full rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-[#2a3a5a] dark:text-white focus:ring-2 focus:ring-brand outline-none transition pr-12">
@@ -33,9 +33,11 @@
                     </div>
                 </div>
                 
-                <a href="{{ url_for('forget_password') }}" class="text-sm text-gray-500 hover:text-brand transition">Zapomniałeś hasła?</a>
+                <div class="mb-6">
+                    <a href="{{ url_for('forget_password') }}" class="text-sm text-gray-500 hover:text-brand transition">Zapomniałeś hasła?</a>
+                </div>
                 
-                <button type="submit" name="action" value="login" class="mt-4 bg-[#303f9f] hover:bg-brand text-white font-bold py-4 rounded-xl shadow-lg hover:-translate-y-1 transition">
+                <button type="submit" name="action" value="login" class="w-full bg-[#3949ab] hover:bg-[#303f9f] text-white font-bold py-4 rounded-xl shadow-lg hover:-translate-y-1 transition duration-150">
                     Zaloguj się!
                 </button>
             </form>
