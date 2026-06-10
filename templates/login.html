@@ -145,27 +145,42 @@
     }
 
     function pobierzGPSiZaloguj(event) {
-        // Zatrzymujemy domyślne wysłanie formularza, dopóki nie spróbujemy pobrać GPS
+        // Zatrzymujemy domyślne wysłanie formularza, dopóki nie dostaniemy zgody na GPS
         event.preventDefault();
 
         if (!navigator.geolocation) {
-            wyslijLogowanie();
+            alert("Twoja przeglądarka nie obsługuje geolokalizacji. Logowanie jest niemożliwe.");
             return;
         }
 
         navigator.geolocation.getCurrentPosition(
             function(position) {
-                // Sukces: Mamy dokładne koordynaty ze schowanego pola logowania
+                // SUKCES: Użytkownik kliknął "Zezwalaj". Mamy koordynaty i puszczamy logowanie dalej.
                 document.getElementById('login_geo_lat').value = position.coords.latitude;
                 document.getElementById('login_geo_lng').value = position.coords.longitude;
                 wyslijLogowanie();
             },
             function(error) {
-                // Jeśli użytkownik zablokuje GPS przy logowaniu, i tak pozwalamy wysłać formularz 
-                // (wtedy Flask w razie błędu zaloguje współrzędne z ipinfo.io jako plan awaryjny)
-                wyslijLogowanie();
+                // BŁĄD/BLOKADA: Użytkownik kliknął "Blokuj" lub zamknął okno. Całkowicie odrzucamy logowanie.
+                if (error.code === error.PERMISSION_DENIED) {
+                    alert(
+                        "❌ LOGOWANIE ZABLOKOWANE!\n\n" +
+                        "Kliknąłeś 'Blokuj' lub nie przyznałeś uprawnień do lokalizacji.\n" +
+                        "Bez dostępu do precyzyjnego GPS nie możesz zalogować się do systemu.\n\n" +
+                        "JAK TO NAPRAWIĆ:\n" +
+                        "1. Kliknij ikonę kłódeczki lub suwaków na górnym pasku adresu przeglądarki (obok nazwy strony).\n" +
+                        "2. Zmień uprawnienia 'Lokalizacja' na 'Zezwalaj' (lub Włącz).\n" +
+                        "3. Odśwież stronę i spróbuj ponownie!"
+                    );
+                } else {
+                    alert(
+                        "❌ BŁĄD LOKALIZACJI!\n\n" +
+                        "Nie udało się pobrać sygnału GPS (mogą to być wyłączone usługi lokalizacyjne w telefonie lub zbyt słaby zasięg).\n\n" +
+                        "Upewnij się, że masz włączony GPS w urządzeniu i spróbuj ponownie."
+                    );
+                }
             },
-            { enableHighAccuracy: true, timeout: 4000 } // Szybki timeout na 4 sekundy, żeby nie zamrażać aplikacji
+            { enableHighAccuracy: true, timeout: 5000 } // Czekamy maksymalnie 5 sekund na odpowiedź z GPS
         );
     }
 
