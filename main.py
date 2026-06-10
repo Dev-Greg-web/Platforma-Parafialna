@@ -75,12 +75,18 @@ def format_datetime_pl(dt):
 
 app.jinja_env.filters['datetime_pl'] = format_datetime_pl
 
-def send_async_email(app, msg):
-    with app.app_context():
-        try:
-            mail.send(msg)
-        except Exception as e:
-            print(f"--- [BŁĄD SMTP W TLE] Nie udało się wysłać maila: {e} ---")
+def send_telegram_alert(tresc):
+    token = os.getenv("TELEGRAM_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    if not token or not chat_id:
+        return
+        
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = {"chat_id": chat_id, "text": tresc}
+    try:
+        requests.post(url, json=payload, timeout=5)
+    except Exception as e:
+        print(f"Błąd powiadomienia Telegram: {e}")
 
 @app.route('/')
 def login_page():
