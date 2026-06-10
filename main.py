@@ -90,20 +90,20 @@ def auth_process():
     username = request.form.get("username")
     password = request.form.get("haslo")
     
-    env_admin_name = os.getenv("admin_name")
-    env_admin_pass = os.getenv("admin_password") # Zostawiamy w .env jako surowe zabezpieczenie pierwszego startu
+    env_admin_name = os.getenv("admin_name", "AdminGreg")
+    env_admin_pass = os.getenv("admin_password", "GregG2204@..")
 
     if action == "login":
-        # 1. LOGOWANIE GLOWNEGO ADMINA
+        # 1. LOGOWANIE GŁÓWNEGO ADMINA (ZMIENNE ŚRODOWISKOWE)
         if username == env_admin_name:
-            admin_in_db = Users.query.filter_by(username=username).first()
-            
             # Pobieranie IP z uwzględnieniem proxy Rendera
             if request.headers.getlist("X-Forwarded-For"):
                 user_ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
             else:
                 user_ip = request.remote_addr
 
+            # Szukamy admina w bazie lub tworzymy go, jeśli go nie ma
+            admin_in_db = Users.query.filter_by(username=username).first()
             if not admin_in_db:
                 hashed_admin_pass = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
                 admin_in_db = Users(
@@ -117,16 +117,18 @@ def auth_process():
                 db.session.add(admin_in_db)
                 db.session.commit()
 
-            # SPRAWDZAMY HASŁO
-            if check_password_hash(admin_in_db.password, password):
-                # Kod 2FA (jeśli hasło jest poprawne)
+            # ZALEŻNIE OD TEGO CO WPISAŁEŚ, SPRAWDZAMY Z HASŁEM W .ENV (Zawsze aktualne!)
+            if password == env_admin_pass:
+                # Jeśli hasło pasuje, na wszelki wypadek aktualizujemy hasz w bazie
+                admin_in_db.password = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
+                
+                # Generujemy kod 2FA
                 kod_2fa = ''.join([str(secrets.randbelow(10)) for _ in range(12)])
                 admin_in_db.two_factor_code = kod_2fa
                 admin_in_db.two_factor_expiry = datetime.now() + timedelta(minutes=5)
                 db.session.commit()
 
                 try:
-                    # Generujemy tekst powiadomienia 2FA na Telegram
                     telegram_2fa_text = (
                         f"🔒 KOD WERYFIKACYJNY 2FA\n\n"
                         f"Witaj Szefie!\n"
@@ -144,7 +146,7 @@ def auth_process():
                     flash("Błąd przygotowania kodu 2FA.", "danger")
                     return redirect(url_for('login_page'))
             else:
-                # !!! NIEUDANA PRÓBA LOGOWANIA NA KONTO ADMINA !!!
+                # !!! NIEUDANA PRÓBA LOGOWANIA !!!
                 teraz = datetime.now()
                 data_str = teraz.strftime("%d-%m-%Y")
                 godzina_str = teraz.strftime("%H:%M:%S")
@@ -160,7 +162,6 @@ def auth_process():
                     except Exception as e:
                         print(f"Błąd pobierania geolokalizacji IP: {e}")
 
-                # TWORZYMY TEKST ALERTU NA TELEGRAM
                 alert_text = (
                     f"⚠️ ALERT BEZPIECZEŃSTWA: Nieudane logowanie!\n\n"
                     f"UWAGA SZEFIE!\n"
@@ -173,32 +174,11 @@ def auth_process():
                     f"Jeśli to nie Ty, ktoś próbuje odgadnąć Twoje hasło!"
                 )
                 
-                # URUCHAMIAMY WYSYŁANIE W TLE PRZEZ TELEGRAM
                 thr = Thread(target=send_telegram_alert, args=[alert_text])
                 thr.start()
 
                 flash("Błędne hasło administratora.", "danger")
                 return redirect(url_for('login_page'))
-                
-    elif action == "register":
-        user = Users.query.filter_by(username=username).first()
-        if user or username == env_admin_name:
-            flash("Ta nazwa jest zajęta!", "danger")
-        else:
-            hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-            
-            new_user = Users(
-                imie=request.form.get("imie"), 
-                nazwisko=request.form.get("nazwisko"), 
-                username=username, 
-                password=hashed_password, 
-                role='user',
-                uproszczony=False
-            )
-            db.session.add(new_user)
-            db.session.commit()
-            flash("Konto stworzone! Możesz się zalogować.", "success")
-        return redirect(url_for('login_page'))
     
 @app.route('/verify-2fa', methods=['GET', 'POST'])
 def two_factor_page():
