@@ -11,6 +11,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import urllib.request
 import json
 from flask_mail import Mail, Message
+from threading import Thread
 
 load_dotenv()
 
@@ -36,16 +37,34 @@ app.config['MAIL_USE_SSL'] = True
 app.config['MAIL_USERNAME'] = os.getenv("EMAIL_USER")       
 app.config['MAIL_PASSWORD'] = os.getenv("EMAIL_PASSWORD")   
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv("EMAIL_USER")
+app.config['MAIL_SUPPRESS_SEND'] = False  # Upewnij się, że wysyła w tle
+app.config['FAIL_SILENTLY'] = True        # Nie crashuj aplikacji przy błędach SMTP
 
 mail = Mail(app)
 db.init_app(app)
 
+@app.template_filter('datetimeformat')
+def datetimeformat(value, format='%Y-%m-%d %H:%M'):
+    if value is None:
+        return ""
+    return value.strftime(format)
+
+@app.template_filter('dateformat')
+def dateformat(value, format='%Y-%m-%d'):
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        try:
+            value = datetime.strptime(value, '%Y-%m-%d').date()
+        except ValueError:
+            return value
+    return value.strftime(format)
+
 @app.after_request
 def add_header(response):
-    if 'text/html' in response.content_type:
-        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-        response.headers['Pragma'] = 'no-cache'
-        response.headers['Expires'] = '-1'
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
     return response
 
 def format_datetime_pl(dt):
@@ -55,6 +74,13 @@ def format_datetime_pl(dt):
     return f"{dni[dt.weekday()]} {dt.day}.{dt.month} o {godz_min}"
 
 app.jinja_env.filters['datetime_pl'] = format_datetime_pl
+
+def send_async_email(app, msg):
+    with app.app_context():
+        try:
+            mail.send(msg)
+        except Exception as e:
+            print(f"--- [BŁĄD SMTP W TLE] Nie udało się wysłać maila: {e} ---")
 
 @app.route('/')
 def login_page():
@@ -124,31 +150,29 @@ def auth_process():
                 lokalizacja_info = "Brak danych (Localhost / Błąd API)"
                 if user_ip and user_ip != "127.0.0.1":
                     try:
-                        # Dodajemy timeout=3, aby skrypt nie czekał w nieskończoność
-                        with urllib.request.urlopen(f"http://ip-api.com/json/{user_ip}?fields=status,country,regionName,city,lat,lon", timeout=3) as url:
+                        with urllib.request.urlopen(f"http://ip-api.com/json/{user_ip}?fields=status,country,regionName,city,lat,lon", timeout=2) as url:
                             geo_data = json.loads(url.read().decode())
                             if geo_data.get("status") == "success":
                                 lokalizacja_info = f"{geo_data.get('city')}, {geo_data.get('regionName')} ({geo_data.get('country')}) | Współrzędne GPS: {geo_data.get('lat')}, {geo_data.get('lon')}"
                     except Exception as e:
                         print(f"Błąd pobierania geolokalizacji IP: {e}")
 
-                # WYSYŁANIE ALARMU DO SZEFA (W otoczce try-except, żeby błąd maila nie psuł strony)
-                try:
-                    alert_msg = Message("⚠️ ALERT BEZPIECZEŃSTWA: Nieudane logowanie na Admina!", recipients=[admin_target_email])
-                    alert_msg.body = (
-                        f"UWAGA SZEFIE!\n\n"
-                        f"Wykryto NIEUDANĄ próbę zalogowania na konto głównego administratora ({username}).\n\n"
-                        f"📅 Data: {data_str}\n"
-                        f"⏰ Godzina: {godzina_str}\n"
-                        f"🌐 Adres IP: {user_ip}\n"
-                        f"📍 Geolokalizacja IP: {lokalizacja_info}\n"
-                        f"📱 Urządzenie/Przeglądarka: {user_agent}\n\n"
-                        f"Jeśli to nie Ty, ktoś próbuje odgadnąć Twoje hasło!"
-                    )
-                    mail.send(alert_msg)
-                except Exception as e:
-                    # Jeśli mail nie zadziała, błąd zostanie wypisany w logach Rendera, ale strona będzie działać dalej!
-                    print(f"Błąd wysyłania maila alarmowego: {e}")
+                # TWORZYMY WIADOMOŚĆ
+                alert_msg = Message("⚠️ ALERT BEZPIECZEŃSTWA: Nieudane logowanie na Admina!", recipients=[admin_target_email])
+                alert_msg.body = (
+                    f"UWAGA SZEFIE!\n\n"
+                    f"Wykryto NIEUDANĄ próbę zalogowania na konto głównego administratora ({username}).\n\n"
+                    f"📅 Data: {data_str}\n"
+                    f"⏰ Godzina: {godzina_str}\n"
+                    f"🌐 Adres IP: {user_ip}\n"
+                    f"📍 Geolokalizacja IP: {lokalizacja_info}\n"
+                    f"📱 Urządzenie/Przeglądarka: {user_agent}\n\n"
+                    f"Jeśli to nie Ty, ktoś próbuje odgadnąć Twoje hasło!"
+                )
+                
+                # URUCHAMIAMY WYSYŁANIE W TLE - STRONA NIE BĘDZIE CZEKAĆ NA SERWER GMAILA!
+                thr = Thread(target=send_async_email, args=[app, alert_msg])
+                thr.start()
 
                 flash("Błędne hasło administratora.", "danger")
                 return redirect(url_for('login_page'))
