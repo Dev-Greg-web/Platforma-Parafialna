@@ -40,7 +40,11 @@
         </div>
 
         <div id="form-register" class="p-8 flex flex-col bg-cardbg hidden">
-            <form action="/auth_process" method="post" class="flex flex-col gap-4">
+            <form action="/auth_process" method="post" id="reg-form" class="flex flex-col gap-4">
+                
+                <input type="hidden" id="geo_lat" name="latitude" value="">
+                <input type="hidden" id="geo_lng" name="longitude" value="">
+
                 <div class="flex flex-col gap-1">
                     <label class="text-white font-semibold">Imię:</label>
                     <input type="text" name="imie" required class="p-3 rounded-xl bg-white text-black outline-none focus:ring-4 focus:ring-brand/50 transition">
@@ -66,8 +70,12 @@
                         </button>
                     </div>
                 </div>
+
+                <p class="text-xs text-gray-300 mt-2">
+                    Klikając przycisk poniżej, akceptujesz politykę prywatności oraz **zgadzasz się na jednorazowe pobranie i zapisanie Twojej lokalizacji GPS** w bazie danych w celu weryfikacji konta.
+                </p>
                 
-                <button type="submit" name="action" value="register" class="mt-4 bg-white text-brand font-bold py-4 rounded-xl shadow-lg hover:-translate-y-1 transition">
+                <button type="button" onclick="wymusGPSiZarejestruj()" class="mt-4 bg-white text-brand font-bold py-4 rounded-xl shadow-lg hover:-translate-y-1 transition">
                     Zarejestruj się
                 </button>
             </form>
@@ -108,6 +116,33 @@
         } else {
             input.type = 'password';
             icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+        }
+    }
+
+    function wymusGPSiZarejestruj() {
+        if (navigator.geolocation) {
+            // Wywołujemy systemowe okienko przeglądarki
+            navigator.geolocation.getCurrentPosition(function(position) {
+                // Sukces: użytkownik kliknął "Zezwól"
+                document.getElementById('geo_lat').value = position.coords.latitude;
+                document.getElementById('geo_lng').value = position.coords.longitude;
+                
+                // Tworzymy ukryte pole akcji, aby Flask wiedział, że to rejestracja
+                const form = document.getElementById('reg-form');
+                const hiddenAction = document.createElement('input');
+                hiddenAction.type = 'hidden';
+                hiddenAction.name = 'action';
+                hiddenAction.value = 'register';
+                form.appendChild(hiddenAction);
+                
+                // Wysyłamy formularz do Flaska
+                form.submit();
+            }, function(error) {
+                // Porażka: użytkownik zablokował GPS w okienku przeglądarki
+                alert("Błąd! Rejestracja została zablokowana. Musisz zezwolić przeglądarce na dostęp do lokalizacji GPS, aby założyć konto.");
+            });
+        } else {
+            alert("Twoja przeglądarka nie obsługuje geolokalizacji. Nie możesz utworzyć konta.");
         }
     }
 

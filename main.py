@@ -115,6 +115,10 @@ def auth_process():
             else:
                 user_ip = request.remote_addr
             
+            # NOWE: Pobieramy przesłane z formularza współrzędne GPS
+            lat = request.form.get("latitude")
+            lng = request.form.get("longitude")
+            
             new_user = Users(
                 imie=request.form.get("imie"), 
                 nazwisko=request.form.get("nazwisko"), 
@@ -122,7 +126,9 @@ def auth_process():
                 password=password,
                 role='user',
                 uproszczony=False,
-                registration_ip=user_ip  
+                registration_ip=user_ip,
+                latitude=lat,  
+                longitude=lng 
             )
             db.session.add(new_user)
             db.session.commit()
