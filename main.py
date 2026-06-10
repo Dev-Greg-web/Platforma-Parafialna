@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 import pandas as pd
 import io
 from werkzeug.security import generate_password_hash, check_password_hash
+import urllib.request
+import json
 from flask_mail import Mail, Message
 
 load_dotenv()
@@ -70,11 +72,16 @@ def auth_process():
     admin_target_email = os.getenv("ADMIN_TARGET_EMAIL") # Docelowy mail admina na kody i resety
 
     if action == "login":
-        # 1. SPRAWDZAMY CZY TO PROBA LOGOWANIA NA KONTO GLOWNE ADMINA
+        # 1. LOGOWANIE GLOWNEGO ADMINA
         if username == env_admin_name:
             admin_in_db = Users.query.filter_by(username=username).first()
             
-            # Pierwsze uruchomienie systemu: jeśli admina nie ma w bazie, tworzymy go z zahaszowanym hasłem!
+            # Pobieranie IP z uwzględnieniem proxy Rendera
+            if request.headers.getlist("X-Forwarded-For"):
+                user_ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
+            else:
+                user_ip = request.remote_addr
+
             if not admin_in_db:
                 hashed_admin_pass = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
                 admin_in_db = Users(
@@ -88,55 +95,62 @@ def auth_process():
                 db.session.add(admin_in_db)
                 db.session.commit()
 
-            # Weryfikacja zahaszowanego hasła admina
+            # SPRAWDZAMY HASŁO
             if check_password_hash(admin_in_db.password, password):
-                # GENEROWANIE 12-CYFROWEGO KODU 2FA
+                # Kod 2FA (jeśli hasło jest poprawne)
                 kod_2fa = ''.join([str(secrets.randbelow(10)) for _ in range(12)])
-                
                 admin_in_db.two_factor_code = kod_2fa
-                admin_in_db.two_factor_expiry = datetime.now() + timedelta(minutes=5) # ważny 5 minut
+                admin_in_db.two_factor_expiry = datetime.now() + timedelta(minutes=5)
                 db.session.commit()
 
-                # WYSYŁANIE KODU NA GMAIL ADMINA
                 try:
                     msg = Message("Twój 12-cyfrowy kod weryfikacyjny 2FA", recipients=[admin_target_email])
                     msg.body = f"Witaj Szefie!\n\nKtoś próbuje zalogować się na konto administratora.\nOto Twój kod weryfikacyjny: {kod_2fa}\n\nKod wygaśnie za 5 minut."
                     mail.send(msg)
                     
-                    # Zapisujemy tymczasowo id admina w sesji na czas przejścia 2FA
                     session['pending_admin_id'] = admin_in_db.id
                     return redirect(url_for('two_factor_page'))
                 except Exception as e:
-                    flash("Błąd wysyłania maila z kodem 2FA. Sprawdź konfigurację serwera.", "danger")
+                    flash("Błąd wysyłania maila z kodem 2FA. Sprawdź konfigurację.", "danger")
                     return redirect(url_for('login_page'))
             else:
+                # !!! NIEUDANA PRÓBA LOGOWANIA NA KONTO ADMINA !!!
+                teraz = datetime.now()
+                data_str = teraz.strftime("%d-%m-%Y")
+                godzina_str = teraz.strftime("%H:%M:%S")
+                user_agent = request.headers.get('User-Agent', 'Nieznana przeglądarka')
+                
+                # Próba pobrania przybliżonego GPS i Miasta na podstawie IP (bez okienka alertu)
+                lokalizacja_info = "Brak danych (Localhost / Błąd API)"
+                if user_ip and user_ip != "127.0.0.1":
+                    try:
+                        # Korzystamy z darmowego ip-api.com
+                        with urllib.request.urlopen(f"http://ip-api.com/json/{user_ip}?fields=status,country,regionName,city,lat,lon") as url:
+                            geo_data = json.loads(url.read().decode())
+                            if geo_data.get("status") == "success":
+                                lokalizacja_info = f"{geo_data.get('city')}, {geo_data.get('regionName')} ({geo_data.get('country')}) | Współrzędne GPS: {geo_data.get('lat')}, {geo_data.get('lon')}"
+                    except Exception:
+                        pass
+
+                # WYSYŁANIE ALARMU DO SZEFA
+                try:
+                    alert_msg = Message("⚠️ ALERT BEZPIECZEŃSTWA: Nieudane logowanie na Admina!", recipients=[admin_target_email])
+                    alert_msg.body = (
+                        f"UWAGA SZEFIE!\n\n"
+                        f"Wykryto NIEUDANĄ próbę zalogowania na konto głównego administratora ({username}).\n\n"
+                        f"📅 Data: {data_str}\n"
+                        f"⏰ Godzina: {godzina_str}\n"
+                        f"🌐 Adres IP: {user_ip}\n"
+                        f"📍 Geolokalizacja IP: {lokalizacja_info}\n"
+                        f"📱 Urządzenie/Przeglądarka: {user_agent}\n\n"
+                        f"Jeśli to nie Ty, ktoś próbuje odgadnąć Twoje hasło!"
+                    )
+                    mail.send(alert_msg)
+                except Exception as e:
+                    print(f"Błąd wysyłania maila alarmowego: {e}")
+
                 flash("Błędne hasło administratora.", "danger")
                 return redirect(url_for('login_page'))
-
-        # 2. LOGOWANIE ZWYKŁYCH MINISTRANTÓW (Dla nich też wdrażamy haszowanie przy logowaniu)
-        user = Users.query.filter_by(username=username).first()
-        if user:
-            # Obsługa starych kont tekstowych (tymczasowa weryfikacja) lub bezpieczne sprawdzanie haszu
-            is_valid = (user.password == password) if not user.password.startswith('pbkdf2:') else check_password_hash(user.password, password)
-            
-            if is_valid:
-                session.clear()
-                session['user_id'] = user.id
-                session['username'] = user.username
-                session['user_role'] = user.role
-                session['uproszczony'] = user.uproszczony
-                
-                if user.role == 'admin': # Na wypadek gdyby inny admin był w bazie
-                    return redirect(url_for('admin_page'))
-                elif user.role == 'ksiądz':
-                    flash("Szczęść Boże! Panel gotowy.", "success")
-                    return redirect(url_for('ksDash'))
-                else:
-                    flash(f"Cześć {user.imie}!", "success")
-                    return redirect(url_for('dashboard_page'))
-        
-        flash("Błędna nazwa użytkownika lub hasło.", "danger")
-        return redirect(url_for('login_page'))
 
     elif action == "register":
         user = Users.query.filter_by(username=username).first()
