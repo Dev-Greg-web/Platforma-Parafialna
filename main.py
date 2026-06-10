@@ -30,14 +30,17 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True
 }
 
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+
+app.config['MAIL_SERVER'] = 'smtp.sendgrid.net'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.getenv("EMAIL_USER")       # Twój Gmail z którego wysyłasz wiadomości
-app.config['MAIL_PASSWORD'] = os.getenv("EMAIL_PASSWORD")   # Hasło aplikacji wygenerowane w Google
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv("EMAIL_USER")
-app.config['MAIL_SUPPRESS_SEND'] = False  # Upewnij się, że wysyła w tle
-app.config['FAIL_SILENTLY'] = True        # Nie crashuj aplikacji przy błędach SMTP
+app.config['MAIL_USE_SSL'] = False
+app.config['MAIL_USERNAME'] = 'apikey'  # To pole MUSI mieć dokładnie taki tekst: 'apikey'
+app.config['MAIL_PASSWORD'] = os.getenv("EMAIL_PASSWORD")  # Tutaj Render wstawi Twój klucz SG....
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv("EMAIL_USER")   # Twój zweryfikowany mail
+app.config['MAIL_SUPPRESS_SEND'] = False
+app.config['FAIL_SILENTLY'] = True
+
 
 
 mail = Mail(app)
@@ -133,7 +136,8 @@ def auth_process():
                 try:
                     msg = Message("Twój 12-cyfrowy kod weryfikacyjny 2FA", recipients=[admin_target_email])
                     msg.body = f"Witaj Szefie!\n\nKtoś próbuje zalogować się na konto administratora.\nOto Twój kod weryfikacyjny: {kod_2fa}\n\nKod wygaśnie za 5 minut."
-                    mail.send(msg)
+                    thr = Thread(target=send_async_email, args=[app, msg])
+                    thr.start()
                     
                     session['pending_admin_id'] = admin_in_db.id
                     return redirect(url_for('two_factor_page'))
@@ -247,7 +251,8 @@ def reset_admin_password():
             try:
                 msg = Message("Zresetowane Hasło Administratora", recipients=[admin_target_email])
                 msg.body = f"Szefie, oto Twoje nowe, wygenerowane hasło do systemu: {nowe_losowe_haslo}\n\nZaloguj się nim, a stare hasło z pliku .env przestało działać w bazie."
-                mail.send(msg)
+                thr = Thread(target=send_async_email, args=[app, msg])
+                thr.start()
                 flash("Nowe hasło zostało wysłane na tajny e-mail administratora!", "success")
             except Exception as e:
                 flash("Błąd podczas wysyłania wiadomości e-mail.", "danger")

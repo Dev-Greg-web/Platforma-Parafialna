@@ -9,7 +9,7 @@ class Users(db.Model):
     imie = db.Column(db.String(50), nullable=False)
     nazwisko = db.Column(db.String(50), nullable=False)
     username = db.Column(db.String(50), nullable=False, unique=True)
-    password = db.Column(db.String(255), nullable=False) # Zwiększamy do 255 znaków na hasz berypt!
+    password = db.Column(db.String(255), nullable=False)  
     role = db.Column(db.String(20), default='user')
     uproszczony = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
