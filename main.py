@@ -30,15 +30,15 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True
 }
 
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 465
-app.config['MAIL_USE_TLS'] = False
-app.config['MAIL_USE_SSL'] = True
-app.config['MAIL_USERNAME'] = os.getenv("EMAIL_USER")       
-app.config['MAIL_PASSWORD'] = os.getenv("EMAIL_PASSWORD")   
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv("EMAIL_USER")
-app.config['MAIL_SUPPRESS_SEND'] = False  # Upewnij się, że wysyła w tle
-app.config['FAIL_SILENTLY'] = True        # Nie crashuj aplikacji przy błędach SMTP
+app.config['MAIL_SERVER'] = 'smtp.sendgrid.net'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
+app.config['MAIL_USERNAME'] = 'apikey'  # To pole MUSI mieć dokładnie taki tekst: 'apikey'
+app.config['MAIL_PASSWORD'] = os.getenv("EMAIL_PASSWORD")  # Tutaj Render wstawi Twój klucz SG....
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv("EMAIL_USER")   # Twój zweryfikowany mail
+app.config['MAIL_SUPPRESS_SEND'] = False
+app.config['FAIL_SILENTLY'] = True
 
 mail = Mail(app)
 db.init_app(app)
