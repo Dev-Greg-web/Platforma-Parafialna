@@ -811,5 +811,20 @@ def export_schedule():
 with app.app_context(): 
     db.create_all()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+        
+        # AUTOMATYCZNA MIGRACJA HASŁA ADMINA
+        env_admin_name = os.getenv("admin_name")
+        env_admin_pass = os.getenv("admin_password")
+        
+        if env_admin_name:
+            admin_user = Users.query.filter_by(username=env_admin_name).first()
+            # Jeśli admin istnieje i jego hasło NIE zaczyna się od prefiksu haszującego
+            if admin_user and not admin_user.password.startswith('pbkdf2:'):
+                admin_user.password = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
+                db.session.commit()
+                print(f"Sukces: Hasło administratora {env_admin_name} zostało bezpiecznie zahaszowane w bazie!")
+
     app.run(debug=True)
