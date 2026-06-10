@@ -9,14 +9,17 @@ class Users(db.Model):
     imie = db.Column(db.String(50), nullable=False)
     nazwisko = db.Column(db.String(50), nullable=False)
     username = db.Column(db.String(50), nullable=False, unique=True)
-    password = db.Column(db.String(100), nullable=False)
+    password = db.Column(db.String(255), nullable=False) # Zwiększamy do 255 znaków na hasz berypt!
     role = db.Column(db.String(20), default='user')
     uproszczony = db.Column(db.Boolean, default=False)
-    
-    created_at = db.Column(db.DateTime, default=datetime.now)  
-    registration_ip = db.Column(db.String(45), nullable=True)  
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    registration_ip = db.Column(db.String(45), nullable=True)
     latitude = db.Column(db.String(30), nullable=True)
     longitude = db.Column(db.String(30), nullable=True)
+    
+    # NOWE KOLUMNY DLA 2FA:
+    two_factor_code = db.Column(db.String(12), nullable=True)
+    two_factor_expiry = db.Column(db.DateTime, nullable=True)
 
 class Attendance(db.Model):
     id = db.Column(db.Integer, primary_key=True)
