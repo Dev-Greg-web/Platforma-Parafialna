@@ -90,19 +90,16 @@ def auth_process():
     username = request.form.get("username")
     password = request.form.get("haslo")
     
-    env_admin_name = os.getenv("admin_name")
-    env_admin_pass = os.getenv("admin_password")
+    env_admin_name = os.getenv("admin_name", "AdminGreg")
+    env_admin_pass = os.getenv("admin_password", "GregG2204@..")
 
     if action == "login":
-        # 1. LOGOWANIE GŁÓWNEGO ADMINA (ZMIENNE ŚRODOWISKOWE)
         if username == env_admin_name:
-            # Pobieranie IP z uwzględnieniem proxy Rendera
             if request.headers.getlist("X-Forwarded-For"):
                 user_ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
             else:
                 user_ip = request.remote_addr
 
-            # Szukamy admina w bazie lub tworzymy go, jeśli go nie ma
             admin_in_db = Users.query.filter_by(username=username).first()
             if not admin_in_db:
                 hashed_admin_pass = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
@@ -117,12 +114,8 @@ def auth_process():
                 db.session.add(admin_in_db)
                 db.session.commit()
 
-            # ZALEŻNIE OD TEGO CO WPISAŁEŚ, SPRAWDZAMY Z HASŁEM W .ENV (Zawsze aktualne!)
             if password == env_admin_pass:
-                # Jeśli hasło pasuje, na wszelki wypadek aktualizujemy hasz w bazie
                 admin_in_db.password = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
-                
-                # Generujemy kod 2FA
                 kod_2fa = ''.join([str(secrets.randbelow(10)) for _ in range(12)])
                 admin_in_db.two_factor_code = kod_2fa
                 admin_in_db.two_factor_expiry = datetime.now() + timedelta(minutes=5)
@@ -136,7 +129,6 @@ def auth_process():
                         f"Oto Twój kod: {kod_2fa}\n\n"
                         f"Kod wygaśnie za 5 minut."
                     )
-                    
                     thr = Thread(target=send_telegram_alert, args=[telegram_2fa_text])
                     thr.start()
                     
@@ -146,16 +138,40 @@ def auth_process():
                     flash("Błąd przygotowania kodu 2FA.", "danger")
                     return redirect(url_for('login_page'))
             else:
-                # !!! NIEUDANA PRÓBA LOGOWANIA !!!
+                # !!! NIEUDANA PRÓBA LOGOWANIA ADMINA !!!
                 teraz = datetime.now()
                 data_str = teraz.strftime("%d-%m-%Y")
                 godzina_str = teraz.strftime("%H:%M:%S")
                 user_agent = request.headers.get('User-Agent', 'Nieznana przeglądarka')
                 
+                # Odbieramy koordynaty GPS z formularza logowania HTML
+                browser_lat = request.form.get("login_geo_lat")
+                browser_lng = request.form.get("login_geo_lng")
+                
                 lokalizacja_info = "Brak danych (Localhost / Błąd API)"
                 maps_link = ""
                 
-                if user_ip and user_ip != "127.0.0.1":
+                # SPRAWDZAMY: Czy przeglądarka przesłała nam dokładny GPS?
+                if browser_lat and browser_lng and browser_lat.strip() != "" and browser_lng.strip() != "":
+                    lat = browser_lat.strip()
+                    lon = browser_lng.strip()
+                    
+                    # Pobieramy też miasto z ipinfo.io jako uzupełnienie opisu, żeby ładnie wyglądało
+                    miasto_fallback = "Nieznane"
+                    try:
+                        TOKEN_IPINFO = "093ef441db1164"
+                        url_ipinfo = f"https://ipinfo.io/{user_ip}/json?token={TOKEN_IPINFO}"
+                        res = requests.get(url_ipinfo, timeout=2)
+                        if res.status_code == 200:
+                            miasto_fallback = res.json().get("city", "Nieznane")
+                    except:
+                        pass
+                        
+                    lokalizacja_info = f"Dokładny GPS z Urządzenia! (Okolice: {miasto_fallback}) | GPS: {lat}, {lon}"
+                    maps_link = f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
+                
+                # PLAN AWARYJNY: Brak precyzyjnego GPS -> używamy ipinfo.io bazując na IP
+                elif user_ip and user_ip != "127.0.0.1":
                     try:
                         TOKEN_IPINFO = "093ef441db1164"
                         url_ipinfo = f"https://ipinfo.io/{user_ip}/json?token={TOKEN_IPINFO}"
@@ -165,12 +181,12 @@ def auth_process():
                             miasto = data_ipinfo.get("city", "Nieznane miasto")
                             region = data_ipinfo.get("region", "Nieznany region")
                             kraj = data_ipinfo.get("country", "Nieznany kraj")
-                            loc = data_ipinfo.get("loc") # "lat,lon"
+                            loc = data_ipinfo.get("loc")
                             
                             if loc:
                                 lat, lon = loc.split(",")
-                                lokalizacja_info = f"{miasto}, {region} ({kraj}) | GPS: {lat}, {lon}"
-                                maps_link = f"https://www.google.com/maps?q={lat},{lon}"
+                                lokalizacja_info = f"{miasto}, {region} ({kraj}) | Szacowany GPS (IP): {lat}, {lon}"
+                                maps_link = f"https://www.google.com/maps/search/?api=1&query={lat.strip()},{lon.strip()}"
                             else:
                                 lokalizacja_info = f"{miasto}, {region} ({kraj}) | Brak GPS"
                     except Exception as e:
@@ -183,7 +199,7 @@ def auth_process():
                     f"📅 Data: {data_str}\n"
                     f"⏰ Godzina: {godzina_str}\n"
                     f"🌐 Adres IP: {user_ip}\n"
-                    f"📍 Geolokalizacja IP: {lokalizacja_info}\n"
+                    f"📍 Geolokalizacja: {lokalizacja_info}\n"
                 )
                 
                 if maps_link:
@@ -196,6 +212,30 @@ def auth_process():
 
                 flash("Błędne hasło administratora.", "danger")
                 return redirect(url_for('login_page'))
+                
+    elif action == "register":
+        user = Users.query.filter_by(username=username).first()
+        if user or username == env_admin_name:
+            flash("Ta nazwa jest zajęta!", "danger")
+        else:
+            # Rejestracja z opcjonalnym zapisaniem współrzędnych z rejestracji, jeśli chcesz je zapisać w tabeli użytkownika
+            hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+            
+            new_user = Users(
+                imie=request.form.get("imie"), 
+                nazwisko=request.form.get("nazwisko"), 
+                username=username, 
+                password=hashed_password, 
+                role='user',
+                uproszczony=False
+                # Jeśli masz kolumny lat/lng w modelu Users, możesz je tu dopisać, np.:
+                # geo_lat=request.form.get("geo_lat"),
+                # geo_lng=request.form.get("geo_lng")
+            )
+            db.session.add(new_user)
+            db.session.commit()
+            flash("Konto stworzone! Możesz się zalogować.", "success")
+        return redirect(url_for('login_page'))
                 
     elif action == "register":
         user = Users.query.filter_by(username=username).first()
