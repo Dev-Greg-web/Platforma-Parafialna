@@ -11,8 +11,10 @@ class Users(db.Model):
     username = db.Column(db.String(50), nullable=False, unique=True)
     password = db.Column(db.String(100), nullable=False)
     role = db.Column(db.String(20), default='user')
-    # NOWE: Flaga trybu uproszczonego
     uproszczony = db.Column(db.Boolean, default=False)
+    
+    created_at = db.Column(db.DateTime, default=datetime.now)  
+    registration_ip = db.Column(db.String(45), nullable=True)  
 
 class Attendance(db.Model):
     id = db.Column(db.Integer, primary_key=True)
