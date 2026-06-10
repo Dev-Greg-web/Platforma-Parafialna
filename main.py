@@ -3,9 +3,12 @@ from models import Users, Attendance, Announcement, Schedule, db
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, date
 import os
+import secrets  # Do generowania bezpiecznych kodów 2FA i haseł
 from dotenv import load_dotenv
 import pandas as pd
 import io
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_mail import Mail, Message
 
 load_dotenv()
 
@@ -19,12 +22,19 @@ if db_url.startswith("postgres://"):
 app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 app.permanent_session_lifetime = timedelta(minutes=15)
 
-# Zabezpieczenie połączenia przed zamykaniem przez Neona
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 280,
     "pool_pre_ping": True
 }
 
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.getenv("EMAIL_USER")       # Twój Gmail z którego wysyłasz wiadomości
+app.config['MAIL_PASSWORD'] = os.getenv("EMAIL_PASSWORD")   # Hasło aplikacji wygenerowane w Google
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv("EMAIL_USER")
+
+mail = Mail(app)
 db.init_app(app)
 
 @app.after_request
@@ -56,51 +66,74 @@ def auth_process():
     password = request.form.get("haslo")
     
     env_admin_name = os.getenv("admin_name")
-    env_admin_pass = os.getenv("admin_password")
+    env_admin_pass = os.getenv("admin_password") # Zostawiamy w .env jako surowe zabezpieczenie pierwszego startu
+    admin_target_email = os.getenv("ADMIN_TARGET_EMAIL") # Docelowy mail admina na kody i resety
 
     if action == "login":
-        if username == env_admin_name and password == env_admin_pass:
-            session.clear()
+        # 1. SPRAWDZAMY CZY TO PROBA LOGOWANIA NA KONTO GLOWNE ADMINA
+        if username == env_admin_name:
             admin_in_db = Users.query.filter_by(username=username).first()
+            
+            # Pierwsze uruchomienie systemu: jeśli admina nie ma w bazie, tworzymy go z zahaszowanym hasłem!
             if not admin_in_db:
+                hashed_admin_pass = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
                 admin_in_db = Users(
                     imie="Główny", 
                     nazwisko="Szef", 
                     username=username, 
-                    password=password, 
+                    password=hashed_admin_pass, 
                     role='admin', 
                     uproszczony=False
                 )
                 db.session.add(admin_in_db)
                 db.session.commit()
-                
-            session['user_id'] = admin_in_db.id
-            session['username'] = admin_in_db.username
-            session['user_role'] = 'admin'
-            session['uproszczony'] = False
-            flash("Witaj Szefie (Konto Główne .env)! System gotowy.", "success")
-            return redirect(url_for('admin_page'))
 
-        user = Users.query.filter_by(username=username).first()
-        if user and user.password == password:
-            session.clear()
-            session['user_id'] = user.id
-            session['username'] = user.username
-            session['user_role'] = user.role
-            session['uproszczony'] = user.uproszczony
-            
-            if user.role == 'admin':
-                flash("Witaj Szefie! System gotowy.", "success")
-                return redirect(url_for('admin_page'))
-            elif user.role == 'ksiądz':
-                flash("Szczęść Boże! Panel gotowy.", "success")
-                return redirect(url_for('ksDash'))
+            # Weryfikacja zahaszowanego hasła admina
+            if check_password_hash(admin_in_db.password, password):
+                # GENEROWANIE 12-CYFROWEGO KODU 2FA
+                kod_2fa = ''.join([str(secrets.randbelow(10)) for _ in range(12)])
+                
+                admin_in_db.two_factor_code = kod_2fa
+                admin_in_db.two_factor_expiry = datetime.now() + timedelta(minutes=5) # ważny 5 minut
+                db.session.commit()
+
+                # WYSYŁANIE KODU NA GMAIL ADMINA
+                try:
+                    msg = Message("Twój 12-cyfrowy kod weryfikacyjny 2FA", recipients=[admin_target_email])
+                    msg.body = f"Witaj Szefie!\n\nKtoś próbuje zalogować się na konto administratora.\nOto Twój kod weryfikacyjny: {kod_2fa}\n\nKod wygaśnie za 5 minut."
+                    mail.send(msg)
+                    
+                    # Zapisujemy tymczasowo id admina w sesji na czas przejścia 2FA
+                    session['pending_admin_id'] = admin_in_db.id
+                    return redirect(url_for('two_factor_page'))
+                except Exception as e:
+                    flash("Błąd wysyłania maila z kodem 2FA. Sprawdź konfigurację serwera.", "danger")
+                    return redirect(url_for('login_page'))
             else:
-                powitanie = f"Cześć {user.imie}! Zaraz Cię wpuścimy..."
-                if user.uproszczony:
-                    powitanie = f"Cześć {user.imie}! Witaj w uproszczonym panelu."
-                flash(powitanie, "success")
-                return redirect(url_for('dashboard_page'))
+                flash("Błędne hasło administratora.", "danger")
+                return redirect(url_for('login_page'))
+
+        # 2. LOGOWANIE ZWYKŁYCH MINISTRANTÓW (Dla nich też wdrażamy haszowanie przy logowaniu)
+        user = Users.query.filter_by(username=username).first()
+        if user:
+            # Obsługa starych kont tekstowych (tymczasowa weryfikacja) lub bezpieczne sprawdzanie haszu
+            is_valid = (user.password == password) if not user.password.startswith('pbkdf2:') else check_password_hash(user.password, password)
+            
+            if is_valid:
+                session.clear()
+                session['user_id'] = user.id
+                session['username'] = user.username
+                session['user_role'] = user.role
+                session['uproszczony'] = user.uproszczony
+                
+                if user.role == 'admin': # Na wypadek gdyby inny admin był w bazie
+                    return redirect(url_for('admin_page'))
+                elif user.role == 'ksiądz':
+                    flash("Szczęść Boże! Panel gotowy.", "success")
+                    return redirect(url_for('ksDash'))
+                else:
+                    flash(f"Cześć {user.imie}!", "success")
+                    return redirect(url_for('dashboard_page'))
         
         flash("Błędna nazwa użytkownika lub hasło.", "danger")
         return redirect(url_for('login_page'))
@@ -110,30 +143,81 @@ def auth_process():
         if user or username == env_admin_name:
             flash("Ta nazwa jest zajęta!", "danger")
         else:
-            if request.headers.getlist("X-Forwarded-For"):
-                user_ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
-            else:
-                user_ip = request.remote_addr
-            
-            # NOWE: Pobieramy przesłane z formularza współrzędne GPS
-            lat = request.form.get("latitude")
-            lng = request.form.get("longitude")
+            # Haszujemy hasło nowego użytkownika przed zapisem do bazy!
+            hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
             
             new_user = Users(
                 imie=request.form.get("imie"), 
                 nazwisko=request.form.get("nazwisko"), 
                 username=username, 
-                password=password,
+                password=hashed_password, # Zapisujemy bezpieczny nieodwracalny hasz
                 role='user',
-                uproszczony=False,
-                registration_ip=user_ip,
-                latitude=lat,  
-                longitude=lng 
+                uproszczony=False
             )
             db.session.add(new_user)
             db.session.commit()
             flash("Konto stworzone! Możesz się zalogować.", "success")
         return redirect(url_for('login_page'))
+    
+@app.route('/verify-2fa', methods=['GET', 'POST'])
+def two_factor_page():
+    if 'pending_admin_id' not in session:
+        return redirect(url_for('login_page'))
+        
+    if request.method == 'POST':
+        wpisany_kod = request.form.get("kod_2fa").strip()
+        admin = Users.query.get(session['pending_admin_id'])
+        
+        if admin and admin.two_factor_code == wpisany_kod and datetime.now() < admin.two_factor_expiry:
+            # Czyszczenie danych 2FA po sukcesie
+            admin.two_factor_code = None
+            admin.two_factor_expiry = None
+            db.session.commit()
+            
+            # Pełne zalogowanie sesji
+            session.clear()
+            session['user_id'] = admin.id
+            session['username'] = admin.username
+            session['user_role'] = 'admin'
+            session['uproszczony'] = False
+            
+            flash("Autoryzacja 2FA pomyślna. Witaj Szefie!", "success")
+            return redirect(url_for('admin_page'))
+        else:
+            flash("Niepoprawny lub wygasły kod 2FA!", "danger")
+            
+    return render_template('verify_2fa.html')
+
+@app.route('/reset-admin-password', methods=['POST'])
+def reset_admin_password():
+    username = request.form.get("username")
+    env_admin_name = os.getenv("admin_name")
+    admin_target_email = os.getenv("ADMIN_TARGET_EMAIL")
+    
+    if username == env_admin_name:
+        admin = Users.query.filter_by(username=username).first()
+        if admin:
+            # Generujemy nowe losowe bezpieczne hasło tekstowe
+            nowe_losowe_haslo = secrets.token_hex(6) # Wygeneruje 12-znakowe losowe hasło tekstowe
+            
+            # Zapisujemy bezpieczny HASZ nowego hasła w bazie
+            admin.password = generate_password_hash(nowe_losowe_haslo, method='pbkdf2:sha256')
+            db.session.commit()
+            
+            # Wysyłamy SUROWE nowe hasło tylko na wskazany e-mail admina
+            try:
+                msg = Message("Zresetowane Hasło Administratora", recipients=[admin_target_email])
+                msg.body = f"Szefie, oto Twoje nowe, wygenerowane hasło do systemu: {nowe_losowe_haslo}\n\nZaloguj się nim, a stare hasło z pliku .env przestało działać w bazie."
+                mail.send(msg)
+                flash("Nowe hasło zostało wysłane na tajny e-mail administratora!", "success")
+            except Exception as e:
+                flash("Błąd podczas wysyłania wiadomości e-mail.", "danger")
+        else:
+            flash("Admin nie został jeszcze zainicjalizowany w bazie danych.", "danger")
+    else:
+        flash("Ta opcja szybkiego resetu e-mail jest dostępna wyłącznie dla Konta Głównego Admina.", "danger")
+        
+    return redirect(url_for('login_page'))
 
 @app.route('/add_attendance', methods=['POST'])
 def add_attendance():
