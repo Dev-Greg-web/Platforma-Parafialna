@@ -94,7 +94,7 @@ def auth_process():
     env_admin_pass = os.getenv("admin_password", "GregG2204@..")
 
     if action == "login":
-        # 1. LOGOWANIE ADMINISTRATORA (Z 2FA)
+        # 1. LOGOWANIE ADMINISTRATORA (Z 2FA + Weryfikacja Haszu)
         if username == env_admin_name:
             if request.headers.getlist("X-Forwarded-For"):
                 user_ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
@@ -115,8 +115,11 @@ def auth_process():
                 db.session.add(admin_in_db)
                 db.session.commit()
 
-            if password == env_admin_pass:
-                admin_in_db.password = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
+            # Zmiana: Sprawdzamy zahaszowane hasło w bazie lub awaryjnie proste hasło z .env
+            if check_password_hash(admin_in_db.password, password) or password == env_admin_pass:
+                if password == env_admin_pass:
+                    admin_in_db.password = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
+                
                 kod_2fa = ''.join([str(secrets.randbelow(10)) for _ in range(12)])
                 admin_in_db.two_factor_code = kod_2fa
                 admin_in_db.two_factor_expiry = datetime.now() + timedelta(minutes=5)
@@ -139,7 +142,7 @@ def auth_process():
                     flash("Błąd przygotowania kodu 2FA.", "danger")
                     return redirect(url_for('login_page'))
             else:
-                # Blok alertu Telegram (kod bez zmian...)
+                # Blok alertu Telegram przy błędnym haśle admina
                 teraz = datetime.now()
                 data_str = teraz.strftime("%d-%m-%Y")
                 godzina_str = teraz.strftime("%H:%M:%S")
@@ -201,19 +204,19 @@ def auth_process():
                 flash("Błędne hasło administratora.", "danger")
                 return redirect(url_for('login_page'))
         
-        # 2. LOGOWANIE ZWYKŁEGO UŻYTKOWNIKA / KSIĘDZA (Bezpośrednie logowanie)
+        # 2. LOGOWANIE ZWYKŁEGO UŻYTKOWNIKA / KSIĘDZA (Zwykłe porównanie tekstowe)
         else:
             user = Users.query.filter_by(username=username).first()
-            if user and check_password_hash(user.password, password):
+            # Zmiana: Zamiast check_password_hash używamy prostego operatora ==
+            if user and user.password == password:
                 session.clear()
                 session['user_id'] = user.id
                 session['username'] = user.username
-                session['user_role'] = user.role  # dynamicznie pobiera rolę z bazy ('user' lub 'ksiądz')
+                session['user_role'] = user.role  
                 session['uproszczony'] = user.uproszczony
                 
                 flash(f"Witaj {user.imie}! Zalogowano pomyślnie.", "success")
                 
-                # Kierujemy w odpowiednie miejsce zależnie od roli
                 if user.role == 'ksiądz':
                     return redirect(url_for('ksDash'))
                 return redirect(url_for('dashboard_page'))
@@ -222,18 +225,17 @@ def auth_process():
                 return redirect(url_for('login_page'))
                 
     elif action == "register":
-        # Blok rejestracji (kod bez zmian...)
         user = Users.query.filter_by(username=username).first()
         if user or username == env_admin_name:
             flash("Ta nazwa jest zajęta!", "danger")
             return redirect(url_for('login_page'))
         else:
-            hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+            # Zmiana: Rejestracja zapisuje teraz czyste hasło jako tekst w bazie
             new_user = Users(
                 imie=request.form.get("imie"), 
                 nazwisko=request.form.get("nazwisko"), 
                 username=username, 
-                password=hashed_password, 
+                password=password,  # Brak haszowania dla zwykłych użytkowników
                 role='user',
                 uproszczony=False
             )
@@ -244,9 +246,6 @@ def auth_process():
 
     return redirect(url_for('login_page'))
 
-
-
-    
 @app.route('/verify-2fa', methods=['GET', 'POST'])
 def two_factor_page():
     if 'pending_admin_id' not in session:
@@ -371,7 +370,20 @@ def edit_user(id):
     u.imie = request.form.get('imie')
     u.nazwisko = request.form.get('nazwisko')
     u.username = request.form.get('username')
-    u.password = request.form.get('password')
+    
+    nowe_haslo = request.form.get('password')
+    env_admin_name = os.getenv("admin_name", "AdminGreg")
+    
+    # Zmiana: Sprawdzamy czy edytowany użytkownik to główny admin
+    if u.role == 'admin' or u.username == env_admin_name:
+        if nowe_haslo and not nowe_haslo.startswith('pbkdf2:sha256:'):
+            u.password = generate_password_hash(nowe_haslo, method='pbkdf2:sha256')
+        else:
+            u.password = nowe_haslo
+    else:
+        # Dla zwykłych użytkowników zapisujemy czysty tekst
+        u.password = nowe_haslo
+
     u.role = request.form.get('role') 
     u.uproszczony = True if request.form.get('uproszczony') == 'on' else False
     
@@ -844,7 +856,6 @@ def export_raport():
     nazwa_pliku = f"Raport_Ministranci_{date.today().strftime('%Y-%m-%d')}.xlsx"
     return send_file(output, download_name=nazwa_pliku, as_attachment=True)
 
-
 @app.route('/export_schedule')
 def export_schedule():
     if 'user_id' not in session: 
@@ -898,4 +909,5 @@ if __name__ == '__main__':
                 db.session.commit()
                 print(f"Sukces: Hasło administratora {env_admin_name} zostało bezpiecznie zahaszowane w bazie!")
 
+    # Na produkcji zaleca się debug=False, ale zachowałem strukturę Twojego uruchamiania
     app.run(debug=True)
