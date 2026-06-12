@@ -933,6 +933,14 @@ def pobierz_regulamin():
         download_name='regulamin.pdf'
     )
 
+@app.route('/pomoc')
+def pomoc_page():
+    # Sprawdzamy czy użytkownik jest zalogowany (opcjonalnie, jeśli pomoc ma być dostępna dla każdego, usuń te dwie linijki)
+    if 'user_id' not in session and 'user_role' not in session:
+        return redirect(url_for('login_page'))
+        
+    return render_template('pomoc.html')
+
 with app.app_context(): 
     db.create_all()
 
