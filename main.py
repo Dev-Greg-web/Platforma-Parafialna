@@ -110,12 +110,12 @@ def auth_process():
                     username=username, 
                     password=hashed_admin_pass, 
                     role='admin', 
-                    uproszczony=False,
-                    is_approved=True  # Główny admin automatycznie zatwierdzony
+                    uproszczony=False
                 )
                 db.session.add(admin_in_db)
                 db.session.commit()
 
+            # Zmiana: Sprawdzamy zahaszowane hasło w bazie lub awaryjnie proste hasło z .env
             if check_password_hash(admin_in_db.password, password) or password == env_admin_pass:
                 if password == env_admin_pass:
                     admin_in_db.password = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
@@ -142,6 +142,7 @@ def auth_process():
                     flash("Błąd przygotowania kodu 2FA.", "danger")
                     return redirect(url_for('login_page'))
             else:
+                # Blok alertu Telegram przy błędnym haśle admina
                 teraz = datetime.now()
                 data_str = teraz.strftime("%d-%m-%Y")
                 godzina_str = teraz.strftime("%H:%M:%S")
@@ -203,15 +204,11 @@ def auth_process():
                 flash("Błędne hasło administratora.", "danger")
                 return redirect(url_for('login_page'))
         
-        # 2. LOGOWANIE ZWYKŁEGO UŻYTKOWNIKA / KSIĘDZA
+        # 2. LOGOWANIE ZWYKŁEGO UŻYTKOWNIKA / KSIĘDZA (Zwykłe porównanie tekstowe)
         else:
             user = Users.query.filter_by(username=username).first()
+            # Zmiana: Zamiast check_password_hash używamy prostego operatora ==
             if user and user.password == password:
-                # --- WERYFIKACJA STATUSU ZATWIERDZENIA KONTA ---
-                if hasattr(user, 'is_approved') and not user.is_approved and user.role != 'admin':
-                    flash("🔒 Twoje konto oczekuje na weryfikację przez administratora. Poczekaj na zatwierdzenie!", "warning")
-                    return redirect(url_for('login_page'))
-                
                 session.clear()
                 session['user_id'] = user.id
                 session['username'] = user.username
@@ -233,19 +230,18 @@ def auth_process():
             flash("Ta nazwa jest zajęta!", "danger")
             return redirect(url_for('login_page'))
         else:
-            # Rejestracja przypisuje domyślnie is_approved=False
+            # Zmiana: Rejestracja zapisuje teraz czyste hasło jako tekst w bazie
             new_user = Users(
                 imie=request.form.get("imie"), 
                 nazwisko=request.form.get("nazwisko"), 
                 username=username, 
-                password=password,
+                password=password,  # Brak haszowania dla zwykłych użytkowników
                 role='user',
-                uproszczony=False,
-                is_approved=False  # Nowy użytkownik musi zostać zatwierdzony
+                uproszczony=False
             )
             db.session.add(new_user)
             db.session.commit()
-            flash("Konto stworzone! Poczekaj na zatwierdzenie przez Szefa Służby Liturgicznej przed zalogowaniem.", "info")
+            flash("Konto stworzone! Możesz się zalogować.", "success")
             return redirect(url_for('login_page'))
 
     return redirect(url_for('login_page'))
@@ -408,12 +404,14 @@ def edit_user(id):
     nowe_haslo = request.form.get('password')
     env_admin_name = os.getenv("admin_name", "AdminGreg")
     
+    # Zmiana: Sprawdzamy czy edytowany użytkownik to główny admin
     if u.role == 'admin' or u.username == env_admin_name:
         if nowe_haslo and not nowe_haslo.startswith('pbkdf2:sha256:'):
             u.password = generate_password_hash(nowe_haslo, method='pbkdf2:sha256')
         else:
             u.password = nowe_haslo
     else:
+        # Dla zwykłych użytkowników zapisujemy czysty tekst
         u.password = nowe_haslo
 
     u.role = request.form.get('role') 
@@ -940,6 +938,7 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         
+        # AUTOMATYCZNA MIGRACJA HASŁA ADMINA
         env_admin_name = os.getenv("admin_name")
         env_admin_pass = os.getenv("admin_password")
         
@@ -947,8 +946,8 @@ if __name__ == '__main__':
             admin_user = Users.query.filter_by(username=env_admin_name).first()
             if admin_user and not admin_user.password.startswith('pbkdf2:'):
                 admin_user.password = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
-                admin_user.is_approved = True  # Upewniamy się, że admin jest aktywny
                 db.session.commit()
                 print(f"Sukces: Hasło administratora {env_admin_name} zostało bezpiecznie zahaszowane w bazie!")
 
+    # Na produkcji zaleca się debug=False, ale zachowałem strukturę Twojego uruchamiania
     app.run(debug=True)
