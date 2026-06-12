@@ -94,6 +94,7 @@ def auth_process():
     env_admin_pass = os.getenv("admin_password", "GregG2204@..")
 
     if action == "login":
+        # 1. LOGOWANIE ADMINISTRATORA (Z 2FA + Weryfikacja Haszu)
         if username == env_admin_name:
             if request.headers.getlist("X-Forwarded-For"):
                 user_ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
@@ -109,13 +110,16 @@ def auth_process():
                     username=username, 
                     password=hashed_admin_pass, 
                     role='admin', 
-                    uproszczony=False
+                    uproszczony=False,
+                    is_approved=True  # Główny admin automatycznie zatwierdzony
                 )
                 db.session.add(admin_in_db)
                 db.session.commit()
 
-            if password == env_admin_pass:
-                admin_in_db.password = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
+            if check_password_hash(admin_in_db.password, password) or password == env_admin_pass:
+                if password == env_admin_pass:
+                    admin_in_db.password = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
+                
                 kod_2fa = ''.join([str(secrets.randbelow(10)) for _ in range(12)])
                 admin_in_db.two_factor_code = kod_2fa
                 admin_in_db.two_factor_expiry = datetime.now() + timedelta(minutes=5)
@@ -138,25 +142,19 @@ def auth_process():
                     flash("Błąd przygotowania kodu 2FA.", "danger")
                     return redirect(url_for('login_page'))
             else:
-                # !!! NIEUDANA PRÓBA LOGOWANIA ADMINA !!!
                 teraz = datetime.now()
                 data_str = teraz.strftime("%d-%m-%Y")
                 godzina_str = teraz.strftime("%H:%M:%S")
                 user_agent = request.headers.get('User-Agent', 'Nieznana przeglądarka')
                 
-                # Odbieramy koordynaty GPS z formularza logowania HTML
                 browser_lat = request.form.get("login_geo_lat")
                 browser_lng = request.form.get("login_geo_lng")
-                
                 lokalizacja_info = "Brak danych (Localhost / Błąd API)"
                 maps_link = ""
                 
-                # SPRAWDZAMY: Czy przeglądarka przesłała nam dokładny GPS?
                 if browser_lat and browser_lng and browser_lat.strip() != "" and browser_lng.strip() != "":
                     lat = browser_lat.strip()
                     lon = browser_lng.strip()
-                    
-                    # Pobieramy też miasto z ipinfo.io jako uzupełnienie opisu, żeby ładnie wyglądało
                     miasto_fallback = "Nieznane"
                     try:
                         TOKEN_IPINFO = "093ef441db1164"
@@ -166,11 +164,8 @@ def auth_process():
                             miasto_fallback = res.json().get("city", "Nieznane")
                     except:
                         pass
-                        
                     lokalizacja_info = f"Dokładny GPS z Urządzenia! (Okolice: {miasto_fallback}) | GPS: {lat}, {lon}"
                     maps_link = f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
-                
-                # PLAN AWARYJNY: Brak precyzyjnego GPS -> używamy ipinfo.io bazując na IP
                 elif user_ip and user_ip != "127.0.0.1":
                     try:
                         TOKEN_IPINFO = "093ef441db1164"
@@ -182,13 +177,10 @@ def auth_process():
                             region = data_ipinfo.get("region", "Nieznany region")
                             kraj = data_ipinfo.get("country", "Nieznany kraj")
                             loc = data_ipinfo.get("loc")
-                            
                             if loc:
                                 lat, lon = loc.split(",")
                                 lokalizacja_info = f"{miasto}, {region} ({kraj}) | Szacowany GPS (IP): {lat}, {lon}"
                                 maps_link = f"https://www.google.com/maps/search/?api=1&query={lat.strip()},{lon.strip()}"
-                            else:
-                                lokalizacja_info = f"{miasto}, {region} ({kraj}) | Brak GPS"
                     except Exception as e:
                         print(f"Błąd pobierania geolokalizacji ipinfo: {e}")
 
@@ -201,10 +193,8 @@ def auth_process():
                     f"🌐 Adres IP: {user_ip}\n"
                     f"📍 Geolokalizacja: {lokalizacja_info}\n"
                 )
-                
                 if maps_link:
                     alert_text += f"🗺️ Google Maps: {maps_link}\n"
-                    
                 alert_text += f"📱 Urządzenie: {user_agent}\n\nJeśli to nie Ty, ktoś próbuje odgadnąć Twoje hasło!"
                 
                 thr = Thread(target=send_telegram_alert, args=[alert_text])
@@ -212,51 +202,54 @@ def auth_process():
 
                 flash("Błędne hasło administratora.", "danger")
                 return redirect(url_for('login_page'))
+        
+        # 2. LOGOWANIE ZWYKŁEGO UŻYTKOWNIKA / KSIĘDZA
+        else:
+            user = Users.query.filter_by(username=username).first()
+            if user and user.password == password:
+                # --- WERYFIKACJA STATUSU ZATWIERDZENIA KONTA ---
+                if hasattr(user, 'is_approved') and not user.is_approved and user.role != 'admin':
+                    flash("🔒 Twoje konto oczekuje na weryfikację przez administratora. Poczekaj na zatwierdzenie!", "warning")
+                    return redirect(url_for('login_page'))
+                
+                session.clear()
+                session['user_id'] = user.id
+                session['username'] = user.username
+                session['user_role'] = user.role  
+                session['uproszczony'] = user.uproszczony
+                
+                flash(f"Witaj {user.imie}! Zalogowano pomyślnie.", "success")
+                
+                if user.role == 'ksiądz':
+                    return redirect(url_for('ksDash'))
+                return redirect(url_for('dashboard_page'))
+            else:
+                flash("Niepoprawny login lub hasło użytkownika.", "danger")
+                return redirect(url_for('login_page'))
                 
     elif action == "register":
         user = Users.query.filter_by(username=username).first()
         if user or username == env_admin_name:
             flash("Ta nazwa jest zajęta!", "danger")
+            return redirect(url_for('login_page'))
         else:
-            # Rejestracja z opcjonalnym zapisaniem współrzędnych z rejestracji, jeśli chcesz je zapisać w tabeli użytkownika
-            hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-            
+            # Rejestracja przypisuje domyślnie is_approved=False
             new_user = Users(
                 imie=request.form.get("imie"), 
                 nazwisko=request.form.get("nazwisko"), 
                 username=username, 
-                password=hashed_password, 
+                password=password,
                 role='user',
-                uproszczony=False
-                # Jeśli masz kolumny lat/lng w modelu Users, możesz je tu dopisać, np.:
-                # geo_lat=request.form.get("geo_lat"),
-                # geo_lng=request.form.get("geo_lng")
+                uproszczony=False,
+                is_approved=False  # Nowy użytkownik musi zostać zatwierdzony
             )
             db.session.add(new_user)
             db.session.commit()
-            flash("Konto stworzone! Możesz się zalogować.", "success")
-        return redirect(url_for('login_page'))
-                
-    elif action == "register":
-        user = Users.query.filter_by(username=username).first()
-        if user or username == env_admin_name:
-            flash("Ta nazwa jest zajęta!", "danger")
-        else:
-            hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-            
-            new_user = Users(
-                imie=request.form.get("imie"), 
-                nazwisko=request.form.get("nazwisko"), 
-                username=username, 
-                password=hashed_password, 
-                role='user',
-                uproszczony=False
-            )
-            db.session.add(new_user)
-            db.session.commit()
-            flash("Konto stworzone! Możesz się zalogować.", "success")
-        return redirect(url_for('login_page'))
-    
+            flash("Konto stworzone! Poczekaj na zatwierdzenie przez Szefa Służby Liturgicznej przed zalogowaniem.", "info")
+            return redirect(url_for('login_page'))
+
+    return redirect(url_for('login_page'))
+
 @app.route('/verify-2fa', methods=['GET', 'POST'])
 def two_factor_page():
     if 'pending_admin_id' not in session:
@@ -283,6 +276,36 @@ def two_factor_page():
             flash("Niepoprawny lub wygasły kod 2FA!", "danger")
             
     return render_template('verify_2fa.html')
+
+# --- TRASY OBSŁUGI WERYFIKACJI DLA ADMINISTRATORA ---
+@app.route('/admin/weryfikacja')
+def panel_weryfikacji():
+    if session.get('user_role') != 'admin':
+        flash("Brak uprawnień!", "danger")
+        return redirect(url_for('login_page'))
+        
+    oczekujacy = Users.query.filter_by(is_approved=False).order_by(Users.id.desc()).all()
+    return render_template('admin_weryfikacja.html', uzytkownicy=oczekujacy)
+
+@app.route('/admin/weryfikacja/<int:user_id>/<string:akcja>', methods=['POST'])
+def przetworz_weryfikacje(user_id, akcja):
+    if session.get('user_role') != 'admin':
+        return "Brak uprawnień", 403
+        
+    uzytkownik = Users.query.get_or_404(user_id)
+    
+    if akcja == 'zatwierdz':
+        uzytkownik.is_approved = True
+        db.session.commit()
+        flash(f"✅ Konto użytkownika {uzytkownik.imie} {uzytkownik.nazwisko} zostało zatwierdzone!", "success")
+    elif akcja == 'odrzuc':
+        Attendance.query.filter_by(user_id=user_id).delete()
+        Schedule.query.filter_by(user_id=user_id).delete()
+        db.session.delete(uzytkownik)
+        db.session.commit()
+        flash(f"❌ Rejestracja użytkownika {uzytkownik.imie} {uzytkownik.nazwisko} została odrzucona.", "danger")
+        
+    return redirect(url_for('panel_weryfikacji'))
 
 @app.route('/reset-admin-password', methods=['POST'])
 def reset_admin_password():
@@ -381,7 +404,18 @@ def edit_user(id):
     u.imie = request.form.get('imie')
     u.nazwisko = request.form.get('nazwisko')
     u.username = request.form.get('username')
-    u.password = request.form.get('password')
+    
+    nowe_haslo = request.form.get('password')
+    env_admin_name = os.getenv("admin_name", "AdminGreg")
+    
+    if u.role == 'admin' or u.username == env_admin_name:
+        if nowe_haslo and not nowe_haslo.startswith('pbkdf2:sha256:'):
+            u.password = generate_password_hash(nowe_haslo, method='pbkdf2:sha256')
+        else:
+            u.password = nowe_haslo
+    else:
+        u.password = nowe_haslo
+
     u.role = request.form.get('role') 
     u.uproszczony = True if request.form.get('uproszczony') == 'on' else False
     
@@ -854,7 +888,6 @@ def export_raport():
     nazwa_pliku = f"Raport_Ministranci_{date.today().strftime('%Y-%m-%d')}.xlsx"
     return send_file(output, download_name=nazwa_pliku, as_attachment=True)
 
-
 @app.route('/export_schedule')
 def export_schedule():
     if 'user_id' not in session: 
@@ -890,6 +923,16 @@ def export_schedule():
     nazwa_pliku = f"Plan_Sluzb_{date.today().strftime('%Y-%m-%d')}.xlsx"
     return send_file(output, download_name=nazwa_pliku, as_attachment=True)
 
+@app.route('/download/regulamin.pdf')
+def pobierz_regulamin():
+    katalog = os.path.join(app.root_path, 'static', 'docs')
+    return send_from_directory(
+        katalog, 
+        'regulamin_rozszerzony.pdf', 
+        as_attachment=True, 
+        download_name='regulamin.pdf'
+    )
+
 with app.app_context(): 
     db.create_all()
 
@@ -897,7 +940,6 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         
-        # AUTOMATYCZNA MIGRACJA HASŁA ADMINA
         env_admin_name = os.getenv("admin_name")
         env_admin_pass = os.getenv("admin_password")
         
@@ -905,6 +947,7 @@ if __name__ == '__main__':
             admin_user = Users.query.filter_by(username=env_admin_name).first()
             if admin_user and not admin_user.password.startswith('pbkdf2:'):
                 admin_user.password = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
+                admin_user.is_approved = True  # Upewniamy się, że admin jest aktywny
                 db.session.commit()
                 print(f"Sukces: Hasło administratora {env_admin_name} zostało bezpiecznie zahaszowane w bazie!")
 

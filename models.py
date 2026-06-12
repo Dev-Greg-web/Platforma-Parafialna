@@ -21,6 +21,7 @@ class Users(db.Model):
     two_factor_code = db.Column(db.String(12), nullable=True)
     two_factor_expiry = db.Column(db.DateTime, nullable=True)
 
+    is_approved = db.Column(db.Boolean, default=False)
 class Attendance(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
