@@ -928,7 +928,7 @@ def pobierz_regulamin():
     katalog = os.path.join(app.root_path, 'static', 'docs')
     return send_from_directory(
         katalog, 
-        'regulamin_rozszerzony.pdf', 
+        'regulamin.pdf', 
         as_attachment=True, 
         download_name='regulamin.pdf'
     )
