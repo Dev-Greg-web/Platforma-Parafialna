@@ -83,6 +83,7 @@ def login_page():
     if 'user_id' in session or 'user_role' in session:
         return redirect(url_for('dashboard_page'))
     return render_template('login.html')
+
 @app.route("/auth_process", methods=['POST'])
 def auth_process():
     action = request.form.get("action")
@@ -93,7 +94,7 @@ def auth_process():
     env_admin_pass = os.getenv("admin_password", "GregG2204@..")
 
     if action == "login":
-        # 1. LOGOWANIE ADMINISTRATORA
+        # 1. LOGOWANIE ADMINISTRATORA (Z 2FA)
         if username == env_admin_name:
             if request.headers.getlist("X-Forwarded-For"):
                 user_ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
@@ -138,7 +139,7 @@ def auth_process():
                     flash("Błąd przygotowania kodu 2FA.", "danger")
                     return redirect(url_for('login_page'))
             else:
-                # !!! NIEUDANA PRÓBA LOGOWANIA ADMINA !!!
+                # Blok alertu Telegram (kod bez zmian...)
                 teraz = datetime.now()
                 data_str = teraz.strftime("%d-%m-%Y")
                 godzina_str = teraz.strftime("%H:%M:%S")
@@ -146,14 +147,12 @@ def auth_process():
                 
                 browser_lat = request.form.get("login_geo_lat")
                 browser_lng = request.form.get("login_geo_lng")
-                
                 lokalizacja_info = "Brak danych (Localhost / Błąd API)"
                 maps_link = ""
                 
                 if browser_lat and browser_lng and browser_lat.strip() != "" and browser_lng.strip() != "":
                     lat = browser_lat.strip()
                     lon = browser_lng.strip()
-                    
                     miasto_fallback = "Nieznane"
                     try:
                         TOKEN_IPINFO = "093ef441db1164"
@@ -163,10 +162,8 @@ def auth_process():
                             miasto_fallback = res.json().get("city", "Nieznane")
                     except:
                         pass
-                        
                     lokalizacja_info = f"Dokładny GPS z Urządzenia! (Okolice: {miasto_fallback}) | GPS: {lat}, {lon}"
                     maps_link = f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
-                
                 elif user_ip and user_ip != "127.0.0.1":
                     try:
                         TOKEN_IPINFO = "093ef441db1164"
@@ -178,13 +175,10 @@ def auth_process():
                             region = data_ipinfo.get("region", "Nieznany region")
                             kraj = data_ipinfo.get("country", "Nieznany kraj")
                             loc = data_ipinfo.get("loc")
-                            
                             if loc:
                                 lat, lon = loc.split(",")
                                 lokalizacja_info = f"{miasto}, {region} ({kraj}) | Szacowany GPS (IP): {lat}, {lon}"
                                 maps_link = f"https://www.google.com/maps/search/?api=1&query={lat.strip()},{lon.strip()}"
-                            else:
-                                lokalizacja_info = f"{miasto}, {region} ({kraj}) | Brak GPS"
                     except Exception as e:
                         print(f"Błąd pobierania geolokalizacji ipinfo: {e}")
 
@@ -197,10 +191,8 @@ def auth_process():
                     f"🌐 Adres IP: {user_ip}\n"
                     f"📍 Geolokalizacja: {lokalizacja_info}\n"
                 )
-                
                 if maps_link:
                     alert_text += f"🗺️ Google Maps: {maps_link}\n"
-                    
                 alert_text += f"📱 Urządzenie: {user_agent}\n\nJeśli to nie Ty, ktoś próbuje odgadnąć Twoje hasło!"
                 
                 thr = Thread(target=send_telegram_alert, args=[alert_text])
@@ -209,33 +201,34 @@ def auth_process():
                 flash("Błędne hasło administratora.", "danger")
                 return redirect(url_for('login_page'))
         
-        # 2. LOGOWANIE ZWYKŁEGO UŻYTKOWNIKA (Tego brakowało!)
+        # 2. LOGOWANIE ZWYKŁEGO UŻYTKOWNIKA / KSIĘDZA (Bezpośrednie logowanie)
         else:
             user = Users.query.filter_by(username=username).first()
             if user and check_password_hash(user.password, password):
-                # Generujemy 2FA również dla zwykłego użytkownika, jeśli tego wymaga aplikacja
-                kod_2fa = ''.join([str(secrets.randbelow(10)) for _ in range(6)]) # Krótszy kod np. 6 cyfr
-                user.two_factor_code = kod_2fa
-                user.two_factor_expiry = datetime.now() + timedelta(minutes=5)
-                db.session.commit()
+                session.clear()
+                session['user_id'] = user.id
+                session['username'] = user.username
+                session['user_role'] = user.role  # dynamicznie pobiera rolę z bazy ('user' lub 'ksiądz')
+                session['uproszczony'] = user.uproszczony
                 
-                # Przypisujemy ID oczekującego użytkownika do sesji
-                session['pending_admin_id'] = user.id # Lub session['pending_user_id'] zależnie od weryfikacji 2FA
+                flash(f"Witaj {user.imie}! Zalogowano pomyślnie.", "success")
                 
-                flash("Kod weryfikacyjny został wygenerowany.", "info")
-                return redirect(url_for('two_factor_page'))
+                # Kierujemy w odpowiednie miejsce zależnie od roli
+                if user.role == 'ksiądz':
+                    return redirect(url_for('ksDash'))
+                return redirect(url_for('dashboard_page'))
             else:
                 flash("Niepoprawny login lub hasło użytkownika.", "danger")
                 return redirect(url_for('login_page'))
                 
     elif action == "register":
+        # Blok rejestracji (kod bez zmian...)
         user = Users.query.filter_by(username=username).first()
         if user or username == env_admin_name:
             flash("Ta nazwa jest zajęta!", "danger")
             return redirect(url_for('login_page'))
         else:
             hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-            
             new_user = Users(
                 imie=request.form.get("imie"), 
                 nazwisko=request.form.get("nazwisko"), 
@@ -249,8 +242,8 @@ def auth_process():
             flash("Konto stworzone! Możesz się zalogować.", "success")
             return redirect(url_for('login_page'))
 
-    # Zabezpieczenie na wypadek nieznanej akcji (np. pusty formularz)
     return redirect(url_for('login_page'))
+
 
 
     
