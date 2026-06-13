@@ -61,7 +61,7 @@
         <div class="flex items-center gap-4 text-white">
             <div class="text-4xl">🍪</div>
             <p class="text-sm md:text-base font-medium">
-                Ta aplikacja używa niezbędnych ciasteczek <strong class="bg-brand px-2 py-0.5 rounded text-white font-mono">session</strong> do utrzymania logowania. Jeśli nie klikniesz akceptacji, ten pasek po prostu z Tobą zostanie.
+                Ta aplikacja używa niezbędnych ciasteczek <strong class="bg-brand px-2 py-0.5 rounded text-white font-mono">session</strong> do utrzymania logowania. Jeśli nie klikniesz akceptacji, nie będziesz mógł przejść dalej.
             </p>
         </div>
         <button onclick="acceptCookies()" class="shrink-0 w-full sm:w-auto bg-brand text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-purple-700 transition">
@@ -101,13 +101,13 @@
         }
 
         function acceptCookies() {
-            // Zapisz zgodę
             localStorage.setItem('cookiesAccepted', 'true');
-            // Zwiń baner na dół
             const banner = document.getElementById('cookie-banner');
             banner.classList.add('translate-y-full'); 
-            // Całkowicie usuń go po zakończeniu animacji żeby nie przeszkadzał
-            setTimeout(() => { banner.style.display = 'none'; }, 500);
+            setTimeout(() => { 
+                banner.style.display = 'none'; 
+                window.location.reload(); // <--- Dodaj to, żeby odblokować formularze po kliknięciu
+            }, 500);
         }
 
         document.addEventListener("DOMContentLoaded", checkCookies);

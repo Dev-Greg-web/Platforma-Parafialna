@@ -118,146 +118,115 @@
     function showLogin() {
         document.getElementById('form-login').classList.remove('hidden');
         document.getElementById('form-register').classList.add('hidden');
-        document.getElementById('tab-login').className = "flex-1 py-4 bg-brand transition-colors text-white";
-        document.getElementById('tab-register').className = "flex-1 py-4 hover:bg-brand/50 transition-colors text-gray-300";
-        document.getElementById('login-footer').classList.remove('hidden');
+        document.getElementById('tab-login').classList.add('bg-brand');
+        document.getElementById('tab-register').classList.remove('bg-brand');
     }
-    
+
     function showRegister() {
         document.getElementById('form-login').classList.add('hidden');
         document.getElementById('form-register').classList.remove('hidden');
-        document.getElementById('tab-register').className = "flex-1 py-4 bg-brand transition-colors text-white";
-        document.getElementById('tab-login').className = "flex-1 py-4 hover:bg-brand/50 transition-colors text-gray-300";
-        document.getElementById('login-footer').classList.add('hidden');
+        document.getElementById('tab-register').classList.add('bg-brand');
+        document.getElementById('tab-login').classList.remove('bg-brand');
     }
 
-    function togglePass(inputId, iconId) {
-        const input = document.getElementById(inputId);
-        const icon = document.getElementById(iconId);
-        if (input.type === 'password') {
-            input.type = 'text';
-            icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
-        } else {
-            input.type = 'password';
-            icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+    // Blokada formularzy przed akceptacją cookies
+    document.addEventListener("DOMContentLoaded", function() {
+        const cookiesAccepted = localStorage.getItem('cookiesAccepted') === 'true';
+        if (!cookiesAccepted) {
+            const inputs = document.querySelectorAll('#login-form input, #register-form input, #login-form button, #register-form button');
+            inputs.forEach(el => {
+                el.disabled = true;
+                el.classList.add('opacity-50', 'cursor-not-allowed');
+            });
+            // Opcjonalna informacja nad przyciskami
+            flashMessage("Pierwsze zaakceptuj politykę cookies na dole strony!", "warning");
         }
+    });
+
+    function flashMessage(text, type) {
+        console.log(`[${type}] ${text}`);
     }
 
-    let modalSkipCallback = null;
-    let modalAcceptCallback = null;
-
-    function otworzGpsModal(tekst, onAccept, onSkip) {
+    // Modal GPS
+    function otworzGpsModal(tekst, onZgoda, onOdmowa) {
+        // Tworzymy modal dynamicznie, jeśli nie istnieje w HTML
+        let modal = document.getElementById('gps-alert-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'gps-alert-modal';
+            modal.className = "fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm";
+            modal.innerHTML = `
+                <div class="bg-white dark:bg-[#1f2a44] p-6 rounded-3xl max-w-sm w-full border border-brand text-center shadow-2xl">
+                    <span class="text-4xl">📍</span>
+                    <h3 class="text-lg font-black mt-2 text-gray-800 dark:text-white">Autoryzacja Lokalizacji</h3>
+                    <p id="gps-modal-text" class="text-xs text-gray-500 dark:text-gray-300 my-4 leading-relaxed"></p>
+                    <div class="flex gap-3 justify-center">
+                        <button id="gps-btn-allow" class="px-4 py-2 bg-success text-white font-bold text-xs rounded-xl shadow-md">Udostępnij</button>
+                        <button id="gps-btn-deny" class="px-4 py-2 bg-gray-500 text-white font-bold text-xs rounded-xl shadow-md">Pomiń GPS</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
         document.getElementById('gps-modal-text').innerText = tekst;
-        document.getElementById('gps-modal').classList.remove('hidden');
-        modalAcceptCallback = onAccept;
-        modalSkipCallback = onSkip;
+        modal.classList.remove('hidden');
+
+        document.getElementById('gps-btn-allow').onclick = function() {
+            modal.classList.add('hidden');
+            onZgoda();
+        };
+        document.getElementById('gps-btn-deny').onclick = function() {
+            modal.classList.add('hidden');
+            onOdmowa();
+        };
     }
 
-    function zamknijGpsModal() {
-        document.getElementById('gps-modal').classList.add('hidden');
-    }
-
-    document.getElementById('gps-modal-accept').addEventListener('click', function() {
-        zamknijGpsModal();
-        if (modalAcceptCallback) modalAcceptCallback();
-    });
-
-    document.getElementById('gps-modal-skip').addEventListener('click', function() {
-        zamknijGpsModal();
-        if (modalSkipCallback) modalSkipCallback();
-    });
-
-    // REJESTRACJA
-    function wymusGPSiZarejestruj() {
-        if (!navigator.geolocation) {
-            wyslijRejestracje();
-            return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-            function(position) {
-                document.getElementById('geo_lat').value = position.coords.latitude;
-                document.getElementById('geo_lng').value = position.coords.longitude;
-                wyslijRejestracje();
+    // Główny proces przechwytywania formularza (Logowanie / Rejestracja)
+    function procesujFormularz(event, formId, actionType) {
+        event.preventDefault(); // Zatrzymaj wysyłanie formularza
+        
+        const komunikat = "System wymaga zweryfikowania Twojej lokalizacji w celu zabezpieczenia sesji i potwierdzenia obecności w parafii.";
+        
+        otworzGpsModal(komunikat, 
+            function() {
+                // Użytkownik kliknął UDOSTĘPNIJ
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        function(pos) {
+                            // Sukces GPS
+                            document.getElementById(actionType + '_geo_lat').value = pos.coords.latitude;
+                            document.getElementById(actionType + '_geo_lng').value = pos.coords.longitude;
+                            wyslijForm(formId, actionType);
+                        },
+                        function(error) {
+                            // Błąd pobierania GPS mimo zgody (np. wyłączony GPS w telefonie)
+                            wyslijForm(formId, actionType);
+                        },
+                        { enableHighAccuracy: false, timeout: 6000 }
+                    );
+                } else {
+                    wyslijForm(formId, actionType);
+                }
             },
-            function(error) {
-                otworzGpsModal(
-                    "Udostępnienie lokalizacji pozwala nam zweryfikować, czy konto zakłada właściwa osoba. Możesz zarejestrować się bez tego, ale system użyje wtedy wyłącznie szacowania lokalizacji po adresie IP.",
-                    function() {
-                        navigator.geolocation.getCurrentPosition(function(pos) {
-                            document.getElementById('geo_lat').value = pos.coords.latitude;
-                            document.getElementById('geo_lng').value = pos.coords.longitude;
-                            wyslijRejestracje();
-                        }, function() { wyslijRejestracje(); });
-                    },
-                    function() {
-                        wyslijRejestracje();
-                    }
-                );
-            },
-            { enableHighAccuracy: true, timeout: 4000 }
+            function() {
+                // Użytkownik kliknął POMIŃ GPS (Serwer obsłuży IP)
+                wyslijForm(formId, actionType);
+            }
         );
     }
 
-    function wyslijRejestracje() {
-        const form = document.getElementById('reg-form');
-        const hiddenAction = document.createElement('input');
-        hiddenAction.type = 'hidden';
-        hiddenAction.name = 'action';
-        hiddenAction.value = 'register';
-        form.appendChild(hiddenAction);
-        form.submit();
-    }
-
-    // LOGOWANIE
-    function pobierzGPSiZaloguj(event) {
-        event.preventDefault();
-
-        if (!navigator.geolocation) {
-            wyslijLogowanie();
-            return;
+    function wyslijForm(formId, actionType) {
+        const form = document.getElementById(formId);
+        // Jeśli nie ma jeszcze inputu 'action', dodaj go
+        if (!form.querySelector('input[name="action"]')) {
+            const hiddenAction = document.createElement('input');
+            hiddenAction.type = 'hidden';
+            hiddenAction.name = 'action';
+            hiddenAction.value = actionType;
+            form.appendChild(hiddenAction);
         }
-
-        navigator.geolocation.getCurrentPosition(
-            function(position) {
-                document.getElementById('login_geo_lat').value = position.coords.latitude;
-                document.getElementById('login_geo_lng').value = position.coords.longitude;
-                wyslijLogowanie();
-            },
-            function(error) {
-                otworzGpsModal(
-                    "Udostępnienie lokalizacji ułatwia ochronę Twojego konta i pomaga w weryfikacji nietypowych prób logowania. Zalecamy udostępnienie współrzędnych.",
-                    function() {
-                        navigator.geolocation.getCurrentPosition(function(pos) {
-                            document.getElementById('login_geo_lat').value = pos.coords.latitude;
-                            document.getElementById('login_geo_lng').value = pos.coords.longitude;
-                            wyslijLogowanie();
-                        }, function() { wyslijLogowanie(); });
-                    },
-                    function() {
-                        wyslijLogowanie();
-                    }
-                );
-            },
-            { enableHighAccuracy: true, timeout: 4000 }
-        );
-    }
-
-    function wyslijLogowanie() {
-        const form = document.getElementById('login-form');
-        const hiddenAction = document.createElement('input');
-        hiddenAction.type = 'hidden';
-        hiddenAction.name = 'action';
-        hiddenAction.value = 'login';
-        form.appendChild(hiddenAction);
         form.submit();
-    }
-
-    const isSuccess = "{{ 'true' if success_login else 'false' }}" === "true";
-    if (isSuccess) {
-        setTimeout(function() {
-            window.location.href = "{{ url_for('dashboard_page') }}";
-        }, 2000); 
     }
 </script>
 {% endblock %}

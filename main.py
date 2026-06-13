@@ -90,128 +90,60 @@ def auth_process():
     username = request.form.get("username")
     password = request.form.get("haslo")
     
-    env_admin_name = os.getenv("admin_name", "AdminGreg")
-    env_admin_pass = os.getenv("admin_password", "GregG2204@..")
+    # Pobranie czystego adresu IP użytkownika
+    if request.headers.getlist("X-Forwarded-For"):
+        user_ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
+    else:
+        user_ip = request.remote_addr
 
+    # Odczyt danych GPS przekazanych przez formularz
+    browser_lat = request.form.get(f"{action}_geo_lat")
+    browser_lng = request.form.get(f"{action}_geo_lng")
+
+    final_lat = None
+    final_lng = None
+
+    # KROK 1: Jeśli mamy współrzędne GPS z przeglądarki, używamy ich w pierwszej kolejności
+    if browser_lat and browser_lng and browser_lat.strip() != "" and browser_lng.strip() != "":
+        final_lat = browser_lat.strip()
+        final_lng = browser_lng.strip()
+
+    # KROK 2: Jeśli nie ma GPS, a IP nie jest adresem pętli lokalnej, odpytujemy ipinfo.io
+    if (not final_lat or not final_lng) and user_ip and user_ip != "127.0.0.1":
+        try:
+            TOKEN_IPINFO = "093ef441db1164"
+            url_ipinfo = f"https://ipinfo.io/{user_ip}/json?token={TOKEN_IPINFO}"
+            res = requests.get(url_ipinfo, timeout=3)
+            if res.status_code == 200:
+                data_ipinfo = res.json()
+                loc = data_ipinfo.get("loc")
+                if loc:
+                    ip_lat, ip_lng = loc.split(",")
+                    final_lat = f"{ip_lat.strip()} (IP)"
+                    final_lng = f"{ip_lng.strip()} (IP)"
+        except Exception as e:
+            print(f"Błąd pobierania awaryjnej geolokalizacji z IP: {e}")
+
+    # --- OBSŁUGA LOGOWANIA ---
     if action == "login":
-        # 1. LOGOWANIE ADMINISTRATORA (Z 2FA + Weryfikacja Haszu)
-        if username == env_admin_name:
-            if request.headers.getlist("X-Forwarded-For"):
-                user_ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
-            else:
-                user_ip = request.remote_addr
-
-            admin_in_db = Users.query.filter_by(username=username).first()
-            if not admin_in_db:
-                hashed_admin_pass = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
-                admin_in_db = Users(
-                    imie="Główny", 
-                    nazwisko="Szef", 
-                    username=username, 
-                    password=hashed_admin_pass, 
-                    role='admin', 
-                    uproszczony=False,
-                    is_approved=True  # Główny admin automatycznie zatwierdzony
-                )
-                db.session.add(admin_in_db)
-                db.session.commit()
-
-            if check_password_hash(admin_in_db.password, password) or password == env_admin_pass:
-                if password == env_admin_pass:
-                    admin_in_db.password = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
-                
-                kod_2fa = ''.join([str(secrets.randbelow(10)) for _ in range(12)])
-                admin_in_db.two_factor_code = kod_2fa
-                admin_in_db.two_factor_expiry = datetime.now() + timedelta(minutes=5)
-                db.session.commit()
-
-                try:
-                    telegram_2fa_text = (
-                        f"🔒 KOD WERYFIKACYJNY 2FA\n\n"
-                        f"Witaj Szefie!\n"
-                        f"Ktoś próbuje zalogować się na konto administratora.\n"
-                        f"Oto Twój kod: {kod_2fa}\n\n"
-                        f"Kod wygaśnie za 5 minut."
-                    )
-                    thr = Thread(target=send_telegram_alert, args=[telegram_2fa_text])
-                    thr.start()
-                    
-                    session['pending_admin_id'] = admin_in_db.id
-                    return redirect(url_for('two_factor_page'))
-                except Exception as e:
-                    flash("Błąd przygotowania kodu 2FA.", "danger")
-                    return redirect(url_for('login_page'))
-            else:
-                teraz = datetime.now()
-                data_str = teraz.strftime("%d-%m-%Y")
-                godzina_str = teraz.strftime("%H:%M:%S")
-                user_agent = request.headers.get('User-Agent', 'Nieznana przeglądarka')
-                
-                browser_lat = request.form.get("login_geo_lat")
-                browser_lng = request.form.get("login_geo_lng")
-                lokalizacja_info = "Brak danych (Localhost / Błąd API)"
-                maps_link = ""
-                
-                if browser_lat and browser_lng and browser_lat.strip() != "" and browser_lng.strip() != "":
-                    lat = browser_lat.strip()
-                    lon = browser_lng.strip()
-                    miasto_fallback = "Nieznane"
-                    try:
-                        TOKEN_IPINFO = "093ef441db1164"
-                        url_ipinfo = f"https://ipinfo.io/{user_ip}/json?token={TOKEN_IPINFO}"
-                        res = requests.get(url_ipinfo, timeout=2)
-                        if res.status_code == 200:
-                            miasto_fallback = res.json().get("city", "Nieznane")
-                    except:
-                        pass
-                    lokalizacja_info = f"Dokładny GPS z Urządzenia! (Okolice: {miasto_fallback}) | GPS: {lat}, {lon}"
-                    maps_link = f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
-                elif user_ip and user_ip != "127.0.0.1":
-                    try:
-                        TOKEN_IPINFO = "093ef441db1164"
-                        url_ipinfo = f"https://ipinfo.io/{user_ip}/json?token={TOKEN_IPINFO}"
-                        res = requests.get(url_ipinfo, timeout=3)
-                        if res.status_code == 200:
-                            data_ipinfo = res.json()
-                            miasto = data_ipinfo.get("city", "Nieznane miasto")
-                            region = data_ipinfo.get("region", "Nieznany region")
-                            kraj = data_ipinfo.get("country", "Nieznany kraj")
-                            loc = data_ipinfo.get("loc")
-                            if loc:
-                                lat, lon = loc.split(",")
-                                lokalizacja_info = f"{miasto}, {region} ({kraj}) | Szacowany GPS (IP): {lat}, {lon}"
-                                maps_link = f"https://www.google.com/maps/search/?api=1&query={lat.strip()},{lon.strip()}"
-                    except Exception as e:
-                        print(f"Błąd pobierania geolokalizacji ipinfo: {e}")
-
-                alert_text = (
-                    f"⚠️ ALERT BEZPIECZEŃSTWA: Nieudane logowanie!\n\n"
-                    f"UWAGA SZEFIE!\n"
-                    f"Wykryto NIEUDANĄ próbę zalogowania na konto głównego administratora ({username}).\n\n"
-                    f"📅 Data: {data_str}\n"
-                    f"⏰ Godzina: {godzina_str}\n"
-                    f"🌐 Adres IP: {user_ip}\n"
-                    f"📍 Geolokalizacja: {lokalizacja_info}\n"
-                )
-                if maps_link:
-                    alert_text += f"🗺️ Google Maps: {maps_link}\n"
-                alert_text += f"📱 Urządzenie: {user_agent}\n\nJeśli to nie Ty, ktoś próbuje odgadnąć Twoje hasło!"
-                
-                thr = Thread(target=send_telegram_alert, args=[alert_text])
-                thr.start()
-
-                flash("Błędne hasło administratora.", "danger")
-                return redirect(url_for('login_page'))
-        
-        # 2. LOGOWANIE ZWYKŁEGO UŻYTKOWNIKA / KSIĘDZA
+        if username == os.getenv("admin_name", "AdminGreg"):
+            # ... Tutaj zostawiasz kod logowania admina, który już masz bez zmian ...
+            pass
         else:
             user = Users.query.filter_by(username=username).first()
             if user and user.password == password:
-                # --- WERYFIKACJA STATUSU ZATWIERDZENIA KONTA ---
                 if hasattr(user, 'is_approved') and not user.is_approved and user.role != 'admin':
-                    flash("🔒 Twoje konto oczekuje na weryfikację przez administratora. Poczekaj na zatwierdzenie!", "warning")
+                    flash("🔒 Twoje konto oczekuje na weryfikację przez administratora.", "warning")
                     return redirect(url_for('login_page'))
                 
+                # Zapisujemy aktualne współrzędne przy logowaniu do bazy danych
+                user.registration_ip = user_ip
+                if final_lat and final_lng:
+                    user.latitude = final_lat
+                    user.longitude = final_lng
+                
+                db.session.commit()
+
                 session.clear()
                 session['user_id'] = user.id
                 session['username'] = user.username
@@ -219,21 +151,20 @@ def auth_process():
                 session['uproszczony'] = user.uproszczony
                 
                 flash(f"Witaj {user.imie}! Zalogowano pomyślnie.", "success")
-                
                 if user.role == 'ksiądz':
                     return redirect(url_for('ksDash'))
                 return redirect(url_for('dashboard_page'))
             else:
                 flash("Niepoprawny login lub hasło użytkownika.", "danger")
                 return redirect(url_for('login_page'))
-                
+
+    # --- OBSŁUGA REJESTRACJI ---
     elif action == "register":
         user = Users.query.filter_by(username=username).first()
-        if user or username == env_admin_name:
+        if user or username == os.getenv("admin_name", "AdminGreg"):
             flash("Ta nazwa jest zajęta!", "danger")
             return redirect(url_for('login_page'))
         else:
-            # Rejestracja przypisuje domyślnie is_approved=False
             new_user = Users(
                 imie=request.form.get("imie"), 
                 nazwisko=request.form.get("nazwisko"), 
@@ -241,11 +172,14 @@ def auth_process():
                 password=password,
                 role='user',
                 uproszczony=False,
-                is_approved=False  # Nowy użytkownik musi zostać zatwierdzony
+                is_approved=False,
+                registration_ip=user_ip,
+                latitude=final_lat,
+                longitude=final_lng
             )
             db.session.add(new_user)
             db.session.commit()
-            flash("Konto stworzone! Poczekaj na zatwierdzenie przez Szefa Służby Liturgicznej przed zalogowaniem.", "info")
+            flash("Konto stworzone! Poczekaj na zatwierdzenie przez Szefa.", "info")
             return redirect(url_for('login_page'))
 
     return redirect(url_for('login_page'))
