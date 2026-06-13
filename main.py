@@ -645,7 +645,7 @@ def admin_page():
     all_users = Users.query.filter_by(is_approved=True).all()
     pending_users = Users.query.filter_by(is_approved=False).order_by(Users.created_at.desc()).all()
     
-    all_announcements = Announcement.query.order_by(Announcement.data_wystawienia.desc()).all()
+    all_announcements = Announcement.query.order_by(Announcement.data_dodania.desc()).all()
     schedules = db.session.query(Schedule, Users).join(Users, Schedule.user_id == Users.id).all()
     
     # ... reszta logiki statystyk (zostaje bez zmian) ...
