@@ -41,10 +41,10 @@ class Announcement(db.Model):
     tresc = db.Column(db.Text, nullable=False)
     data_dodania = db.Column(db.DateTime, default=datetime.now)
 
+# POPRAWIONY MODEL Grafiku / Stałych Dyżurów
 class Schedule(db.Model):
     __tablename__ = "schedule"
     id = db.Column(db.Integer, primary_key=True)
-    data = db.Column(db.Date, nullable=False)
+    dzien_tygodnia = db.Column(db.String(50), nullable=False)  # Zmieniono z 'data' na 'dzien_tygodnia'
     godzina = db.Column(db.String(5), nullable=False)
-    opis = db.Column(db.String(205), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
