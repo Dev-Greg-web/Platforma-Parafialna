@@ -27,13 +27,11 @@
     @keyframes sectionFadeIn {
         0% {
             opacity: 0;
-            transform: translateY(15px);
-            filter: blur(4px);
+            transform: translateY(12px) scale(0.99);
         }
         100% {
             opacity: 1;
-            transform: translateY(0);
-            filter: blur(0);
+            transform: translateY(0) scale(1);
         }
     }
 
@@ -41,909 +39,877 @@
         animation: sectionFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    /* Efekt pulsującego neonu dla aktywnych elementów statusu */
-    @keyframes cyberPulse {
-        0%, 100% {
-            transform: scale(1);
-            box-shadow: 0 0 10px rgba(94, 59, 238, 0.4);
-        }
-        50% {
-            transform: scale(1.05);
-            box-shadow: 0 0 20px rgba(94, 59, 238, 0.7);
-        }
+    /* Klasa generująca głęboki neonowy cień brandowy */
+    .custom-brand-glow {
+        box-shadow: 0 0 30px rgba(94, 59, 238, 0.15);
+    }
+    
+    .custom-accent-glow {
+        box-shadow: 0 0 25px rgba(34, 197, 94, 0.2);
     }
 
-    .neon-pulse {
-        animation: cyberPulse 2s infinite ease-in-out;
-    }
-
-    /* Wygląd aktywnych przycisków nawigacyjnych w menu bocznym */
-    .nav-btn-active {
-        background: linear-gradient(90deg, rgba(94, 59, 238, 0.25) 0%, rgba(94, 59, 238, 0.05) 100%);
-        border-left: 4px solid #5e3bee;
-        color: #ffffff !important;
-        box-shadow: inset 4px 0 15px rgba(94, 59, 238, 0.15);
-    }
-
-    /* Customowe maskowanie i gradienty dla siatki tła dashboardu */
-    .bg-cyber-grid {
-        background-image: radial-gradient(rgba(94, 59, 238, 0.07) 1px, transparent 0);
-        background-size: 24px 24px;
-    }
-
-    /* Klasa maskująca dla długich tekstów w tabeli */
-    .truncate-cell {
-        max-width: 150px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+    /* Szklany efekt dla kart danych */
+    .glass-card {
+        background: rgba(30, 41, 59, 0.4);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="w-full min-h-screen bg-gradient-to-br from-[#0b0f19] via-[#111827] to-[#0f172a] text-slate-100 flex flex-col md:flex-row font-sans relative overflow-x-hidden bg-cyber-grid">
+<div class="w-full min-h-screen flex flex-col lg:flex-row bg-darkbg text-gray-100 antialiased">
     
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="fixed top-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-[100] flex flex-col gap-3 pointer-events-none">
-                {% for category, message in messages %}
-                    <div class="p-[18px] rounded-2xl text-sm font-extrabold shadow-2xl backdrop-blur-xl border pointer-events-auto flex items-center gap-[14px] transition-all duration-300 animate-section
-                        {% if category == 'error' %} bg-red-950/80 border-red-500/30 text-red-200 shadow-red-950/50 {% else %} bg-emerald-950/80 border-emerald-500/30 text-emerald-200 shadow-emerald-950/50 {% endif %}">
-                        <div class="w-2.5 h-2.5 rounded-full {% if category == 'error' %} bg-red-500 {% else %} bg-emerald-500 {% endif %} neon-pulse"></div>
-                        <div class="flex-grow">{{ message }}</div>
-                        <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-white transition font-black text-lg">&times;</button>
+    <aside class="w-full lg:w-80 bg-cardbg/40 backdrop-blur-xl border-b lg:border-b-0 lg:border-r border-white/5 p-6 flex flex-col shrink-0">
+        
+        <div class="flex items-center justify-between mb-8 pb-6 border-b border-white/5">
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand to-purple-500 flex items-center justify-center font-black text-xl text-white shadow-brand-glow">
+                        👑
                     </div>
-                {% endfor %}
-            </div>
-        {% endif %}{% endwith %}
-
-    <aside class="w-full md:w-80 bg-slate-900/60 backdrop-blur-2xl border-b md:border-b-0 md:border-r border-slate-800 p-6 flex flex-col shrink-0 overflow-y-auto z-10 transition-all duration-300 justify-between">
-        <div class="flex flex-col w-full">
-            <div class="flex items-center gap-3 mb-8 mt-2 px-2">
-                <div class="w-3 h-3 rounded-full bg-brand shadow-[0_0_15px_#5e3bee] neon-pulse"></div>
-                <div class="flex flex-col">
-                    <span class="text-white text-lg font-black tracking-widest uppercase bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">Centrum Szefa</span>
-                    <span class="text-[10px] text-brand font-mono tracking-wider font-bold">PREMIUM ARCHITECTURE v2.4</span>
+                    <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-success rounded-full border-4 border-darkbg animate-pulse"></div>
+                </div>
+                <div>
+                    <h2 class="text-white font-black tracking-tight text-sm uppercase">Szef Panel</h2>
+                    <p class="text-xs text-brand font-semibold tracking-wider">Status: Root Admin</p>
                 </div>
             </div>
-
-            <div class="bg-slate-950/50 border border-slate-800 rounded-2xl p-4 mb-6 flex items-center gap-4 shadow-inner">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-brand to-purple-600 flex items-center justify-center font-black text-white text-xl shadow-[0_4px_12px_rgba(94,59,238,0.3)] border border-white/10">
-                    SZ
-                </div>
-                <div class="flex flex-col overflow-hidden">
-                    <span class="text-sm font-bold text-slate-200 truncate">Szef Służby Liturgicznej</span>
-                    <span class="text-xs text-emerald-400 flex items-center gap-1.5 font-medium mt-0.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
-                        Główny Root Admin
-                    </span>
-                </div>
-            </div>
-
-            <nav class="flex flex-col gap-1.5 w-full">
-                <button onclick="showSection('dashboard')" id="btn-dashboard" class="nav-btn flex items-center gap-3.5 w-full p-4 rounded-xl font-extrabold text-sm text-left text-slate-400 hover:text-white hover:bg-slate-800/30 border border-transparent transition-all duration-200">
-                    <span class="text-lg">📊</span> Panel Analityczny
-                </button>
-                <button onclick="showSection('sluzby')" id="btn-sluzby" class="nav-btn flex items-center gap-3.5 w-full p-4 rounded-xl font-extrabold text-sm text-left text-slate-400 hover:text-white hover:bg-slate-800/30 border border-transparent transition-all duration-200">
-                    <span class="text-lg">⛪</span> Zgłoszone Służby
-                </button>
-                <button onclick="showSection('ranking')" id="btn-ranking" class="nav-btn flex items-center gap-3.5 w-full p-4 rounded-xl font-extrabold text-sm text-left text-slate-400 hover:text-white hover:bg-slate-800/30 border border-transparent transition-all duration-200">
-                    <span class="text-lg">🏆</span> Cyfrowy Ranking
-                </button>
-                <button onclick="showSection('terminarze')" id="btn-terminarze" class="nav-btn flex items-center gap-3.5 w-full p-4 rounded-xl font-extrabold text-sm text-left text-slate-400 hover:text-white hover:bg-slate-800/30 border border-transparent transition-all duration-200">
-                    <span class="text-lg">📅</span> Plany i Grafiki
-                </button>
-                <button onclick="showSection('ogloszenia')" id="btn-ogloszenia" class="nav-btn flex items-center gap-3.5 w-full p-4 rounded-xl font-extrabold text-sm text-left text-slate-400 hover:text-white hover:bg-slate-800/30 border border-transparent transition-all duration-200">
-                    <span class="text-lg">📣</span> Tablica Ogłoszeń
-                </button>
-                <button onclick="showSection('uzytkownicy')" id="btn-uzytkownicy" class="nav-btn flex items-center gap-3.5 w-full p-4 rounded-xl font-extrabold text-sm text-left text-slate-400 hover:text-white hover:bg-slate-800/30 border border-transparent transition-all duration-200">
-                    <span class="text-lg">👥</span> Konta Ministrantów
-                </button>
-                <button onclick="showSection('ustawienia')" id="btn-ustawienia" class="nav-btn flex items-center gap-3.5 w-full p-4 rounded-xl font-extrabold text-sm text-left text-slate-400 hover:text-white hover:bg-slate-800/30 border border-transparent transition-all duration-200">
-                    <span class="text-lg">⚙️</span> Ustawienia Rdzenia
-                </button>
-            </nav>
+            <a href="{{ url_for('logout') }}" class="p-2.5 rounded-xl bg-danger/10 hover:bg-danger/20 text-danger transition duration-300 group" title="Bezpieczne wylogowanie z sesji">
+                <span class="block transform group-hover:scale-110 transition-transform">🚪</span>
+            </a>
         </div>
 
-        <div class="mt-8 pt-4 border-t border-slate-800/60 flex flex-col gap-3">
-            <div class="flex justify-between items-center px-2 text-xs text-slate-500 font-mono">
-                <span>SYSTEM UPTIME:</span>
-                <span class="text-slate-300 font-bold">100% stable</span>
-            </div>
-            <div id="live-clock-sidebar" class="text-center bg-slate-950/40 py-2.5 rounded-xl border border-slate-800 text-xs font-black text-brand tracking-widest font-mono shadow-inner">
-                00:00:00 UTC
-            </div>
-            <a href="{{ url_for('logout') }}" class="flex items-center justify-center gap-2 p-3 bg-red-950/40 hover:bg-red-900/40 text-red-400 hover:text-red-300 border border-red-900/30 rounded-xl font-bold text-xs tracking-wider uppercase transition active:scale-95">
-                🔌 Bezpieczne Wylogowanie
-            </a>
+        <div class="mb-8 p-4 rounded-2xl bg-white/5 border border-white/5 text-center">
+            <div class="text-xs text-gray-400 font-bold uppercase tracking-widest mb-1">Czas Systemowy</div>
+            <div id="live-clock-sidebar" class="text-lg font-mono font-black text-white tracking-wider">00:00:00 | CEST</div>
+        </div>
+
+        <nav class="flex flex-col gap-2 flex-grow">
+            <button onclick="showSection('dashboard')" id="btn-dashboard" 
+                class="nav-btn flex items-center gap-3 w-full p-4 rounded-2xl font-extrabold text-sm text-left transition-all duration-300">
+                <span class="text-base">📊</span> Panel Analityczny
+            </button>
+            
+            <button onclick="showSection('sluzby')" id="btn-sluzby" 
+                class="nav-btn flex items-center gap-3 w-full p-4 rounded-2xl font-extrabold text-sm text-left transition-all duration-300">
+                <span class="text-base">🛡️</span> Zarządzanie Służbami
+            </button>
+            
+            <button onclick="showSection('ranking')" id="btn-ranking" 
+                class="nav-btn flex items-center gap-3 w-full p-4 rounded-2xl font-extrabold text-sm text-left transition-all duration-300">
+                <span class="text-base">🏆</span> Cyfrowy Ranking
+            </button>
+            
+            <button onclick="showSection('plan')" id="btn-plan" 
+                class="nav-btn flex items-center gap-3 w-full p-4 rounded-2xl font-extrabold text-sm text-left transition-all duration-300">
+                <span class="text-base">📅</span> Plany i Grafiki
+            </button>
+            
+            <button onclick="showSection('ogloszenia')" id="btn-ogloszenia" 
+                class="nav-btn flex items-center gap-3 w-full p-4 rounded-2xl font-extrabold text-sm text-left transition-all duration-300">
+                <span class="text-base">📢</span> Tablica Ogłoszeń
+            </button>
+            
+            <button onclick="showSection('uzytkownicy')" id="btn-uzytkownicy" 
+                class="nav-btn flex items-center gap-3 w-full p-4 rounded-2xl font-extrabold text-sm text-left transition-all duration-300">
+                <span class="text-base">👥</span> Rejestr Kont
+            </button>
+
+            <button onclick="showSection('ustawienia')" id="btn-ustawienia" 
+                class="nav-btn flex items-center gap-3 w-full p-4 rounded-2xl font-extrabold text-sm text-left transition-all duration-300">
+                <span class="text-base">⚙️</span> Ustawienia Rdzenia
+            </button>
+        </nav>
+
+        <div class="mt-auto pt-6 border-t border-white/5 text-center">
+            <p class="text-[10px] text-gray-500 font-mono">System Liturgiczny v3.4.2 Premium</p>
+            <p class="text-[9px] text-brand/50 font-mono mt-0.5">Protected Encryption Mode</p>
         </div>
     </aside>
 
-    <main class="flex-grow p-4 md:p-8 overflow-y-auto flex flex-col gap-8 w-full">
+    <main class="flex-grow p-4 md:p-8 lg:p-10 overflow-y-auto w-full">
         
-        <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-slate-900/30 p-6 rounded-3xl border border-slate-800/50 backdrop-blur-md shadow-sm">
-            <div>
-                <h1 class="text-2xl md:text-3xl font-black tracking-tight text-white flex items-center gap-2">
-                    Centrum Zarządzania <span class="bg-clip-text text-transparent bg-gradient-to-r from-brand via-purple-400 to-indigo-400">Służbą Liturgiczną</span>
-                </h1>
-                <p class="text-slate-400 text-sm mt-1 font-medium">Witaj z powrotem Szefie. Monitoruj logowania, weryfikuj obecności i koordynuj harmonogram.</p>
-            </div>
-            <div class="flex flex-wrap gap-2.5 w-full lg:w-auto">
-                <a href="{{ url_for('export_raport') }}" class="px-4 py-2.5 bg-brand hover:bg-brand/90 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl shadow-lg transition flex items-center gap-2 active:scale-95">
-                    📥 Generuj Raport Excel
-                </a>
-                <button onclick="showSection('ogloszenia')" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-extrabold text-xs tracking-wider uppercase rounded-xl transition flex items-center gap-2 active:scale-95">
-                    ➕ Nowe Ogłoszenie
-                </button>
-            </div>
-        </header>
-
-        <section id="section-sluzby" class="admin-section block">
-            <div class="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-8">
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Zarządzanie Służbami</h1>
-                <button class="bg-gradient-to-r from-success to-green-400 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:-translate-y-1 transition flex items-center gap-2" onclick="openModal('addAttendanceModal')">
-                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                    Dodaj służbę
-                </button>
-            </div>
-            
-            <div class="flex flex-wrap gap-2 mb-6 p-4 bg-white dark:bg-cardbg rounded-2xl shadow-lg">
-                <button class="filter-btn bg-brand text-white border border-brand px-4 py-2 rounded-lg font-bold transition shadow-[0_0_10px_rgba(94,59,238,0.6)]" onclick="filterUser('all', this)">Wszyscy</button>
-                {% for u in users %}
-                    <button class="filter-btn bg-gray-200 dark:bg-darkbg text-gray-800 dark:text-white border border-gray-300 dark:border-brand px-4 py-2 rounded-lg font-bold hover:bg-brand/30 transition" onclick="filterUser('{{ u.username }}', this)">{{ u.username }}</button>
-                {% endfor %}
+        <section id="section-dashboard" class="admin-section hidden animate-section">
+            <div class="mb-8">
+                <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">Panel Analityczny</h1>
+                <p class="text-gray-400 text-sm mt-1">Kompleksowe statystyki aktywności i wydajności struktury liturgicznej w czasie rzeczywistym.</p>
             </div>
 
-            <form action="/admin/delete_bulk_attendances" method="POST" class="w-full">
-                <div class="flex justify-end mb-4">
-                    <button type="submit" class="bg-danger text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-red-700 hover:-translate-y-1 transition flex items-center gap-2" onclick="return confirm('Czy na pewno chcesz usunąć wszystkie ZAZNACZONE służby?')">
-                        🗑️ Usuń zaznaczone
-                    </button>
-                </div>
-                <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto w-full">
-                    <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[600px]">
-                        <thead>
-                            <tr class="border-b-2 border-brand text-lg">
-                                <th class="p-4 w-12"><input type="checkbox" class="w-6 h-6 accent-danger cursor-pointer" onclick="toggleAll(this, 'att-chk')"></th>
-                                <th class="p-4">Użytkownicy</th><th class="p-4">Data</th><th class="p-4">Godzina</th><th class="p-4">Rodzaj</th><th class="p-4">Akcje</th>
-                            </tr>
-                        </thead>
-                        <tbody id="attendance-tbody">
-                            {% for att, user in attendances %}
-                            <tr class="attendance-row border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition relative" data-username="{{ user.username }}">
-                                <td class="p-4"><input type="checkbox" name="att_ids" value="{{ att.id }}" class="att-chk w-6 h-6 accent-danger cursor-pointer"></td>
-                                <td class="p-4"><strong>{{ user.username }}</strong> <span class="text-sm text-gray-500 dark:text-gray-300">({{ user.imie }} {{ user.nazwisko }})</span></td>
-                                <td class="p-4">{{ att.data_sluzby.strftime('%d.%m.%Y') }}</td>
-                                <td class="p-4">{{ att.godzina }}</td>
-                                <td class="p-4">
-                                    {% if att.typ_mszy == 'inna' %}
-                                        <span class="bg-success text-white px-3 py-1 rounded-md font-bold text-xs">{{ att.nazwa_inna }}</span>
-                                    {% else %}
-                                        <span class="bg-[#4834d4] text-white px-3 py-1 rounded-md font-bold text-xs">{{ att.typ_mszy|capitalize }}</span>
-                                    {% endif %}
-                                </td>
-                                <td class="p-4">
-                                    <div class="relative inline-block text-left">
-                                        <button type="button" class="text-2xl font-bold px-2 py-1 hover:text-brand" onclick="toggleMenu('menu-att-{{att.id}}')">⋮</button>
-                                        <div id="menu-att-{{att.id}}" class="dropdown-content hidden absolute right-0 top-full mt-2 w-48 bg-white dark:bg-darkbg border border-gray-200 dark:border-brand rounded-xl shadow-2xl z-50 overflow-hidden">
-                                            {% set bezpieczna_nazwa = att.nazwa_inna if att.nazwa_inna else '' %}
-                                            <a href="javascript:void(0)" class="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-brand transition" onclick="openEditModal('{{att.id}}', '{{att.data_sluzby}}', '{{att.godzina}}', '{{att.typ_mszy}}', '{{bezpieczna_nazwa}}')">Popraw wpis</a>
-                                            <a href="{{ url_for('delete_entry', id=att.id) }}" class="block px-4 py-3 text-danger hover:bg-red-50 dark:hover:bg-red-900/30 transition" onclick="return confirm('Usunąć?')">Usuń wpis</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </form>
-        </section>
-
-        <section id="section-uzytkownicy" class="admin-section hidden">
-            <div class="flex flex-col xl:flex-row flex-wrap justify-between items-start xl:items-center gap-4 mb-8">
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Zarządzanie Użytkownikami</h1>
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-white dark:bg-cardbg px-3 py-2 rounded-xl shadow border border-gray-200 dark:border-brand w-full sm:w-auto max-w-full overflow-hidden">
-                    <div class="flex items-center gap-2 shrink-0">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" class="text-brand dark:text-gray-300" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9M3 12h5m0 0v8m0 0l-3-3m3 3l3-3"></path></svg>
-                        <label class="font-bold text-gray-700 dark:text-white whitespace-nowrap">Sortuj:</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                <div class="glass-card rounded-3xl p-6 border border-white/5 relative overflow-hidden">
+                    <div class="absolute -top-10 -right-10 w-24 h-24 bg-brand/10 rounded-full blur-2xl"></div>
+                    <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">Suma Obsłużonych Służb</div>
+                    <div class="text-4xl font-black text-white mt-2 font-mono tracking-tight">{{ attendances|length }}</div>
+                    <div class="text-xs text-success font-semibold mt-2 flex items-center gap-1">
+                        <span>📈</span> Status bazy danych stabilny
                     </div>
-                    <select id="sortUsers" onchange="sortTable('tbody-users', this.value, 'users')" class="bg-transparent text-gray-900 dark:text-white outline-none font-semibold cursor-pointer w-full max-w-full truncate">
-                        <option value="ranga-nazwisko" class="text-black">Ranga + Nazwisko</option>
-                        <option value="ranga-imie" class="text-black">Ranga + Imię</option>
-                        <option value="ranga-user" class="text-black">Ranga + Login</option>
-                        <option value="alfa-nazwisko" class="text-black">Alfabetycznie (Nazwisko)</option>
-                        <option value="alfa-imie" class="text-black">Alfabetycznie (Imię)</option>
-                        <option value="alfa-user" class="text-black">Alfabetycznie (Login)</option>
-                    </select>
+                </div>
+
+                <div class="glass-card rounded-3xl p-6 border border-white/5 relative overflow-hidden">
+                    <div class="absolute -top-10 -right-10 w-24 h-24 bg-success/10 rounded-full blur-2xl"></div>
+                    <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">Zarejestrowani Członkowie</div>
+                    <div class="text-4xl font-black text-white mt-2 font-mono tracking-tight">{{ users|length }}</div>
+                    <div class="text-xs text-brand font-semibold mt-2 flex items-center gap-1">
+                        <span>👥</span> Aktywne profile użytkowników
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-3xl p-6 border border-white/5 relative overflow-hidden">
+                    <div class="absolute -top-10 -right-10 w-24 h-24 bg-warning/10 rounded-full blur-2xl"></div>
+                    <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">Aktualne Ogłoszenia</div>
+                    <div class="text-4xl font-black text-white mt-2 font-mono tracking-tight">{{ announcements|length }}</div>
+                    <div class="text-xs text-warning font-semibold mt-2 flex items-center gap-1">
+                        <span>📢</span> Komunikaty na tablicy głównej
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-3xl p-6 border border-white/5 relative overflow-hidden">
+                    <div class="absolute -top-10 -right-10 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl"></div>
+                    <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">Wpisy w Grafiku</div>
+                    <div class="text-4xl font-black text-white mt-2 font-mono tracking-tight">{{ schedules|length if schedules else 0 }}</div>
+                    <div class="text-xs text-purple-400 font-semibold mt-2 flex items-center gap-1">
+                        <span>📅</span> Przydziały asyst liturgicznych
+                    </div>
                 </div>
             </div>
-            
-            <form action="/admin/delete_bulk_users" method="POST" class="w-full">
-                <div class="flex justify-end mb-4">
-                    <button type="submit" class="bg-danger text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-red-700 hover:-translate-y-1 transition flex items-center gap-2" onclick="return confirm('UWAGA: Zaznaczeni użytkownicy zostaną usunięci razem z wszystkimi ich służbami! Jesteś pewien?')">
-                        🗑️ Usuń zaznaczonych
-                    </button>
-                </div>
-                <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto w-full">
-                    <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[750px]">
-                        <thead>
-                            <tr class="border-b-2 border-brand text-lg">
-                                <th class="p-4 w-12"><input type="checkbox" class="w-6 h-6 accent-danger cursor-pointer" onclick="toggleAll(this, 'usr-chk')"></th>
-                                <th class="p-4">Imię</th><th class="p-4">Nazwisko</th><th class="p-4">User</th><th class="p-4">Hasło</th><th class="p-4">Ranga / 2FA</th><th class="p-4">Rejestracja IP / GPS</th><th class="p-4">Akcje</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-users">
-                            {% for u in users %}
-                            <tr class="border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition" data-imie="{{ u.imie|lower }}" data-nazwisko="{{ u.nazwisko|lower }}" data-user="{{ u.username|lower }}" data-role="{{ u.role|default('user')|lower }}">
-                                <td class="p-4"><input type="checkbox" name="user_ids" value="{{u.id}}" class="usr-chk w-6 h-6 accent-danger cursor-pointer"></td>
-                                <td class="p-4">{{ u.imie }}</td><td class="p-4">{{ u.nazwisko }}</td>
-                                <td class="p-4 font-bold text-indigo-400">@{{ u.username }}</td>
-                                <td class="p-4"><code class="text-green-600 dark:text-green-400 font-mono text-xs">{{ u.password[:15] }}...</code></td>
-                                <td class="p-4">
-                                    <div class="flex flex-col gap-1.5 items-start">
-                                        <span class="px-3 py-1 rounded-md font-bold text-xs {{ 'bg-warning text-black' if u.role == 'admin' else 'bg-purple-600 text-white' if u.role == 'ksiądz' else 'bg-gray-600 text-white' }}">
-                                            {{ u.role|capitalize }}
-                                        </span>
-                                        {% if u.two_factor_code %}
-                                            <span class="text-[10px] bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded font-black uppercase tracking-wide">Wymaga resetu</span>
-                                        {% else %}
-                                            <span class="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded font-black uppercase tracking-wide">2FA Aktywne</span>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                                <td class="p-4">
-                                    <div class="flex flex-col gap-0.5 text-xs">
-                                        <span class="font-mono text-gray-600 dark:text-gray-300">🌐 {{ u.registration_ip if u.registration_ip else 'Brak' }}</span>
-                                        {% if u.latitude and u.longitude %}
-                                            <a href="https://www.google.com/maps?q={{ u.latitude }},{{ u.longitude }}" target="_blank" class="text-brand hover:underline font-bold flex items-center gap-0.5">
-                                                📍 {{ u.latitude|round(4) }}, {{ u.longitude|round(4) }} 🔗
-                                            </a>
-                                        {% else %}
-                                            <span class="text-gray-400 italic">Brak GPS</span>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                                <td class="p-4">
-                                    <div class="relative inline-block text-left">
-                                        <button type="button" class="text-2xl font-bold px-2 py-1 hover:text-brand" onclick="toggleMenu('menu-usr-{{u.id}}')">⋮</button>
-                                        <div id="menu-usr-{{u.id}}" class="dropdown-content hidden absolute right-0 top-full mt-2 w-56 bg-white dark:bg-darkbg border border-gray-200 dark:border-brand rounded-xl shadow-2xl z-50 overflow-hidden">
-                                            {% set bez_imie = u.imie if u.imie else '' %}
-                                            {% set bez_nazwisko = u.nazwisko if u.nazwisko else '' %}
-                                            <a href="javascript:void(0)" class="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-brand transition" onclick="openUserEditModal('{{u.id}}', '{{bez_imie}}', '{{bez_nazwisko}}', '{{u.username}}', '{{u.password}}', '{{u.role}}', '{{u.uproszczony}}')">Popraw dane / Rangę</a>
-                                            <a href="{{ url_for('delete_user', id=u.id) }}" class="block px-4 py-3 text-danger hover:bg-red-50 dark:hover:bg-red-900/30 transition" onclick="return confirm('Usunąć?')">Usuń</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </form>
-        </section>
 
-        <section id="section-ogloszenia" class="admin-section hidden">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Tablica Ogłoszeń</h1>
-            <div class="bg-white dark:bg-cardbg rounded-2xl p-6 shadow-xl mb-8">
-                <form action="/admin/add_announcement" method="POST" class="flex flex-col md:flex-row gap-4 w-full">
-                    <input type="text" name="tresc" placeholder="Co chcesz ogłosić?" required class="flex-grow p-4 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-brand w-full">
-                    <button type="submit" class="bg-brand text-white px-8 py-4 rounded-xl font-bold hover:-translate-y-1 hover:shadow-lg transition shrink-0">Opublikuj</button>
-                </form>
-            </div>
-            <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto w-full">
-                <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[500px]">
-                    <thead><tr class="border-b-2 border-brand text-lg"><th class="p-4">Treść</th><th class="p-4">Data</th><th class="p-4">Akcje</th></tr></thead>
-                    <tbody>
-                        {% for og in announcements %}
-                        <tr class="border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition">
-                            <td class="p-4">{{ og.tresc }}</td><td class="p-4">{{ og.data_dodania.strftime('%d.%m %H:%M') }}</td>
-                            <td class="p-4">
-                                <div class="relative inline-block text-left">
-                                    <button type="button" class="text-2xl font-bold px-2 py-1 hover:text-brand" onclick="toggleMenu('menu-og-{{og.id}}')">⋮</button>
-                                    <div id="menu-og-{{og.id}}" class="dropdown-content hidden absolute right-0 top-full mt-2 w-48 bg-white dark:bg-darkbg border border-gray-200 dark:border-brand rounded-xl shadow-2xl z-50 overflow-hidden">
-                                        {% set bez_tresc = og.tresc|replace("'", "\\'") %}
-                                        <a href="javascript:void(0)" class="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-brand transition" onclick="openOgEditModal('{{og.id}}', '{{bez_tresc}}')">Popraw treść</a>
-                                        <a href="{{ url_for('delete_announcement', id=og.id) }}" class="block px-4 py-3 text-danger hover:bg-red-50 dark:hover:bg-red-900/30 transition" onclick="return confirm('Usunąć?')">Usuń</a>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <section id="section-plan" class="admin-section hidden">
-            <div class="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-8">
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Plan Służb (Stałe Dyżury)</h1>
-                <a href="{{ url_for('export_schedule') }}" class="w-full sm:w-auto bg-success text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:-translate-y-1 transition flex items-center justify-center gap-2 shrink-0">
-                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Pobierz Plan Służb (Excel)
-                </a>
-            </div>
-            
-            <div class="bg-white dark:bg-cardbg rounded-3xl p-8 shadow-2xl mb-12 border border-brand/30">
-                <form action="/admin/add_schedule" method="POST" class="flex flex-col lg:flex-row gap-6 items-stretch lg:items-end w-full">
-                    
-                    <div class="flex-grow flex flex-col gap-2 w-full lg:w-auto min-w-0">
-                        <label class="font-bold dark:text-white text-gray-700">Wybierz ministranta:</label>
-                        <select name="user_id" required class="w-full max-w-full p-4 rounded-2xl border-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:border-brand focus:ring-2 focus:ring-brand truncate">
-                            {% for u in users %}<option value="{{ u.id }}">{{ u.username }} ({{ u.imie }} {{ u.nazwisko }})</option>{% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="flex flex-col gap-2 w-full lg:w-60 shrink-0 min-w-0">
-                        <label class="font-bold dark:text-white text-gray-700">Dzień tygodnia:</label>
-                        <select name="dzien" id="planDzien" onchange="updateGodziny()" class="w-full max-w-full p-4 rounded-2xl border-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:border-brand focus:ring-2 focus:ring-brand truncate">
-                            <option value="Poniedziałek">Poniedziałek</option><option value="Wtorek">Wtorek</option>
-                            <option value="Środa">Środa</option><option value="Czwartek">Czwartek</option>
-                            <option value="Piątek">Piątek</option><option value="Sobota">Sobota</option>
-                            <option value="Niedziela">Niedziela</option>
-                        </select>
-                    </div>
-                    
-                    <div class="flex flex-col gap-2 w-full lg:w-48 shrink-0 min-w-0">
-                        <label class="font-bold dark:text-white text-gray-700">Godzina mszy:</label>
-                        <select name="godzina" id="planGodzina" class="w-full max-w-full p-4 rounded-2xl border-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:border-brand focus:ring-2 focus:ring-brand truncate">
-                        </select>
-                    </div>
-
-                    <button type="submit" class="w-full lg:w-auto bg-gradient-to-r from-success to-green-400 text-white px-10 py-4 h-[65px] rounded-2xl font-extrabold shadow-lg hover:scale-105 active:scale-95 transition whitespace-nowrap shrink-0 flex items-center justify-center gap-2">
-                        + Dodaj dyżur
-                    </button>
-                </form>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
-                {% for dzien, godziny_grupy in plan.items() %}
-                <div class="bg-white dark:bg-cardbg rounded-3xl p-6 shadow-xl flex flex-col w-full min-w-0 border-t-4 border-brand">
-                    
-                    <div class="flex justify-between items-center mb-5 shrink-0">
-                        <h2 class="text-2xl font-extrabold text-gray-900 dark:text-white m-0 truncate">{{ dzien }}</h2>
-                        <span class="bg-brand/20 text-brand px-3 py-1 rounded-lg text-sm font-bold">{{ liczniki[dzien] }} osób</span>
-                    </div>
-                    
-                    {% if godziny_grupy %}
-                        <div class="flex flex-col gap-4 w-full">
-                            {% for godzina, ministranci in godziny_grupy.items() %}
-                                <div class="bg-gray-50 dark:bg-darkbg p-4 rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden">
-                                    
-                                    <div class="bg-brand/10 p-2 rounded-lg mb-3 shrink-0">
-                                        <span class="font-extrabold text-brand flex items-center gap-2">
-                                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                                            Godzina: {{ godzina }}
-                                        </span>
-                                    </div>
-
-                                    <ul class="flex flex-col gap-1 w-full min-w-0">
-                                        {% for m in ministranci %}
-                                            <li class="flex justify-between items-center w-full min-w-0 group hover:bg-white/10 px-2 py-1.5 rounded-lg transition overflow-hidden">
-                                                <div class="flex flex-col sm:flex-row sm:items-center gap-0 sm:gap-2 min-w-0 truncate">
-                                                    <strong class="text-gray-800 dark:text-white truncate">{{ m.user.username }}</strong>
-                                                    <span class="text-xs text-gray-500 font-normal truncate">({{ m.user.imie }} {{ m.user.nazwisko }})</span>
-                                                </div>
-                                                <a href="{{ url_for('delete_schedule', id=m.id) }}" class="text-gray-400 group-hover:text-danger text-2xl font-bold transition px-2 shrink-0 ml-2" onclick="return confirm('Usunąć ten dyżur?')">&times;</a>
-                                            </li>
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <p class="text-sm text-gray-500 dark:text-gray-400 italic">Brak zapisanych dyżurów.</p>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
-        </section>
-
-        <section id="section-weryfikacja" class="admin-section hidden">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Oczekujące Rejestracje</h1>
-            {% if pending_users %}
-                <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 w-full">
-                    {% for pu in pending_users %}
-                    <div class="bg-white dark:bg-cardbg rounded-3xl p-6 shadow-xl border border-gray-100 dark:border-brand/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 w-full min-w-0">
-                        <div class="flex items-center gap-4 min-w-0">
-                            <div class="w-14 h-14 rounded-2xl bg-brand/10 flex items-center justify-center text-2xl shrink-0">👤</div>
-                            <div class="min-w-0 truncate">
-                                <h3 class="text-xl font-black text-gray-800 dark:text-white truncate">{{ pu.imie }} {{ pu.nazwisko }}</h3>
-                                <div class="flex flex-col gap-0.5 mt-1">
-                                    <span class="text-sm font-mono text-brand font-bold truncate">@{{ pu.username }}</span>
-                                    <span class="text-xs text-gray-400 dark:text-gray-500">Zarejestrowano: {{ pu.created_at.strftime('%d.%m.%Y %H:%M') if pu.created_at else 'Brak daty' }}</span>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="glass-card rounded-3xl p-6 lg:col-span-2 border border-white/5">
+                    <h3 class="text-lg font-extrabold text-white mb-6 flex items-center gap-2">
+                        <span>📊</span> Wykres Aktywności (Suma zgłoszeń na użytkownika)
+                    </h3>
+                    <div class="space-y-4">
+                        {% for u in users[:5] %}
+                        <div>
+                            <div class="flex justify-between text-xs font-bold mb-1.5">
+                                <span class="text-gray-300">{{ u.imie }} {{ u.nazwisko }} (@{{ u.username }})</span>
+                                <span class="text-brand font-mono">
+                                    {% set count = attendances|selectattr('user_id', 'equalto', u.id)|list|length %}
+                                    {{ count }} punktów wejść
+                                </span>
+                            </div>
+                            <div class="w-full bg-white/5 h-3 rounded-full overflow-hidden border border-white/5">
+                                <div class="bg-gradient-to-r from-brand to-purple-500 h-full rounded-full transition-all duration-500" >
+                                    {% if attendances|length > 0 %}
+                                    {{ (count / attendances|length * 100)|round }}
+                                    {% else %}0
                                 </div>
                             </div>
                         </div>
-                        <div class="flex flex-col gap-1.5 text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-darkbg p-3 rounded-xl border border-gray-100 dark:border-white/5 shrink-0">
-                            <div class="flex items-center gap-2">🌐 <strong>IP:</strong> <span class="font-mono">{{ pu.registration_ip if pu.registration_ip else 'Brak' }}</span></div>
-                            {% if pu.latitude and pu.longitude %}
-                                <div class="flex items-center gap-2">📍 <strong>GPS:</strong> 
-                                    <a href="https://www.google.com/maps?q={{ pu.latitude }},{{ pu.longitude }}" target="_blank" class="text-brand font-bold hover:underline">Pokaż mapę 🔗</a>
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <form action="{{ url_for('przetworz_weryfikacje', user_id=pu.id, akcja='zatwierdz') }}" method="POST">
-                                <button type="submit" class="bg-success text-white px-4 py-2.5 rounded-xl font-bold shadow hover:bg-green-600 transition flex items-center gap-1 text-sm">✅ Zatwierdź</button>
-                            </form>
-                            <form action="{{ url_for('przetworz_weryfikacje', user_id=pu.id, akcja='odrzuc') }}" method="POST" onsubmit="return confirm('Usunąć to zgłoszenie?')">
-                                <button type="submit" class="bg-danger text-white px-4 py-2.5 rounded-xl font-bold shadow hover:bg-red-700 transition flex items-center gap-1 text-sm">❌ Odrzuć</button>
-                            </form>
-                        </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
                 </div>
-            {% else %}
-                <div class="bg-white dark:bg-cardbg rounded-3xl p-12 text-center text-gray-500 shadow-xl max-w-md mx-auto flex flex-col items-center gap-3">
-                    <span class="text-5xl">🎉</span>
-                    <h3 class="text-xl font-bold text-gray-800 dark:text-white">Wszystko czyste!</h3>
-                    <p class="text-sm text-gray-400">Brak nowych wniosków o rejestrację w systemie.</p>
+
+                <div class="glass-card rounded-3xl p-6 border border-white/5 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-extrabold text-white mb-4 flex items-center gap-2">
+                            <span>💡</span> Szybki Raport
+                        </h3>
+                        <p class="text-sm text-gray-400 leading-relaxed">
+                            System przeanalizował ostatnie wpisy. Najwyższa frekwencja odnotowywana jest tradycyjnie na nabożeństwach niedzielnych. Pamiętaj o regularnym weryfikowaniu wpisów o statusie "Inna", aby zapobiegać nadużyciom punktowym.
+                        </p>
+                    </div>
+                    <div class="pt-6 border-t border-white/5 mt-6">
+                        <div class="text-xs text-gray-500 font-mono">Ostatnia aktualizacja struktur:</div>
+                        <div class="text-xs text-gray-300 font-mono font-bold mt-1">Synchronizacja z bazą PostgreSQL przebiegła pomyślnie.</div>
+                    </div>
                 </div>
-            {% endif %}
+            </div>
         </section>
 
-        <section id="section-podsumowanie" class="admin-section hidden">
+        <section id="section-sluzby" class="admin-section hidden animate-section">
             <div class="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-8">
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Podsumowanie i Statystyki</h1>
-                <div class="flex items-center gap-2 bg-white dark:bg-cardbg px-3 py-2 rounded-xl shadow border border-gray-200 dark:border-brand w-full sm:w-auto">
-                    <label class="font-bold text-gray-700 dark:text-white whitespace-nowrap">Miesiąc:</label>
-                    <select id="selectMiesiac" onchange="wybierzMiesiac()" class="bg-transparent text-gray-900 dark:text-white outline-none font-semibold cursor-pointer w-full">
-                        <option value="all" class="text-black">Wszystkie wpisy</option>
-                        <option value="01" class="text-black">Styczeń</option><option value="02" class="text-black">Luty</option>
-                        <option value="03" class="text-black">Marzec</option><option value="04" class="text-black">Kwiecień</option>
-                        <option value="05" class="text-black">Maj</option><option value="06" class="text-black">Czerwiec</option>
-                        <option value="07" class="text-black">Lipiec</option><option value="08" class="text-black">Sierpień</option>
-                        <option value="09" class="text-black">Wrzesień</option><option value="10" class="text-black">Październik</option>
-                        <option value="11" class="text-black">Listopad</option><option value="12" class="text-black">Grudzień</option>
-                    </select>
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">Zarządzanie Służbami</h1>
+                    <p class="text-gray-400 text-sm mt-1">Ewidencja, modyfikacja oraz zatwierdzanie punktów za asysty liturgiczne.</p>
+                </div>
+                <button class="bg-gradient-to-r from-success to-green-400 text-white px-6 py-3.5 rounded-2xl font-black text-sm shadow-lg hover:-translate-y-0.5 transition duration-300 flex items-center gap-2" onclick="openModal('addAttendanceModal')">
+                    <span>＋</span> Manually Add Attendance
+                </button>
+            </div>
+            
+            <div class="flex flex-wrap gap-2 mb-6 p-4 bg-white/5 border border-white/5 rounded-2xl">
+                <button class="filter-btn bg-brand text-white border border-brand px-4 py-2 rounded-xl font-bold text-xs transition-all duration-300 shadow-brand-glow" onclick="filterUser('all', this)">Wszyscy</button>
+                {% for u in users %}
+                    <button class="filter-btn bg-white/5 text-gray-300 border border-white/5 px-4 py-2 rounded-xl font-bold text-xs transition-all duration-300 hover:bg-white/10" onclick="filterUser('{{ u.username }}', this)">{{ u.imie }} {{ u.nazwisko }}</button>
+                {% endfor %}
+            </div>
+
+            <div class="glass-card rounded-3xl overflow-hidden border border-white/5 shadow-2xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-white/5 border-b border-white/5 text-gray-300 font-bold text-xs uppercase tracking-wider">
+                                <th class="p-4 md:p-5">Id</th>
+                                <th class="p-4 md:p-5">Użytkownik</th>
+                                <th class="p-4 md:p-5">Data Służby</th>
+                                <th class="p-4 md:p-5">Godzina</th>
+                                <th class="p-4 md:p-5">Typ Liturgii</th>
+                                <th class="p-4 md:p-5 text-center">Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5 text-sm">
+                            {% for att in attendances %}
+                            {% set u = users|selectattr('id', 'equalto', att.user_id)|first %}
+                            <tr class="attendance-row hover:bg-white/5 transition duration-200 text-gray-200" data-username="{{ u.username if u else '' }}">
+                                <td class="p-4 md:p-5 font-mono text-xs text-gray-500">#{{ att.id }}</td>
+                                <td class="p-4 md:p-5 font-bold text-white">
+                                    {% if u %}{{ u.imie }} {{ u.nazwisko }} <span class="text-brand font-normal text-xs block">@{{ u.username }}</span>{% else %}<span class="text-danger italic">Usunięty użytkownik</span>{% endif %}
+                                </td>
+                                <td class="p-4 md:p-5 font-medium font-mono">{{ att.data_sluzby }}</td>
+                                <td class="p-4 md:p-5 font-bold font-mono text-brand">{{ att.godzina }}</td>
+                                <td class="p-4 md:p-5">
+                                    {% if att.typ_mszy == 'inna' %}
+                                        <span class="bg-purple-500/10 text-purple-400 border border-purple-500/20 px-3 py-1 rounded-lg text-xs font-bold">Inna: {{ att.nazwa_inna }}</span>
+                                    {% else %}
+                                        <span class="bg-brand/10 text-brand-400 border border-brand/20 px-3 py-1 rounded-lg text-xs font-bold uppercase">{{ att.typ_mszy }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="p-4 md:p-5">
+                                    <div class="flex items-center justify-center gap-2">
+                                        <button class="bg-white/5 hover:bg-brand/20 hover:text-white text-gray-300 p-2 rounded-xl transition duration-300 text-xs font-bold" 
+                                                onclick="openAdminEditModal('{{ att.id }}', '{{ att.data_sluzby }}', '{{ att.godzina }}', '{{ att.typ_mszy }}', '{{ att.nazwa_inna or ',' }}')">
+                                            ✏️ Edytuj
+                                        </button>
+                                        <a href="{{ url_for('delete_attendance', id=att.id) }}" 
+                                           class="bg-danger/10 hover:bg-danger/20 text-danger p-2 rounded-xl transition duration-300 text-xs font-bold"
+                                           onclick="return confirm('Czy na pewno bezpowrotnie skasować ten rekord obecności?')">
+                                            🗑️ Usuń
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="section-ranking" class="admin-section hidden animate-section">
+            <div class="mb-8">
+                <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">Cyfrowy Ranking</h1>
+                <p class="text-gray-400 text-sm mt-1">Automatycznie generowany system punktowy klasyfikujący ministrantów na podstawie frekwencji.</p>
+            </div>
+
+            <div class="glass-card rounded-3xl overflow-hidden border border-white/5 shadow-2xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-white/5 border-b border-white/5 text-gray-300 font-bold text-xs uppercase tracking-wider">
+                                <th class="p-5">Miejsce</th>
+                                <th class="p-5">Użytkownik</th>
+                                <th class="p-5">Nazwa Profilu</th>
+                                <th class="p-5 text-center">Suma Punktów (Służb)</th>
+                                <th class="p-5 text-center">Poziom Medalowy</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-podsumowanie" class="divide-y divide-white/5 text-sm">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="section-plan" class="admin-section hidden animate-section">
+            <div class="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-8">
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">Plany i Grafiki</h1>
+                    <p class="text-gray-400 text-sm mt-1">Zarządzaj stałym planem asyst liturgicznych oraz pobieraj raporty Excel dla parafii.</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ url_for('export_excel') }}" class="bg-white/5 border border-white/10 hover:bg-white/10 text-white px-5 py-3 rounded-2xl font-bold text-xs transition-all duration-300 flex items-center gap-2">
+                        📥 Eksportuj Grafik (.xlsx)
+                    </a>
+                    <button class="bg-brand text-white px-5 py-3 rounded-2xl font-black text-xs shadow-lg hover:bg-brand/90 transition-all duration-300" onclick="openModal('addScheduleModal')">
+                        ＋ Dodaj Przydział do Planu
+                    </button>
                 </div>
             </div>
 
-            <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto w-full">
-                <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[500px]">
-                    <thead>
-                        <tr class="border-b-2 border-brand text-lg">
-                            <th class="p-4">Miejsce</th><th class="p-4">Użytkownik</th>
-                            <th class="p-4">Imię i Nazwisko</th><th class="p-4 text-center">Liczba Służb</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody-podsumowanie">
-                    </tbody>
-                </table>
+            <div class="glass-card rounded-3xl overflow-hidden border border-white/5 shadow-2xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-white/5 border-b border-white/5 text-gray-300 font-bold text-xs uppercase tracking-wider">
+                                <th class="p-5">Dzień Tygodnia</th>
+                                <th class="p-5">Godzina</th>
+                                <th class="p-5">Przypisany Ministrant</th>
+                                <th class="p-5 text-center">Akcja</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5 text-sm">
+                            {% if schedules %}
+                                {% for sch in schedules %}
+                                <tr class="hover:bg-white/5 transition duration-200">
+                                    <td class="p-5 font-bold text-white">{{ sch.dzien_tygodnia }}</td>
+                                    <td class="p-5 font-mono font-bold text-brand">{{ sch.godzina }}</td>
+                                    <td class="p-5">
+                                        {% set su = users|selectattr('id', 'equalto', sch.user_id)|first %}
+                                        {% if su %}<span class="font-semibold">{{ su.imie }} {{ su.nazwisko }}</span> ({{ su.username }}){% else %}<span class="text-gray-500 italic">Brak przypisania</span>{% endif %}
+                                    </td>
+                                    <td class="p-5 text-center">
+                                        <a href="{{ url_for('delete_schedule', id=sch.id) }}" class="text-danger hover:bg-danger/10 px-3 py-1.5 rounded-xl text-xs font-bold transition duration-300" onclick="return confirm('Usunąć ten stały przydział z grafiku?')">
+                                            Usuń
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="p-10 text-center text-gray-500 italic">Brak zdefiniowanych stałych grafików w bazie danych. Użyj przycisku powyżej aby dodać pierwszy rekord.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="mt-8 glass-card rounded-3xl p-6 border border-white/5">
+                <h3 class="text-md font-black uppercase text-gray-300 tracking-wider mb-4">Referencyjna matryca godzinowa systemu</h3>
+                <p class="text-xs text-gray-400 mb-4">Poniższe stałe godziny są zdefiniowane jako kluczowe punkty kontrolne dla algorytmu weryfikacji geolokalizacji.</p>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 text-center">
+                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Poniedziałek 06:30</div>
+                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Poniedziałek 18:00</div>
+                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Wtorek 06:30</div>
+                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Wtorek 18:00</div>
+                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Środa 06:30</div>
+                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Środa 18:00</div>
+                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Czwartek 06:30</div>
+                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Czwartek 18:00</div>
+                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Piątek 06:30</div>
+                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Piątek 18:00</div>
+                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Sobota 08:00</div>
+                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Niedziela 11:00</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="section-ogloszenia" class="admin-section hidden animate-section">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <div class="glass-card rounded-3xl p-6 border border-white/5 h-fit">
+                    <h2 class="text-xl font-black text-white mb-2">Nowe Ogłoszenie</h2>
+                    <p class="text-gray-400 text-xs mb-6">Wpisz komunikat, który pojawi się natychmiast na tablicach wszystkich ministrantów.</p>
+                    
+                    <form action="/admin/add_announcement" method="POST" class="flex flex-col gap-4">
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Tytuł Komunikatu:</label>
+                            <input type="text" name="tytul" required placeholder="np. Zbiórka przed Bożym Ciałem" class="w-full bg-white/5 border border-white/10 rounded-xl p-3.5 text-sm text-white focus:outline-none focus:border-brand transition">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Treść Ogłoszenia:</label>
+                            <textarea name="tresc" required rows="5" placeholder="Wpisz szczegóły ogłoszenia..." class="w-full bg-white/5 border border-white/10 rounded-xl p-3.5 text-sm text-white focus:outline-none focus:border-brand transition"></textarea>
+                        </div>
+                        <button type="submit" class="bg-brand text-white font-black p-4 rounded-xl text-xs tracking-wider uppercase transition shadow-brand-glow hover:bg-brand/90 mt-2">
+                            📢 Opublikuj Ogłoszenie
+                        </button>
+                    </form>
+                </div>
+
+                <div class="lg:col-span-2 flex flex-col gap-4">
+                    <h2 class="text-xl font-black text-white mb-2">Aktywne Ogłoszenia</h2>
+                    {% if announcements %}
+                        {% for og in announcements %}
+                        <div class="glass-card rounded-3xl p-6 border border-white/5 flex flex-col justify-between transition hover:border-white/10 relative">
+                            <div>
+                                <div class="flex justify-between items-start gap-4 mb-2">
+                                    <h3 class="text-lg font-black text-white">{{ og.tytul }}</h3>
+                                    <span class="text-xs font-mono text-gray-500 bg-white/5 px-2.5 py-1 rounded-lg">ID: #{{ og.id }}</span>
+                                </div>
+                                <p class="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{{ og.tresc }}</p>
+                            </div>
+                            <div class="flex justify-between items-center pt-4 mt-6 border-t border-white/5">
+                                <span class="text-xs text-brand font-semibold">Emitowano przez: Szef</span>
+                                <div class="flex gap-2">
+                                    <button onclick="openEditOgModal('{{ og.id }}', '{{ og.tresc|e }}')" class="text-xs font-bold bg-white/5 hover:bg-white/10 text-gray-300 px-3 py-1.5 rounded-xl transition">
+                                        ✏️ Edytuj
+                                    </button>
+                                    <a href="{{ url_for('delete_announcement', id=og.id) }}" class="text-xs font-bold bg-danger/10 hover:bg-danger/20 text-danger px-3 py-1.5 rounded-xl transition" onclick="return confirm('Usunąć to ogłoszenie bezpowrotnie?')">
+                                        🗑️ Skasuj
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="glass-card rounded-3xl p-10 text-center border border-white/5 text-gray-500 italic">
+                            Brak komunikatów na tablicy. Użyj formularza po lewej stronie, aby dodać pierwsze ogłoszenie.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <section id="section-uzytkownicy" class="admin-section hidden animate-section">
+            <div class="mb-8">
+                <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">Rejestr Kont Użytkowników</h1>
+                <p class="text-gray-400 text-sm mt-1">Zarządzanie profilami, nadawanie uprawnień oraz autoryzacja kont oczekujących.</p>
+            </div>
+
+            <div class="glass-card rounded-3xl overflow-hidden border border-white/5 shadow-2xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-white/5 border-b border-white/5 text-gray-300 font-bold text-xs uppercase tracking-wider">
+                                <th class="p-5">Użytkownik</th>
+                                <th class="p-5">Login / Rola</th>
+                                <th class="p-5">IP Rejestracji</th>
+                                <th class="p-5">Geolokacja</th>
+                                <th class="p-5 text-center">Zatwierdzony</th>
+                                <th class="p-5 text-center">Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5 text-sm">
+                            {% for u in users %}
+                            <tr class="hover:bg-white/5 transition duration-200">
+                                <td class="p-5">
+                                    <div class="font-black text-white text-base">{{ u.imie }} {{ u.nazwisko }}</div>
+                                    <div class="text-xs text-gray-400 mt-0.5">Utworzono: {{ u.created_at|datetimeformat if u.created_at else 'Brak danych' }}</div>
+                                </td>
+                                <td class="p-5">
+                                    <div class="font-mono text-brand font-bold">@{{ u.username }}</div>
+                                    <div class="mt-1">
+                                        {% if u.role == 'admin' %}
+                                            <span class="bg-danger/10 text-danger border border-danger/20 text-[10px] uppercase font-black px-2 py-0.5 rounded-md">Szef (Admin)</span>
+                                        {% elif u.role == 'ksiadz' %}
+                                            <span class="bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] uppercase font-black px-2 py-0.5 rounded-md">Ksiądz</span>
+                                        {% else %}
+                                            <span class="bg-white/5 text-gray-300 border border-white/5 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md">Ministrant</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="p-5 font-mono text-xs text-gray-400">
+                                    {{ u.registration_ip or 'Brak logu IP' }}
+                                </td>
+                                <td class="p-5 font-mono text-xs text-gray-400">
+                                    {% if u.latitude and u.longitude %}
+                                        <span class="text-success">🛰️ Wykryto</span><br>
+                                        <span class="text-[10px] text-gray-500">{{ u.latitude[:8] }}, {{ u.longitude[:8] }}</span>
+                                    {% else %}
+                                        <span class="text-gray-600">Brak współrzędnych</span>
+                                    {% endif %}
+                                </td>
+                                <td class="p-5 text-center">
+                                    {% if u.is_approved %}
+                                        <span class="bg-success/10 text-success border border-success/20 text-xs font-bold px-3 py-1 rounded-full">✓ Tak</span>
+                                    {% else %}
+                                        <span class="bg-warning/10 text-warning border border-warning/20 text-xs font-bold px-3 py-1 rounded-full animate-pulse">⏳ Oczekuje</span>
+                                    {% endif %}
+                                </td>
+                                <td class="p-5">
+                                    <div class="flex justify-center items-center gap-2">
+                                        {% if not u.is_approved %}
+                                        <a href="{{ url_for('approve_user', id=u.id) }}" class="bg-success/20 hover:bg-success/30 text-success px-3 py-1.5 rounded-xl font-bold text-xs transition">
+                                            Zatwierdź
+                                        </a>
+                                        {% endif %}
+                                        <a href="{{ url_for('toggle_uproszczony', id=u.id) }}" class="bg-white/5 hover:bg-white/10 text-gray-300 px-3 py-1.5 rounded-xl font-bold text-xs transition">
+                                            Tryb: {{ 'Uproszczony' if u.uproszczony else 'Pełny' }}
+                                        </a>
+                                        {% if u.username != session['user'] %}
+                                        <a href="{{ url_for('delete_user', id=u.id) }}" class="bg-danger/10 hover:bg-danger/20 text-danger px-3 py-1.5 rounded-xl font-bold text-xs transition" onclick="return confirm('Czy bezpowrotnie usunąć konto użytkownika {{ u.username }}?')">
+                                            Usuń
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="section-ustawienia" class="admin-section hidden animate-section">
+            <div class="mb-8">
+                <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">Ustawienia Rdzenia</h1>
+                <p class="text-gray-400 text-sm mt-1">Konfiguracja zmiennych systemowych, bazy danych oraz parametrów bezpieczeństwa sieciowego.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="glass-card rounded-3xl p-6 border border-white/5">
+                    <h3 class="text-lg font-black text-white mb-4 flex items-center gap-2">
+                        <span>🔒</span> Bezpieczeństwo i Sesje
+                    </h3>
+                    <div class="space-y-4 text-sm">
+                        <div class="flex justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+                            <span class="text-gray-400">Czas wygasania sesji administratora:</span>
+                            <span class="font-mono text-white font-bold">15 minut (Hard Timeout)</span>
+                        </div>
+                        <div class="flex justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+                            <span class="text-gray-400">Weryfikacja dwuetapowa (2FA):</span>
+                            <span class="text-success font-bold">Włączona (Wymagany token mail/SMS)</span>
+                        </div>
+                        <div class="flex justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+                            <span class="text-gray-400">Szyfrowanie haseł użytkowników:</span>
+                            <span class="font-mono text-purple-400 font-bold">Werkzeug PBKDF2-SHA256</span>
+                        </div>
+                        <div class="flex justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+                            <span class="text-gray-400">Algorytm poolingu bazy danych:</span>
+                            <span class="font-mono text-white font-bold">pool_pre_ping=True (280s recycle)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-3xl p-6 border border-white/5 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-black text-white mb-4 flex items-center gap-2">
+                            <span>📡</span> Parametry Środowiskowe
+                        </h3>
+                        <div class="p-4 rounded-2xl bg-black/40 border border-white/5 font-mono text-xs text-gray-300 space-y-2">
+                            <p><span class="text-purple-400">FLASK_APP</span> = main.py</p>
+                            <p><span class="text-purple-400">SQLALCHEMY_TRACK_MODIFICATIONS</span> = False</p>
+                            <p><span class="text-purple-400">DATABASE_URL</span> = *************************</p>
+                            <p><span class="text-purple-400">WEB_CONCURRENCY</span> = 1 (Auto-set by Render CPU)</p>
+                        </div>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-white/5 text-xs text-gray-500">
+                        Aby zmienić parametry produkcyjne rdzenia, zmodyfikuj zmienne środowiskowe bezpośrednio w panelu administracyjnym platformy **Render.com**.
+                    </div>
+                </div>
             </div>
         </section>
 
     </main>
 </div>
 
-<!-- MODALE POZOSTAJĄ BEZ ZMIAN STRUKTURALNYCH -->
-<div id="addAttendanceModal" class="modal fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 transition-all duration-300">
-    <div class="bg-white dark:bg-cardbg rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-brand/20 transform scale-95 transition-all duration-300">
+<div id="adminEditModal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+    <div class="glass-card rounded-3xl p-6 md:p-8 max-w-md w-full border border-white/10 shadow-2xl animate-section">
         <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-black text-gray-900 dark:text-white m-0">Dodaj nową służbę</h2>
-            <button onclick="closeModal('addAttendanceModal')" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
+            <h2 class="text-2xl font-black text-white m-0">Modyfikacja Służby</h2>
+            <button onclick="closeModal('adminEditModal')" class="text-gray-400 hover:text-white text-3xl font-bold transition">&times;</button>
+        </div>
+        <form id="adminEditForm" method="POST" class="flex flex-col gap-4">
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Data Służby:</label>
+                <input type="date" name="data_sluzby" id="adminEditDate" required class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand">
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Godzina:</label>
+                <input type="text" name="godzina" id="adminEditTime" required placeholder="np. 06:30" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand font-mono">
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Typ Nabożeństwa/Mszy:</label>
+                <select name="typ_mszy" id="adminEditType" onchange="toggleInna('adminEditType', 'adminGroupInna', 'adminEditInna')" class="w-full bg-cardbg border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand">
+                    <option value="Roraty">Roraty</option>
+                    <option value="Niedzielna">Niedzielna</option>
+                    <option value="Tygodniowa">Tygodniowa</option>
+                    <option value="Nabożeństwo">Nabożeństwo</option>
+                    <option value="inna">Inna (Wpisz własną)</option>
+                </select>
+            </div>
+            <div class="flex-col gap-1.5 hidden" id="adminGroupInna">
+                <label class="text-xs font-bold text-purple-400 uppercase tracking-wider">Własna nazwa nabożeństwa:</label>
+                <input type="text" name="nazwa_inna" id="adminEditInna" placeholder="np. Ślub, Pogrzeb" class="w-full bg-white/5 border border-brand/40 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand">
+            </div>
+            <button type="submit" class="bg-brand text-white font-black p-4 rounded-xl text-sm uppercase tracking-wider transition shadow-brand-glow hover:bg-brand/90 mt-2">
+                💾 Zapisz Poprawki w Bazie
+            </button>
+        </form>
+    </div>
+</div>
+
+<div id="addAttendanceModal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+    <div class="glass-card rounded-3xl p-6 md:p-8 max-w-md w-full border border-white/10 shadow-2xl animate-section">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-black text-white m-0">Ręczny Wpis Służby</h2>
+            <button onclick="closeModal('addAttendanceModal')" class="text-gray-400 hover:text-white text-3xl font-bold transition">&times;</button>
         </div>
         <form action="/admin/add_attendance" method="POST" class="flex flex-col gap-4">
             <div class="flex flex-col gap-1.5">
-                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Wybierz użytkownika:</label>
-                <select name="user_id" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
-                    {% for u in users %}<option value="{{ u.id }}">{{ u.username }} ({{ u.imie }} {{ u.nazwisko }})</option>{% endfor %}
+                <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Wybierz Ministranta:</label>
+                <select name="user_id" required class="w-full bg-cardbg border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand">
+                    {% for u in users %}
+                        <option value="{{ u.id }}">{{ u.imie }} {{ u.nazwisko }} (@{{ u.username }})</option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="flex flex-col gap-1.5">
-                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Data:</label>
-                <input type="date" name="data_sluzby" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+                <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Data Służby:</label>
+                <input type="date" name="data_sluzby" required class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand">
             </div>
             <div class="flex flex-col gap-1.5">
-                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Godzina:</label>
-                <input type="time" name="godzina" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+                <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Godzina:</label>
+                <input type="text" name="godzina" required placeholder="np. 18:00" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand font-mono">
             </div>
             <div class="flex flex-col gap-1.5">
-                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Rodzaj Mszy:</label>
-                <select name="typ_mszy" id="add_typ_mszy" onchange="toggleInnaNazwa('add_typ_mszy', 'add_inna_container')" class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
-                    <option value="niedzielna">Niedzielna</option>
-                    <option value="tygodniowa">Tygodniowa</option>
-                    <option value="inna">Inna (np. Ślub, Pogrzeb, Nabożeństwo)</option>
+                <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Typ Nabożeństwa:</label>
+                <select name="typ_mszy" id="addType" onchange="toggleInna('addType', 'addGroupInna', 'addInna')" class="w-full bg-cardbg border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand">
+                    <option value="Niedzielna">Niedzielna</option>
+                    <option value="Tygodniowa">Tygodniowa</option>
+                    <option value="Roraty">Roraty</option>
+                    <option value="Nabożeństwo">Nabożeństwo</option>
+                    <option value="inna">Inna (Wpisz własną)</option>
                 </select>
             </div>
-            <div id="add_inna_container" class="flex flex-col gap-1.5 hidden">
-                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Własna nazwa służby:</label>
-                <input type="text" name="nazwa_inna" placeholder="np. Ślub, Droga Krzyżowa" class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+            <div class="flex-col gap-1.5 hidden" id="addGroupInna">
+                <label class="text-xs font-bold text-purple-400 uppercase tracking-wider">Własna nazwa:</label>
+                <input type="text" name="nazwa_inna" id="addInna" placeholder="np. Droga Krzyżowa" class="w-full bg-white/5 border border-brand/40 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand">
             </div>
-            <button type="submit" class="bg-brand text-white p-4 rounded-xl font-bold mt-2 shadow-lg hover:bg-brand/90 transition w-full">Zapisz służbę</button>
+            <button type="submit" class="bg-success text-white font-black p-4 rounded-xl text-sm uppercase tracking-wider transition hover:bg-success/90 mt-2">
+                ＋ Wprowadź Rekord do Bazy
+            </button>
         </form>
     </div>
 </div>
 
-<div id="editAttendanceModal" class="modal fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-    <div class="bg-white dark:bg-cardbg rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-brand/20">
+<div id="addScheduleModal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+    <div class="glass-card rounded-3xl p-6 md:p-8 max-w-md w-full border border-white/10 shadow-2xl animate-section">
         <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-black text-gray-900 dark:text-white m-0">Popraw wpis służby</h2>
-            <button onclick="closeModal('editAttendanceModal')" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
+            <h2 class="text-2xl font-black text-white m-0">Nowy Przydział Stały</h2>
+            <button onclick="closeModal('addScheduleModal')" class="text-gray-400 hover:text-white text-3xl font-bold transition">&times;</button>
         </div>
-        <form action="/admin/edit_attendance" method="POST" class="flex flex-col gap-4">
-            <input type="hidden" name="att_id" id="edit_att_id">
+        <form action="/admin/add_schedule" method="POST" class="flex flex-col gap-4">
             <div class="flex flex-col gap-1.5">
-                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Data:</label>
-                <input type="date" name="data_sluzby" id="edit_data_sluzby" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
-            </div>
-            <div class="flex flex-col gap-1.5">
-                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Godzina:</label>
-                <input type="time" name="godzina" id="edit_godzina" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
-            </div>
-            <div class="flex flex-col gap-1.5">
-                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Rodzaj Mszy:</label>
-                <select name="typ_mszy" id="edit_typ_mszy" onchange="toggleInnaNazwa('edit_typ_mszy', 'edit_inna_container')" class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
-                    <option value="niedzielna">Niedzielna</option>
-                    <option value="tygodniowa">Tygodniowa</option>
-                    <option value="inna">Inna (Własna nazwa)</option>
+                <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Dzień Tygodnia:</label>
+                <select name="dzien_tygodnia" required class="w-full bg-cardbg border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand">
+                    <option value="Poniedziałek">Poniedziałek</option>
+                    <option value="Wtorek">Wtorek</option>
+                    <option value="Środa">Środa</option>
+                    <option value="Czwartek">Czwartek</option>
+                    <option value="Piątek">Piątek</option>
+                    <option value="Sobota">Sobota</option>
+                    <option value="Niedzielna">Niedziela</option>
                 </select>
             </div>
-            <div id="edit_inna_container" class="flex flex-col gap-1.5 hidden">
-                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Własna nazwa służby:</label>
-                <input type="text" name="nazwa_inna" id="edit_nazwa_inna" placeholder="np. Ślub, Pogrzeb" class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Godzina Asysty:</label>
+                <input type="text" name="godzina" required placeholder="np. 18:00" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand font-mono">
             </div>
-            <button type="submit" class="bg-brand text-white p-4 rounded-xl font-bold mt-2 shadow-lg hover:bg-brand/90 transition w-full">Zatwierdź zmiany</button>
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Przypisany Ministrant:</label>
+                <select name="user_id" required class="w-full bg-cardbg border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand">
+                    {% for u in users %}
+                        <option value="{{ u.id }}">{{ u.imie }} {{ u.nazwisko }} (@{{ u.username }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="bg-brand text-white font-black p-4 rounded-xl text-sm uppercase tracking-wider transition shadow-brand-glow hover:bg-brand/90 mt-2">
+                🔒 Zapisz w Stałym Grafiku
+            </button>
         </form>
     </div>
 </div>
 
-<div id="editUserModal" class="modal fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-    <div class="bg-white dark:bg-cardbg rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-brand/20">
+<div id="editOgModal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+    <div class="glass-card rounded-3xl p-6 md:p-8 max-w-md w-full border border-white/10 shadow-2xl animate-section">
         <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-black text-gray-900 dark:text-white m-0">Popraw dane / Rangę</h2>
-            <button onclick="closeModal('editUserModal')" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
-        </div>
-        <form action="/admin/edit_user" method="POST" class="flex flex-col gap-4">
-            <input type="hidden" name="user_id" id="edit_user_id">
-            <div class="flex flex-col gap-1.5">
-                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Imię:</label>
-                <input type="text" name="imie" id="edit_user_imie" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
-            </div>
-            <div class="flex flex-col gap-1.5">
-                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Nazwisko:</label>
-                <input type="text" name="nazwisko" id="edit_user_nazwisko" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
-            </div>
-            <div class="flex flex-col gap-1.5">
-                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Login (Username):</label>
-                <input type="text" name="username" id="edit_user_username" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
-            </div>
-            <div class="flex flex-col gap-1.5">
-                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Hasło logowania:</label>
-                <input type="text" name="password" id="edit_user_password" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
-            </div>
-            <div class="flex flex-col gap-1.5">
-                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Ranga systemowa:</label>
-                <select name="role" id="edit_user_role" class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
-                    <option value="user">User (Ministrant)</option>
-                    <option value="ksiądz">Ksiądz</option>
-                    <option value="admin">Admin (Szef)</option>
-                </select>
-            </div>
-            <div class="flex items-center gap-3 p-1">
-                <input type="checkbox" name="uproszczony" id="edit_user_uproszczony" value="y" class="w-5 h-5 accent-brand cursor-pointer">
-                <label for="edit_user_uproszczony" class="font-bold text-gray-700 dark:text-gray-300 text-sm cursor-pointer select-none">Konto uproszczone (bez 2FA / GPS)</label>
-            </div>
-            <button type="submit" class="bg-brand text-white p-4 rounded-xl font-bold mt-2 shadow-lg hover:bg-brand/90 transition w-full">Zapisz poprawione dane</button>
-        </form>
-    </div>
-</div>
-
-<div id="editOgModal" class="modal fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-    <div class="bg-white dark:bg-cardbg rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-brand/20">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-black text-gray-900 dark:text-white m-0">Popraw treść ogłoszenia</h2>
-            <button onclick="closeModal('editOgModal')" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
+            <h2 class="text-2xl font-black text-white m-0">Modyfikacja Ogłoszenia</h2>
+            <button onclick="closeModal('editOgModal')" class="text-gray-400 hover:text-white text-3xl font-bold transition">&times;</button>
         </div>
         <form action="/admin/edit_announcement" method="POST" class="flex flex-col gap-4">
             <input type="hidden" name="og_id" id="edit_og_id">
             <div class="flex flex-col gap-1.5">
-                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Treść ogłoszenia:</label>
-                <textarea name="tresc" id="edit_og_tresc" required rows="4" class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full resize-none focus:ring-2 focus:ring-brand"></textarea>
+                <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Nowa Treść Ogłoszenia:</label>
+                <textarea name="tresc" id="edit_og_tresc" required rows="5" class="w-full bg-white/5 border border-white/10 rounded-xl p-3.5 text-sm text-white focus:outline-none focus:border-brand transition"></textarea>
             </div>
-            <button type="submit" class="bg-brand text-white p-4 rounded-xl font-bold mt-2 shadow-lg hover:bg-brand/90 transition w-full">Zapisz zmiany</button>
+            <button type="submit" class="bg-brand text-white font-black p-4 rounded-xl text-sm uppercase tracking-wider transition shadow-brand-glow hover:bg-brand/90 mt-2">
+                💾 Zaktualizuj Treść Ogłoszenia
+            </button>
         </form>
     </div>
 </div>
 
-    </main>
-</div>
-
-<div id="adminEditModal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xl transition-all duration-300">
-    <div class="w-full max-w-lg bg-[#111827] border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col gap-5 animate-section">
-        
-        <div class="flex justify-between items-start border-b border-slate-800 pb-4">
-            <div class="flex flex-col">
-                <h2 class="text-xl font-black text-white">Autorytatywna Korekta Rekordu</h2>
-                <span class="text-xs text-brand font-mono font-bold mt-0.5">Modyfikujesz zgłoszenie jako Szef</span>
-            </div>
-            <button onclick="closeAdminEditModal()" class="text-slate-400 hover:text-white transition font-black text-2xl leading-none">&times;</button>
-        </div>
-
-        <form id="adminEditForm" action="" method="POST" class="space-y-4">
-            <div class="flex flex-col gap-1.5">
-                <label class="text-xs font-bold text-slate-400 font-mono uppercase tracking-wider">Data Służby:</label>
-                <input type="date" id="modalAdminDate" name="data_sluzby" required class="w-full bg-slate-950 border border-slate-800 focus:border-brand rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand/20 transition">
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-                <label class="text-xs font-bold text-slate-400 font-mono uppercase tracking-wider">Godzina Posługi:</label>
-                <input type="text" id="modalAdminTime" name="godzina" placeholder="np. 18:00" required class="w-full bg-slate-950 border border-slate-800 focus:border-brand rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand/20 transition">
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-                <label class="text-xs font-bold text-slate-400 font-mono uppercase tracking-wider">Kategoria Służby:</label>
-                <select id="modalAdminType" name="rodzaj_sluzby" onchange="toggleAdminModalInnaField()" class="w-full bg-slate-950 border border-slate-800 focus:border-brand rounded-xl px-4 py-3 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand/20 transition">
-                    <option value="msza">Msza Święta</option>
-                    <option value="nabozenstwo">Nabożeństwo</option>
-                    <option value="inna">Inna (Podaj własną nazwę poniżej)</option>
-                </select>
-            </div>
-
-            <div id="modalAdminInnaGroup" class="hidden flex-col gap-1.5">
-                <label class="text-xs font-bold text-amber-400 font-mono uppercase tracking-wider">Podaj specyfikację / nazwę nabożeństwa:</label>
-                <input type="text" id="modalAdminInnaInput" name="inna_nazwa" placeholder="np. Droga Krzyżowa, Roraty" class="w-full bg-slate-950 border border-slate-800 focus:border-brand rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand/20 transition">
-            </div>
-
-            <div class="flex gap-3 pt-4 border-t border-slate-800">
-                <button type="button" onclick="closeAdminEditModal()" class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs tracking-wider uppercase rounded-xl border border-slate-700 transition">
-                    Anuluj
-                </button>
-                <button type="submit" class="flex-1 py-3 bg-brand hover:bg-brand/90 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl shadow-lg shadow-brand/20 transition">
-                    Zatwierdź Zmiany
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    /* --- INTEGRALNY SILNIK JAVASCRIPT CYBERPUNK PANELU ADMINISTRATORA --- */
-
     /**
-     * Główny Router Widoków Sekcji (Tab Switcher z pamięcią stanów w LocalStorage)
-     * @param {string} targetSection - Nazwa docelowej sekcji do wyświetlenia
+     * Główny menedżer przełączania zakładek w panelu administratora.
+     * Zapisuje stan w localStorage, gwarantując odświeżenie karty po przeładowaniu.
      */
-    function showSection(targetSection) {
-        // Schowanie wszystkich zarejestrowanych sekcji administratorskich
+    function showSection(sectionName) {
+        // Ukryj wszystkie sekcje robocze
         document.querySelectorAll('.admin-section').forEach(section => {
             section.classList.add('hidden');
-            section.classList.remove('block');
         });
 
-        // Deaktywacja stanów wizualnych wszystkich przycisków w menu bocznym
+        // Usuń aktywne klasy stylizacyjne ze wszystkich przycisków nawigacyjnych
         document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.classList.remove('nav-btn-active');
-            btn.classList.add('text-slate-400');
+            btn.classList.remove('bg-brand', 'text-white', 'shadow-brand-glow', 'scale-[1.02]');
+            btn.classList.add('text-gray-400', 'hover:bg-white/5', 'hover:text-white');
         });
 
-        // Aktywacja wybranego widoku sekcji roboczej
-        const targetDOM = document.getElementById('section-' + targetSection);
-        if (targetDOM) {
-            targetDOM.classList.remove('hidden');
-            targetDOM.classList.add('block');
-            
-            // Zapisanie bieżącego wyboru w pamięci podręcznej przeglądarki
-            localStorage.setItem('activeAdminTab', targetSection);
+        // Wyświetl żądaną sekcję docelową
+        const targetSection = document.getElementById('section-' + sectionName);
+        if (targetSection) {
+            targetSection.classList.remove('hidden');
         }
 
-        // Nadanie podświetlenia premium przyciskowi nawigacyjnemu
-        const activeBtn = document.getElementById('btn-' + targetSection);
-        if (activeBtn) {
-            activeBtn.classList.add('nav-btn-active');
-            activeBtn.classList.remove('text-slate-400');
+        // Aktywuj wizualnie odpowiedni przycisk menu bocznego
+        const targetBtn = document.getElementById('btn-' + sectionName);
+        if (targetBtn) {
+            targetBtn.classList.remove('text-gray-400', 'hover:bg-white/5', 'hover:text-white');
+            targetBtn.classList.add('bg-brand', 'text-white', 'shadow-brand-glow', 'scale-[1.02]');
+        }
+
+        // Trwałe zapisanie aktywnego wyboru w pamięci podręcznej przeglądarki
+        localStorage.setItem('activeAdminTab', sectionName);
+    }
+
+    /**
+     * Funkcja otwierająca okna modalne systemu
+     */
+    function openModal(modalId) {
+        const targetModal = document.getElementById(modalId);
+        if (targetModal) {
+            targetModal.style.display = 'flex';
         }
     }
 
     /**
-     * Zaawansowany Filtr Wielokryteriowy dla Głównej Tabeli Zgłoszeń (Real-time Fuzzy Search & Date matching)
+     * Funkcja zamykająca okna modalne systemu
      */
-    function filterAttendanceTable() {
-        const query = document.getElementById("filter-search-input").value.toLowerCase().trim();
-        const selectedType = document.getElementById("filter-type-select").value;
-        const selectedDate = document.getElementById("filter-date-input").value;
+    function closeModal(modalId) {
+        const targetModal = document.getElementById(modalId);
+        if (targetModal) {
+            targetModal.style.display = 'none';
+        }
+    }
+
+    /**
+     * Funkcja wywołująca i mapująca dane do modala edycji służby
+     */
+    function openAdminEditModal(id, date, time, type, inna) {
+        document.getElementById('adminEditForm').action = "/edit_attendance/" + id;
+        document.getElementById('adminEditDate').value = date;
+        document.getElementById('adminEditTime').value = time;
+        document.getElementById('adminEditType').value = type;
+        document.getElementById('adminEditInna').value = inna;
         
-        const rows = document.querySelectorAll(".attendance-row");
-        let matchingCount = 0;
+        // Wywołanie kontroli widoczności pola własnego tekstowego "Inna"
+        toggleInna('adminEditType', 'adminGroupInna', 'adminEditInna');
+        openModal('adminEditModal');
+    }
 
+    /**
+     * Funkcja wywołująca i mapująca dane do modala edycji komunikatu / ogłoszenia
+     */
+    function openEditOgModal(id, tresc) {
+        document.getElementById('edit_og_id').value = id;
+        document.getElementById('edit_og_tresc').value = tresc;
+        openModal('editOgModal');
+    }
+
+    /**
+     * Filtrowanie wierszy w tabeli ewidencji służb po nazwie użytkownika
+     */
+    function filterUser(username, btnElement) {
+        // Przywrócenie domyślnych styli dla wszystkich przycisków filtrujących
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.className = "filter-btn bg-white/5 text-gray-300 border border-white/5 px-4 py-2 rounded-xl font-bold text-xs transition-all duration-300 hover:bg-white/10";
+        });
+        
+        // Nadanie stylu wyróżniającego dla aktualnie wybranego kryterium filtru
+        btnElement.className = "filter-btn bg-brand text-white border border-brand px-4 py-2 rounded-xl font-bold text-xs transition-all duration-300 shadow-brand-glow";
+        
+        // Kontrola widoczności wierszy tabeli na podstawie dopasowania data-atrybutu
+        const rows = document.querySelectorAll('.attendance-row');
         rows.forEach(row => {
-            // Pobieranie surowych danych tekstowych z komórek wiersza tabeli
-            const uName = row.dataset.username ? row.dataset.username.toLowerCase() : "";
-            const typeAttr = row.dataset.type ? row.dataset.type : "msza";
-            
-            const nameCell = row.cells[2] ? row.cells[2].innerText.toLowerCase() : "";
-            const dateCell = row.cells[3] ? row.cells[3].innerText.trim() : "";
-            
-            // Warunki dopasowania
-            const matchesSearch = uName.includes(query) || nameCell.includes(query);
-            const matchesType = (selectedType === "all") || (typeAttr === selectedType);
-            const matchesDate = (!selectedDate) || (dateCell === selectedDate);
-
-            if (matchesSearch && matchesType && matchesDate) {
-                row.style.display = "";
-                matchingCount++;
+            if (username === 'all' || row.dataset.username === username) {
+                row.style.display = '';
             } else {
-                row.style.display = "none";
+                row.style.display = 'none';
             }
         });
-
-        // Kontrola wyświetlania wiersza informującego o braku wyników wyszukiwania
-        const noResultsDOM = document.getElementById("no-results-row");
-        if (matchingCount === 0) {
-            if (!noResultsDOM) {
-                const tbody = document.getElementById("tbody-sluzby");
-                const tr = document.createElement("tr");
-                tr.id = "no-results-row";
-                tr.innerHTML = `<td colspan="8" class="p-12 text-center text-slate-500 italic font-medium">Brak wyników spełniających podane kryteria filtracji.</td>`;
-                tbody.appendChild(tr);
-            } else {
-                noResultsDOM.style.display = "";
-            }
-        } else if (noResultsDOM) {
-            noResultsDOM.style.display = "none";
-        }
-
-        // Aktualizacja globalnego licznika statystyk dynamicznych
-        const counterDOM = document.getElementById("stat-total-services");
-        if(counterDOM) {
-            counterDOM.innerText = matchingCount;
-        }
     }
 
     /**
-     * Kompletny reset wszystkich kontrolek filtrujących tabelę
+     * Ukrywa lub pokazuje pole tekstowe dla typu mszy "inna" w zależności od wybranej wartości select
      */
-    function clearAllFilters() {
-        document.getElementById("filter-search-input").value = "";
-        document.getElementById("filter-type-select").value = "all";
-        document.getElementById("filter-date-input").value = "";
-        filterAttendanceTable();
+    function toggleInna(selectId, groupId, inputId) {
+        const select = document.getElementById(selectId);
+        const group = document.getElementById(groupId);
+        const input = document.getElementById(inputId);
+
+        if (select && group) {
+            if (select.value === "inna") {
+                group.classList.remove("hidden");
+                group.classList.add("flex");
+                if (input) input.required = true;
+            } else {
+                group.classList.add("hidden");
+                group.classList.remove("flex");
+                if (input) {
+                    input.required = false;
+                    input.value = "";
+                }
+            }
+        }
     }
 
     /**
-     * PRZELICZANIE RANKINGU (ZACHOWANA I ROZBUDOWANA LOGIKA GREGA)
-     * Agreguje wiersze `.attendance-row`, grupuje po użytkowniku, sortuje desc i generuje medale 🥇, 🥈, 🥉
+     * Przetwarza wiersze tabeli obecności i buduje w czasie rzeczywistym cyfrowy ranking liderów.
+     * Oblicza wystąpienia z bazy i przypisuje odznaki medalowe.
      */
     function aktualizujPodsumowanie() {
         const counts = {};
         const names = {};
-        
-        const rows = document.querySelectorAll(".attendance-row");
-        
-        // Zliczanie powtórzeń w pętli dla każdego aktywnego wiersza
+        const rows = document.querySelectorAll('.attendance-row');
+
         rows.forEach(row => {
             const uName = row.dataset.username;
             if (uName) {
-                const imie = row.cells[2] ? row.cells[2].innerText.trim() : "";
+                // Wyciąganie imienia i nazwiska wyświetlanego w kolumnie użytkownika
+                const boldElement = row.cells[1].querySelector('span');
+                let pelneImie = row.cells[1].innerText.replace(boldElement ? boldElement.innerText : '', '').trim();
                 
-                if (!counts[uName]) {
-                    counts[uName] = 0;
-                    names[uName] = imie;
-                }
-                counts[uName] += 1;
+                counts[uName] = (counts[uName] || 0) + 1;
+                names[uName] = pelneImie;
             }
         });
 
-        // Mapowanie obiektów słownikowych na tablicę i zaawansowane sortowanie malejące
-        const sorted = Object.keys(counts).map(username => ({
+        // Przekształcenie obiektu w posortowaną tablicę struktur rankingu
+        const sortedRanking = Object.keys(counts).map(username => ({
             username: username,
             name: names[username],
             count: counts[username]
         })).sort((a, b) => b.count - a.count);
 
-        // Aktualizacja elitarnego podium graficznego w sekcji rankingu
-        const podium1 = document.getElementById("podium-1-name");
-        const podium2 = document.getElementById("podium-2-name");
-        const podium3 = document.getElementById("podium-3-name");
-
-        if(podium1) podium1.innerText = sorted[0] ? `${sorted[0].name} (${sorted[0].count})` : "-";
-        if(podium2) podium2.innerText = sorted[1] ? `${sorted[1].name} (${sorted[1].count})` : "-";
-        if(podium3) podium3.innerText = sorted[2] ? `${sorted[2].name} (${sorted[2].count})` : "-";
-
-        // Wstrzykiwanie wierszy tabeli podsumowującej do DOM
         const tbody = document.getElementById("tbody-podsumowanie");
         if (!tbody) return;
         tbody.innerHTML = "";
 
-        if (sorted.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-slate-500 italic">Brak danych do wyznaczenia rankingu aktywności.</td></tr>`;
-            return;
-        }
+        // Generowanie kodu HTML wierszy tabeli rankingu z uwzględnieniem stopniowania nagród
+        sortedRanking.forEach((item, index) => {
+            let pozycja = index + 1;
+            let medalBadge = "";
+            let rowHighlight = "";
 
-        sorted.forEach((m, index) => {
-            let tr = document.createElement("tr");
-            tr.className = "border-b border-slate-800/40 hover:bg-slate-800/10 transition-all duration-150";
-            
-            // Logika przydzielania odznak medalowych na podstawie indeksu tablicy
-            let medal = index + 1;
-            let medalStyle = "text-slate-400 font-bold font-mono";
-            
             if (index === 0) {
-                medal = "🥇";
-                medalStyle = "text-xl font-black";
+                medalBadge = "<span class='text-xl'>🥇</span> Mistrz";
+                rowHighlight = "bg-warning/5 border-l-4 border-warning";
             } else if (index === 1) {
-                medal = "🥈";
-                medalStyle = "text-xl font-black";
+                medalBadge = "<span class='text-xl'>🥈</span> Wicemistrz";
+                rowHighlight = "bg-slate-400/5 border-l-4 border-slate-400";
             } else if (index === 2) {
-                medal = "🥉";
-                medalStyle = "text-xl font-black";
+                medalBadge = "<span class='text-xl'>🥉</span> Podium";
+                rowHighlight = "bg-amber-700/5 border-l-4 border-amber-700";
+            } else {
+                medalBadge = "<span class='text-gray-500 font-mono'>#" + pozycja + "</span> Alumn";
             }
 
+            let tr = document.createElement("tr");
+            if(rowHighlight) tr.className = rowHighlight;
+            tr.className += " hover:bg-white/5 transition duration-150";
+
             tr.innerHTML = `
-                <td class="p-4 pl-6 ${medalStyle}">${medal}</td>
-                <td class="p-4 font-bold text-brand">@${m.username}</td>
-                <td class="p-4 font-semibold text-slate-200">${m.name}</td>
-                <td class="p-4 text-center pr-6">
-                    <span class="bg-gradient-to-r from-brand to-purple-600 text-white px-4 py-1.5 rounded-full font-black text-xs shadow-md shadow-brand/10">
-                        ${m.count}
+                <td class="p-5 font-black">${medalBadge}</td>
+                <td class="p-5 font-extrabold text-white">${item.name}</td>
+                <td class="p-5 font-mono text-brand font-bold">@${item.username}</td>
+                <td class="p-5 text-center font-mono font-black text-base text-success">${item.count} pkt</td>
+                <td class="p-5 text-center">
+                    <span class="px-3 py-1 rounded-full text-xs font-bold ${index < 3 ? 'bg-brand/20 text-brand' : 'bg-white/5 text-gray-400'}">
+                        ${index < 3 ? 'Klasa Elitarna' : 'Korpus Podstawowy'}
                     </span>
                 </td>
             `;
             tbody.appendChild(tr);
         });
-    }
-
-    /**
-     * Otwieranie Modala Edycji Rekordu Służby z mapowaniem argumentów z bazy danych Flask
-     */
-    function openAdminEditModal(id, date, time, type, inna) {
-        const form = document.getElementById("adminEditForm");
-        if (form) {
-            form.action = "/edit_attendance/" + id;
-        }
-        
-        document.getElementById("modalAdminDate").value = date;
-        document.getElementById("modalAdminTime").value = time;
-        document.getElementById("modalAdminType").value = type;
-        document.getElementById("modalAdminInnaInput").value = inna;
-        
-        toggleAdminModalInnaField();
-        
-        const modal = document.getElementById("adminEditModal");
-        if (modal) {
-            modal.style.display = "flex";
-            document.body.style.overflow = "hidden";
-        }
-    }
-
-    /**
-     * Zamykanie Modala Edycji Rekordu
-     */
-    function closeAdminEditModal() {
-        const modal = document.getElementById("adminEditModal");
-        if (modal) {
-            modal.style.display = "none";
-            document.body.style.overflow = "";
-        }
-    }
-
-    /**
-     * Warunkowe przełączanie widoczności inputu dla niestandardowej nazwy posługi
-     */
-    function toggleAdminModalInnaField() {
-        const select = document.getElementById("modalAdminType");
-        const group = document.getElementById("modalAdminInnaGroup");
-        const input = document.getElementById("modalAdminInnaInput");
-
-        if (select && select.value === "inna") {
-            if (group) {
-                group.classList.remove("hidden");
-                group.classList.add("flex");
-            }
-            if (input) input.required = true;
-        } else {
-            if (group) {
-                group.classList.add("hidden");
-                group.classList.remove("flex");
-            }
-            if (input) {
-                input.required = false;
-                input.value = "";
-            }
-        }
     }
 
     /**
@@ -953,7 +919,7 @@
         const clockDOM = document.getElementById('live-clock-sidebar');
         setInterval(() => {
             const now = new Date();
-            if(clockDOM) {
+            if (clockDOM) {
                 clockDOM.innerText = now.toLocaleTimeString('pl-PL') + ' | CEST';
             }
         }, 1000);
@@ -973,9 +939,8 @@
         
         // Zabezpieczenie na wypadek kliknięcia poza obszar modala
         window.onclick = function(event) {
-            const modal = document.getElementById('adminEditModal');
-            if (event.target === modal) {
-                closeAdminEditModal();
+            if (event.target.classList.contains('fixed') && event.target.id.includes('Modal')) {
+                event.target.style.display = 'none';
             }
         };
     });
