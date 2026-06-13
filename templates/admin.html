@@ -191,10 +191,13 @@
                                 </span>
                             </div>
                             <div class="w-full bg-white/5 h-3 rounded-full overflow-hidden border border-white/5">
-                                <div class="bg-gradient-to-r from-brand to-purple-500 h-full rounded-full transition-all duration-500" >
-                                    {% if attendances|length > 0 %}
-                                    {{ (count / attendances|length * 100)|round }}
-                                    {% else %}0
+                                {% if attendances|length > 0 %}
+                                    {% set pct = (count / attendances|length * 100)|round %}
+                                    {% set width_style = 'style="width: ' ~ pct ~ '%;"' %}
+                                {% else %}
+                                    {% set width_style = 'style="width: 0%;"' %}
+                                {% endif %}
+                                <div class="bg-gradient-to-r from-brand to-purple-500 h-full rounded-full transition-all duration-500" {{ width_style | safe }}>
                                 </div>
                             </div>
                         </div>
