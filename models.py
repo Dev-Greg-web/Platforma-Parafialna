@@ -17,13 +17,11 @@ class Users(db.Model):
     latitude = db.Column(db.String(30), nullable=True)
     longitude = db.Column(db.String(30), nullable=True)
     
-    # Kolumny dla weryfikacji dwuetapowej 2FA
     two_factor_code = db.Column(db.String(20), nullable=True)
     two_factor_expiry = db.Column(db.DateTime, nullable=True)
-    
-    # Flaga zatwierdzenia konta przez Szefa (Admina)
     is_approved = db.Column(db.Boolean, default=False)
 
+# Upewnij się, że poniższy blok kodu dla 'Attendance' występuje w pliku TYLKO RAZ!
 class Attendance(db.Model):
     __tablename__ = "attendance"
     id = db.Column(db.Integer, primary_key=True)
@@ -33,24 +31,20 @@ class Attendance(db.Model):
     nazwa_inna = db.Column(db.String(100), nullable=True)
     godzina = db.Column(db.String(5), nullable=False)
     data_wpisu = db.Column(db.DateTime, default=datetime.now)
-
-class Attendance(db.Model):
-    __tablename__ = "attendance"
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    data_sluzby = db.Column(db.Date, nullable=False)
-    typ_mszy = db.Column(db.String(20), nullable=False)  # Np. Msza święta, Nabożeństwo, Zbiórka, inna
-    nazwa_inna = db.Column(db.String(100), nullable=True) # Własna nazwa służby
-    godzina = db.Column(db.String(5), nullable=False)
-    data_wpisu = db.Column(db.DateTime, default=datetime.now)
-
-    # RELACJA DLA PANELU ADMINA: Łączy zgłoszenie bezpośrednio z obiektem użytkownika
+    
+    # Relacja do użytkownika
     user = db.relationship('Users', backref=db.backref('attendances', lazy=True))
 
-# POPRAWIONY MODEL Grafiku / Stałych Dyżurów
+class Announcement(db.Model):
+    __tablename__ = "announcement"
+    id = db.Column(db.Integer, primary_key=True)
+    tytul = db.Column(db.String(100), nullable=False)
+    tresc = db.Column(db.Text, nullable=False)
+    data_dodania = db.Column(db.DateTime, default=datetime.now)
+
 class Schedule(db.Model):
     __tablename__ = "schedule"
     id = db.Column(db.Integer, primary_key=True)
-    dzien_tygodnia = db.Column(db.String(50), nullable=False)  # Zmieniono z 'data' na 'dzien_tygodnia'
-    godzina = db.Column(db.String(5), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    dzien_tygodnia = db.Column(db.String(20), nullable=False)
+    godzina = db.Column(db.String(5), nullable=False)
