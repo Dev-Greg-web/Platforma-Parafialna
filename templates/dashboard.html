@@ -2,117 +2,160 @@
 {% block title %}Dashboard - {{ user }}{% endblock %}
 
 {% block content %}
-<div class="w-full max-w-7xl mx-auto min-h-screen flex flex-col md:flex-row shadow-2xl">
+<div class="w-full max-w-7xl mx-auto min-h-screen flex flex-col md:flex-row gap-6 p-4 md:p-6">
     
-    <aside class="w-full md:w-80 bg-[#16213e] border-b-2 md:border-b-0 md:border-r-2 border-brand p-8 flex flex-col shrink-0">
-        <header class="text-white text-2xl font-bold mb-10 text-center">Menu Ministranta</header>
-        <nav class="flex flex-col gap-3 flex-grow">
-            <button onclick="switchTab('ogloszenia')" id="tab-btn-ogloszenia" class="nav-btn bg-brand text-white p-4 text-left rounded-xl font-bold transition">
-                Tablica Ogłoszeń
+    <aside class="w-full md:w-80 bg-cardbg/20 backdrop-blur-xl border border-white/5 p-6 flex flex-col shrink-0 rounded-3xl shadow-2xl transition-all duration-300">
+        <div class="flex items-center justify-center gap-3 mb-10 mt-4">
+            <div class="w-2.5 h-2.5 rounded-full bg-brand shadow-brand-glow animate-pulse"></div>
+            <header class="text-white text-lg font-black tracking-wider uppercase bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+                Menu Ministranta
+            </header>
+        </div>
+        
+        <nav class="flex flex-col gap-2.5 flex-grow">
+            <button onclick="switchTab('ogloszenia')" id="tab-btn-ogloszenia" 
+                class="nav-btn flex items-center gap-3 w-full p-4 rounded-2xl font-extrabold text-sm text-left transition-all duration-300 transform bg-brand text-white shadow-brand-glow">
+                <span>📢</span> Tablica Ogłoszeń
             </button>
-            <button onclick="switchTab('sluzby')" id="tab-btn-sluzby" class="nav-btn text-gray-300 hover:bg-brand/50 p-4 text-left rounded-xl font-bold transition">
-                Zgłoś Służbę
+            <button onclick="switchTab('sluzby')" id="tab-btn-sluzby" 
+                class="nav-btn flex items-center gap-3 w-full p-4 rounded-2xl font-extrabold text-sm text-left transition-all duration-300 transform text-gray-400 hover:bg-white/5">
+                <span>➕</span> Zgłoś Służbę
             </button>
-            <button onclick="switchTab('historia')" id="tab-btn-historia" class="nav-btn text-gray-300 hover:bg-brand/50 p-4 text-left rounded-xl font-bold transition">
-                Moja Historia
+            <button onclick="switchTab('historia')" id="tab-btn-historia" 
+                class="nav-btn flex items-center gap-3 w-full p-4 rounded-2xl font-extrabold text-sm text-left transition-all duration-300 transform text-gray-400 hover:bg-white/5">
+                <span>⏳</span> Moja Historia
             </button>
-            <button onclick="switchTab('plan')" id="tab-btn-plan" class="nav-btn text-gray-300 hover:bg-brand/50 p-4 text-left rounded-xl font-bold transition">
-                Plan Służb (Dyżury)
-            </button>
-            
-            <footer class="mt-auto text-center text-sm text-gray-400 py-4">
-                &copy All rights reserved, Grześ Gładysz 2026
-            </footer>
-            
-            {% if session.get('user_role') == 'admin' %}
-                <a href="{{ url_for('admin_page') }}" class="block w-full bg-warning text-black text-center p-4 rounded-xl font-bold hover:bg-yellow-500 transition mt-4">
-                    Wróć do Panelu Szefa
-                </a>
-            {% endif %}
         </nav>
+        
+        <div class="mt-auto pt-6 border-t border-white/5 flex flex-col gap-2">
+            <div class="text-xs text-gray-500 text-center mb-2">Zalogowany jako: <span class="text-gray-300 font-bold">@{{ user }}</span></div>
+            <a href="{{ url_for('logout') }}" class="w-full text-center p-3.5 bg-danger/10 hover:bg-danger/20 text-danger font-bold text-sm rounded-xl transition duration-300">
+                🚪 Wyloguj się
+            </a>
+        </div>
     </aside>
 
-    <main class="flex-1 p-4 md:p-12 overflow-y-auto pb-32 min-w-0">
+    <main class="flex-grow flex flex-col gap-6">
         
-        <section id="section-ogloszenia" class="dashboard-tab block">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Tablica Ogłoszeń</h1>
+        <div id="section-ogloszenia" class="tab-section bg-cardbg/20 backdrop-blur-xl border border-white/5 p-6 md:p-8 rounded-3xl shadow-2xl flex flex-col">
+            <h2 class="text-2xl md:text-3xl font-black text-white mb-6 flex items-center gap-3">
+                <span class="text-brand">📢</span> Tablica Ogłoszeń
+            </h2>
+            
             {% if announcements %}
-                <div class="flex flex-col gap-6">
-                    {% for og in announcements %}
-                    <div class="bg-gradient-to-br from-brand to-cardbg border-l-4 border-warning p-6 rounded-2xl shadow-lg">
-                        <div class="flex items-center gap-3 mb-2">
-                            <span class="text-white/60 text-sm font-semibold">{{ og.data_wystawienia.strftime('%d.%m %H:%M') }}</span>
-                            <span class="bg-warning text-black text-xs px-2 py-1 rounded font-bold">WAŻNE</span>
-                        </div>
-                        <p class="text-white text-xl">{{ og.tresc }}</p>
+            <div class="grid grid-cols-1 gap-4">
+                {% for ann in announcements %}
+                <div class="p-6 rounded-2xl border border-white/5 bg-slate-900/40 shadow-xl relative overflow-hidden group hover:border-brand/30 transition-all duration-300">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-brand"></div>
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-black text-brand uppercase tracking-widest bg-brand/10 px-2.5 py-1 rounded-md">Ogłoszenie</span>
+                        <span class="text-xs text-gray-500 font-semibold">{{ ann.date_posted.strftime('%d.%m.%Y %H:%M') if ann.date_posted else '' }}</span>
                     </div>
-                    {% endfor %}
+                    <h3 class="text-xl font-extrabold text-white mb-2 group-hover:text-brand transition-colors duration-200">{{ ann.tytul }}</h3>
+                    <p class="text-gray-300 text-sm leading-relaxed whitespace-pre-line">{{ ann.tresc }}</p>
                 </div>
-            {% else %}
-                <div class="text-gray-400 italic text-lg bg-white dark:bg-cardbg p-6 rounded-2xl shadow">Brak nowych ogłoszeń od Szefa.</div>
-            {% endif %}
-        </section>
-
-        <section id="section-sluzby" class="dashboard-tab hidden">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Zgłoś nową służbę</h1>
-            <div class="bg-white dark:bg-cardbg p-8 rounded-3xl max-w-lg border border-gray-200 dark:border-white/10 shadow-xl">
-                <form action="/add_attendance" method="POST" id="attendance-form" class="flex flex-col gap-6">
-                    <div class="flex flex-col gap-2">
-                        <label for="date" class="text-gray-700 dark:text-white font-bold">Data służby:</label>
-                        <input type="date" name="date" id="date" min="{{ min_date }}" max="{{ today }}" value="{{ today }}" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black w-full outline-none focus:ring-4 focus:ring-brand/50 border border-gray-300 dark:border-none">
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <label for="typ_mszy" class="text-gray-700 dark:text-white font-bold">Rodzaj mszy:</label>
-                        <select name="typ_mszy" id="typ_mszy_normal" onchange="toggleInna('typ_mszy_normal', 'group_inna_normal', 'nazwa_inna_normal')" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black w-full outline-none focus:ring-4 focus:ring-brand/50 border border-gray-300 dark:border-none">
-                            <option value="poranna">Poranna</option><option value="wieczorna">Wieczorna</option><option value="inna">Inna (np. Ślub, Pogrzeb)</option>
-                        </select>
-                    </div>
-                    <div class="flex flex-col gap-2 hidden" id="group_inna_normal">
-                        <label for="nazwa_inna_normal" class="text-gray-700 dark:text-white font-bold">Nazwa mszy:</label>
-                        <input type="text" name="nazwa_inna" id="nazwa_inna_normal" placeholder="Wpisz nazwę..." class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black w-full outline-none focus:ring-4 focus:ring-brand/50 border border-gray-300 dark:border-none">
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <label for="godzina" class="text-gray-700 dark:text-white font-bold">Godzina:</label>
-                        <input type="time" name="godzina" id="godzina_normal" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black w-full outline-none focus:ring-4 focus:ring-brand/50 border border-gray-300 dark:border-none">
-                    </div>
-                    <button type="submit" class="w-full bg-brand text-white p-4 rounded-xl font-bold text-lg hover:-translate-y-1 hover:shadow-[0_5px_15px_rgba(94,59,238,0.4)] transition">
-                        Zapisz moją obecność
-                    </button>
-                </form>
+                {% endfor %}
             </div>
-        </section>
+            {% else %}
+            <div class="flex flex-col items-center justify-center py-16 text-center border border-dashed border-white/10 rounded-2xl">
+                <span class="text-4xl mb-3">🕊️</span>
+                <p class="text-gray-400 font-medium italic">Brak nowych ogłoszeń od Szefa.</p>
+            </div>
+            {% endif %}
+        </div>
 
-        <section id="section-historia" class="dashboard-tab hidden w-full">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Moja historia służb</h1>
+        <div id="section-sluzby" class="tab-section hidden bg-cardbg/20 backdrop-blur-xl border border-white/5 p-6 md:p-8 rounded-3xl shadow-2xl flex flex-col">
+            <h2 class="text-2xl md:text-3xl font-black text-white mb-6 flex items-center gap-3">
+                <span class="text-brand">➕</span> Zgłoś Nową Służbę
+            </h2>
+            
+            <form action="{{ url_for('dashboard_page') }}" method="POST" class="space-y-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-bold text-gray-300">Data służby:</label>
+                        <input type="date" name="data_sluzby" required 
+                            class="p-3.5 bg-slate-900/60 border border-white/10 text-white rounded-xl outline-none focus:border-brand focus:ring-4 focus:ring-brand/20 transition duration-300 font-medium">
+                    </div>
+                    
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-bold text-gray-300">Godzina (np. 18:00):</label>
+                        <input type="text" name="godzina" required placeholder="Wpisz godzinę"
+                            class="p-3.5 bg-slate-900/60 border border-white/10 text-white rounded-xl placeholder-gray-600 outline-none focus:border-brand focus:ring-4 focus:ring-brand/20 transition duration-300 font-medium">
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm font-bold text-gray-300">Rodzaj służby:</label>
+                    <div class="relative">
+                        <select name="typ" id="selectType" onchange="toggleInna('selectType', 'groupInna', 'inputInna')" required
+                            class="w-full p-3.5 bg-slate-900/60 border border-white/10 text-white rounded-xl outline-none focus:border-brand focus:ring-4 focus:ring-brand/20 transition duration-300 font-medium cursor-pointer appearance-none">
+                            <option value="Msza święta">Msza święta</option>
+                            <option value="Nabożeństwo">Nabożeństwo</option>
+                            <option value="Zbiórka">Zbiórka</option>
+                            <option value="inna">Inna (wpisz własną)</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
+                            ▼
+                        </div>
+                    </div>
+                </div>
+
+                <div id="groupInna" class="hidden flex-col gap-2">
+                    <label class="text-sm font-bold text-brand">Określ rodzaj służby:</label>
+                    <input type="text" name="inna" id="inputInna" placeholder="Np. Droga Krzyżowa, Ślub"
+                        class="p-3.5 bg-slate-900/60 border border-brand/40 text-white rounded-xl placeholder-gray-600 outline-none focus:border-brand focus:ring-4 focus:ring-brand/20 transition duration-300 font-medium">
+                </div>
+
+                <button type="submit" 
+                    class="w-full mt-4 p-4 bg-brand hover:bg-brand/90 text-white font-black text-base rounded-xl shadow-lg shadow-brand/20 hover:shadow-brand/30 transition transform active:scale-[0.99] flex items-center justify-center gap-2">
+                    🚀 Wyślij Zgłoszenie
+                </button>
+            </form>
+        </div>
+
+        <div id="section-historia" class="tab-section hidden bg-cardbg/20 backdrop-blur-xl border border-white/5 p-6 md:p-8 rounded-3xl shadow-2xl flex flex-col">
+            <h2 class="text-2xl md:text-3xl font-black text-white mb-6 flex items-center gap-3">
+                <span class="text-brand">⏳</span> Moja Historia Służb
+            </h2>
             
             {% if attendances %}
-            <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto w-full">
-                <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[500px]">
+            <div class="overflow-x-auto rounded-2xl border border-white/5">
+                <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="border-b-2 border-brand text-lg">
-                            <th class="p-4">Data</th><th class="p-4">Godzina</th><th class="p-4">Rodzaj</th><th class="p-4">Akcje</th>
+                        <tr class="bg-slate-900/60 border-b border-white/5 text-gray-400 font-bold text-xs uppercase tracking-wider">
+                            <th class="p-4">Data i Godzina</th>
+                            <th class="p-4">Rodzaj Służby</th>
+                            <th class="p-4 text-center">Akcje</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="divide-y divide-white/5">
                         {% for att in attendances %}
-                        <tr class="border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition relative">
-                            <td class="p-4 font-bold">{{ att.data_sluzby.strftime('%d.%m.%Y') }}</td>
-                            <td class="p-4">{{ att.godzina }}</td>
+                        <tr class="hover:bg-white/5 transition-colors duration-200">
+                            <td class="p-4 font-bold text-white">
+                                <span class="block text-base">{{ att.data_sluzby.strftime('%d.%m.%Y') }}</span>
+                                <span class="text-xs text-gray-400 font-medium">o godz. {{ att.godzina }}</span>
+                            </td>
                             <td class="p-4">
-                                {% if att.typ_mszy == 'inna' %}
-                                    <span class="bg-success text-white px-3 py-1 rounded-md font-bold text-xs">{{ att.nazwa_inna }}</span>
+                                {% if att.typ == 'inna' %}
+                                <span class="inline-flex bg-purple-500/10 text-purple-400 border border-purple-500/20 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                                    ⚙️ {{ att.inna }}
+                                </span>
                                 {% else %}
-                                    <span class="bg-[#4834d4] text-white px-3 py-1 rounded-md font-bold text-xs">{{ att.typ_mszy|capitalize }}</span>
+                                <span class="inline-flex bg-brand/10 text-brand border border-brand/20 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                                    ⛪ {{ att.typ }}
+                                </span>
                                 {% endif %}
                             </td>
                             <td class="p-4">
-                                <div class="relative inline-block text-left">
-                                    <button class="text-2xl font-bold px-2 py-1 hover:text-brand" onclick="toggleMenu('menu-my-att-{{att.id}}')">⋮</button>
-                                    <div id="menu-my-att-{{att.id}}" class="dropdown-content hidden absolute right-0 top-full mt-2 w-48 bg-white dark:bg-darkbg border border-gray-200 dark:border-brand rounded-xl shadow-2xl z-50 overflow-hidden">
-                                        {% set bezpieczna_nazwa = att.nazwa_inna if att.nazwa_inna else '' %}
-                                        <a href="javascript:void(0)" class="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-brand transition" onclick="openMyEditModal('{{att.id}}', '{{att.data_sluzby}}', '{{att.godzina}}', '{{att.typ_mszy}}', '{{bezpieczna_nazwa}}')">Popraw wpis</a>
-                                        <a href="{{ url_for('delete_my_attendance', id=att.id) }}" class="block px-4 py-3 text-danger hover:bg-red-50 dark:hover:bg-red-900/30 transition" onclick="return confirm('Czy na pewno chcesz usunąć tę służbę?')">Usuń wpis</a>
-                                    </div>
+                                <div class="flex items-center justify-center gap-2">
+                                    <button onclick="openMyEditModal(`{{ att.id }}`, `{{ att.data_sluzby.strftime('%Y-%m-%d') }}`, `{{ att.godzina }}`, `{{ att.rodzaj_sluzby }}`, `{{ att.inna_sluzba }}`)" class="p-2 bg-brand/10 text-brand hover:bg-brand/20 rounded-xl transition duration-200 text-sm font-bold px-3">
+                                        ✏️ Edytuj
+                                    </button>
+                                    <a href="{{ url_for('delete_my_attendance', id=att.id) }}" 
+                                        onclick="return confirm('Czy na pewno chcesz usunąć tę służbę?')"
+                                        class="p-2 bg-danger/10 text-danger hover:bg-danger/20 rounded-xl transition duration-200 text-sm font-bold px-3">
+                                        🗑️ Usuń
+                                    </a>
                                 </div>
                             </td>
                         </tr>
@@ -121,132 +164,85 @@
                 </table>
             </div>
             {% else %}
-                <div class="text-gray-400 italic text-lg bg-white dark:bg-cardbg p-6 rounded-2xl shadow">Jeszcze nie masz żadnych zgłoszonych służb. Czas to zmienić!</div>
+            <div class="flex flex-col items-center justify-center py-16 text-center border border-dashed border-white/10 rounded-2xl">
+                <span class="text-4xl mb-3">📋</span>
+                <p class="text-gray-400 font-medium italic">Nie zgłosiłeś jeszcze żadnej służby.</p>
+            </div>
             {% endif %}
-        </section>
-
-        <section id="section-plan" class="dashboard-tab hidden w-full">
-            <div class="mb-12">
-                <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">Moje przypisane dyżury</h2>
-                {% if moje_dyzury %}
-                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {% for md in moje_dyzury %}
-                            <div class="bg-gradient-to-br from-success to-green-600 rounded-xl p-5 shadow-lg flex items-center gap-4 hover:-translate-y-1 transition border border-green-400">
-                                <div class="bg-white/20 p-3 rounded-xl shrink-0">
-                                    <svg width="28" height="28" fill="white" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                                </div>
-                                <div class="min-w-0">
-                                    <div class="text-white font-extrabold text-xl truncate">{{ md.dzien }}</div>
-                                    <div class="text-green-100 font-bold text-lg">{{ md.godzina }}</div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="bg-white dark:bg-cardbg rounded-xl p-6 shadow border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-300 italic text-lg">
-                        Szef nie przypisał Cię jeszcze do żadnego stałego dyżuru.
-                    </div>
-                {% endif %}
-            </div>
-
-            <div class="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-6">
-                <h2 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Pełny plan na ten tydzień</h2>
-                <a href="{{ url_for('export_schedule') }}" class="w-full sm:w-auto bg-success text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:-translate-y-1 transition flex items-center justify-center gap-2 shrink-0">
-                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Pobierz Plan Służb (Excel)
-                </a>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
-                {% for dzien, godziny_grupy in plan.items() %}
-                <div class="bg-white dark:bg-cardbg rounded-3xl shadow-lg border-t-4 border-brand flex flex-col w-full min-w-0 overflow-hidden">
-                    <div class="p-5 pb-3">
-                        <h3 class="text-xl font-extrabold text-gray-900 dark:text-white flex justify-between items-center m-0 shrink-0">
-                            {{ dzien }} <span class="bg-brand/20 text-brand px-3 py-1 rounded-lg text-sm font-bold">{{ liczniki[dzien] }} osób</span>
-                        </h3>
-                    </div>
-                    {% if godziny_grupy %}
-                        <div class="flex flex-col gap-0 w-full bg-gray-50 dark:bg-black/10">
-                            
-                            {% for godzina, ministranci in godziny_grupy.items() %}
-                                <div class="border-t border-gray-200 dark:border-white/5">
-                                    <div class="bg-gray-200/50 dark:bg-brand/10 px-5 py-2">
-                                        <span class="font-extrabold text-brand flex items-center gap-2">
-                                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg> Godzina: {{ godzina }}
-                                        </span>
-                                    </div>
-                                    <ul class="px-5 py-3 flex flex-col gap-2">
-                                        {% for m in ministranci %}
-                                            <li class="flex items-center gap-3 w-full min-w-0 group">
-                                                <div class="w-2 h-2 rounded-full bg-gray-400 group-hover:bg-brand transition shrink-0"></div>
-                                                <div class="flex flex-col sm:flex-row sm:items-center gap-0 sm:gap-2 min-w-0">
-                                                    <strong class="text-gray-800 dark:text-white truncate">{{ m.user.username }}</strong>
-                                                    <span class="text-sm text-gray-500 dark:text-gray-400 truncate">({{ m.user.imie }} {{ m.user.nazwisko }})</span>
-                                                </div>
-                                            </li>
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="p-5 pt-0 text-gray-500 dark:text-gray-400 italic">Brak dyżurów.</div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
-        </section>
+        </div>
 
     </main>
+</div>
 
-    <div id="editMyModal" class="fixed inset-0 bg-black/80 hidden justify-center items-center z-[10000] p-4">
-        <div class="bg-white dark:bg-cardbg p-8 rounded-3xl w-full max-w-md shadow-2xl">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Poprawianie służby</h2>
-            <form id="editMyForm" method="POST" class="flex flex-col gap-4">
-                <div class="flex flex-col gap-1">
-                    <label class="text-gray-700 dark:text-white font-bold">Data:</label>
-                    <input type="date" name="date" id="editMyDate" min="{{ min_date }}" max="{{ today }}" required class="p-3 rounded-xl border border-gray-300 dark:border-none bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50">
-                </div>
-                <div class="flex flex-col gap-1">
-                    <label class="text-gray-700 dark:text-white font-bold">Godzina:</label>
-                    <input type="time" name="godzina" id="editMyTime" required class="p-3 rounded-xl border border-gray-300 dark:border-none bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50">
-                </div>
-                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Rodzaj:</label>
-                    <select name="typ_mszy" id="editMyType" onchange="toggleInna('editMyType', 'groupInnaMy', 'editMyInna')" class="p-3 rounded-xl border border-gray-300 dark:border-none bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50">
-                        <option value="poranna">Poranna</option><option value="wieczorna">Wieczorna</option><option value="inna">Inna</option>
+<div id="editMyModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-[#1e293b] border border-white/10 rounded-3xl w-full max-w-lg p-6 md:p-8 shadow-2xl relative">
+        <button onclick="document.getElementById('editMyModal').style.display = 'none'" 
+            class="absolute top-4 right-4 text-gray-400 hover:text-white transition text-xl font-bold p-2 bg-white/5 rounded-full w-9 h-9 flex items-center justify-center">
+            &times;
+        </button>
+        
+        <h3 class="text-xl font-black text-white mb-6 flex items-center gap-2">
+            <span>✏️</span> Edycja Służby
+        </h3>
+        
+        <form id="editMyForm" method="POST" class="space-y-4">
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Nowa data:</label>
+                <input type="date" id="editMyDate" name="data_sluzby" required
+                    class="p-3 bg-slate-900/60 border border-white/10 text-white rounded-xl outline-none focus:border-brand focus:ring-2 focus:ring-brand/30 transition">
+            </div>
+            
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Nowa godzina:</label>
+                <input type="text" id="editMyTime" name="godzina" required
+                    class="p-3 bg-slate-900/60 border border-white/10 text-white rounded-xl outline-none focus:border-brand focus:ring-2 focus:ring-brand/30 transition">
+            </div>
+            
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Nowy rodzaj:</label>
+                <div class="relative">
+                    <select id="editMyType" name="typ" onchange="toggleInna('editMyType', 'groupInnaMy', 'editMyInna')" required
+                        class="w-full p-3 bg-slate-900/60 border border-white/10 text-white rounded-xl outline-none focus:border-brand focus:ring-2 focus:ring-brand/30 transition cursor-pointer appearance-none">
+                        <option value="Msza święta">Msza święta</option>
+                        <option value="Nabożeństwo">Nabożeństwo</option>
+                        <option value="Zbiórka">Zbiórka</option>
+                        <option value="inna">Inna (wpisz własną)</option>
                     </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
+                        ▼
+                    </div>
                 </div>
-                <div class="flex-col gap-1 hidden" id="groupInnaMy">
-                    <label class="text-gray-700 dark:text-white font-bold">Nazwa mszy:</label>
-                    <input type="text" name="nazwa_inna" id="editMyInna" class="p-3 rounded-xl border border-gray-300 dark:border-none bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50">
-                </div>
-                <div class="flex justify-end gap-3 mt-4">
-                    <button type="button" class="px-6 py-3 rounded-xl font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10 transition" onclick="closeModal('editMyModal')">Anuluj</button>
-                    <button type="submit" class="bg-brand text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:-translate-y-1 transition">Zapisz poprawki</button>
-                </div>
-            </form>
-        </div>
+            </div>
+            
+            <div id="groupInnaMy" class="hidden flex-col gap-1.5">
+                <label class="text-xs font-bold text-brand uppercase tracking-wider">Określ rodzaj:</label>
+                <input type="text" id="editMyInna" name="inna"
+                    class="p-3 bg-slate-900/60 border border-brand/40 text-white rounded-xl outline-none focus:border-brand focus:ring-2 focus:ring-brand/30 transition">
+            </div>
+            
+            <button type="submit" 
+                class="w-full mt-4 p-3.5 bg-brand hover:bg-brand/90 text-white font-bold rounded-xl transition shadow-lg shadow-brand/20">
+                💾 Zapisz Zmiany
+            </button>
+        </form>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    function switchTab(tabName) {
-        document.querySelectorAll('.dashboard-tab').forEach(section => {
-            section.classList.remove('block');
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-section').forEach(section => {
             section.classList.add('hidden');
         });
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.classList.remove('bg-brand', 'text-white');
-            btn.classList.add('text-gray-300', 'hover:bg-brand/50');
-        });
-
-        document.getElementById('section-' + tabName).classList.remove('hidden');
-        document.getElementById('section-' + tabName).classList.add('block');
+        document.getElementById('section-' + tabId).classList.remove('hidden');
         
-        let activeBtn = document.getElementById('tab-btn-' + tabName);
-        activeBtn.classList.remove('text-gray-300', 'hover:bg-brand/50');
-        activeBtn.classList.add('bg-brand', 'text-white');
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.remove('bg-brand', 'text-white', 'shadow-brand-glow');
+            btn.classList.add('text-gray-400', 'hover:bg-white/5');
+        });
+        document.getElementById('tab-btn-' + tabId).classList.add('bg-brand', 'text-white', 'shadow-brand-glow');
+        document.getElementById('tab-btn-' + tabId).classList.remove('text-gray-400', 'hover:bg-white/5');
     }
 
     function toggleInna(selectId, groupId, inputId) {
@@ -255,21 +251,18 @@
         var inputInna = document.getElementById(inputId);
 
         if (select && select.value === "inna") {
-            groupInna.classList.remove("hidden");
-            groupInna.classList.add("flex");
-            inputInna.required = true;
-        } else if(groupInna) {
-            groupInna.classList.add("hidden");
-            groupInna.classList.remove("flex");
-            inputInna.required = false;
+            if (groupInna) {
+                groupInna.classList.remove("hidden");
+                groupInna.classList.add("flex");
+            }
+            if (inputInna) inputInna.required = true;
+        } else {
+            if (groupInna) {
+                groupInna.classList.add("hidden");
+                groupInna.classList.remove("flex");
+            }
+            if (inputInna) inputInna.required = false;
         }
-    }
-
-    function toggleMenu(id) {
-        document.querySelectorAll('.dropdown-content').forEach(m => {
-            if(m.id !== id) m.classList.add('hidden');
-        });
-        document.getElementById(id).classList.toggle('hidden');
     }
 
     function openMyEditModal(id, date, time, type, inna) {
@@ -283,10 +276,10 @@
     }
 
     window.onclick = function(event) {
-        if (!event.target.matches('button') && !event.target.closest('button')) {
-            document.querySelectorAll('.dropdown-content').forEach(m => m.classList.add('hidden'));
+        var modal = document.getElementById('editMyModal');
+        if (event.target == modal) {
+            modal.style.display = "none";
         }
     }
 </script>
 {% endblock %}
-

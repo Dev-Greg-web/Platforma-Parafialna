@@ -1,24 +1,100 @@
 {% extends "base.html" %}
-{% block title %}Weryfikacja 2FA{% endblock %}
+
+{% block title %}Weryfikacja Dwuetapowa (2FA){% endblock %}
+
+{% block extra_styles %}
+<style>
+    @keyframes fade-down-fast {
+        0% {
+            opacity: 0;
+            transform: translate3d(0, -30px, 0);
+            filter: blur(4px);
+        }
+        100% {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+            filter: blur(0);
+        }
+    }
+    .animate-fade-down-fast {
+        animation: fade-down-fast 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .custom-brand-shadow {
+        box-shadow: 0 25px 50px -12px rgba(94, 59, 238, 0.25);
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="flex-grow flex items-center justify-center p-4 min-h-screen">
-    <div class="w-full max-w-md bg-[#1f2a44] rounded-3xl shadow-2xl p-8 flex flex-col text-white text-center">
-        <h2 class="text-2xl font-bold mb-4 text-brand">Weryfikacja Dwuetapowa (2FA)</h2>
-        <p class="text-sm text-gray-300 mb-6">
-            Wysłaliśmy 12-cyfrowy kod bezpieczeństwa na Twój adres e-mail admina. Wpisz go poniżej, aby potwierdzić tożsamość.
-        </p>
+<div class="flex-grow flex flex-col items-center justify-center p-4 min-h-screen bg-gray-50 dark:bg-[#0f172a] transition-colors duration-300 relative overflow-hidden">
+    
+    <div class="w-full max-w-md bg-white dark:bg-cardbg rounded-3xl shadow-2xl p-8 border border-gray-100 dark:border-gray-800/80 z-10 animate-fade-down-fast custom-brand-shadow flex flex-col gap-6">
         
-        <form action="/verify-2fa" method="post" class="flex flex-col gap-5">
-            <div class="flex flex-col gap-2 text-left">
-                <label class="font-bold text-gray-300">Wpisz kod 2FA:</label>
-                <input type="text" name="kod_2fa" required placeholder="XXXXXXXXXXXX" maxlength="12" class="p-3 text-center tracking-widest font-mono rounded-xl bg-[#2a3a5a] text-white border border-brand outline-none focus:ring-2 focus:ring-brand transition">
+        <div class="text-center">
+            <div class="w-16 h-16 bg-brand/10 text-brand rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                </svg>
             </div>
-            
-            <button type="submit" class="mt-2 bg-brand hover:bg-brand/80 text-white font-bold py-4 rounded-xl shadow-lg transition">
-                Potwierdź i wejdź
+            <h2 class="text-2xl font-black text-gray-900 dark:text-white">Weryfikacja 2FA</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                Na Twój powiązany plik/konto Telegram wysłaliśmy specjalny kod dostępu. Wprowadź go poniżej, aby potwierdzić tożsamość.
+            </p>
+        </div>
+
+        {% if error %}
+        <div class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400 font-semibold text-center">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <form action="{{ url_for('two_factor_page') }}" method="post" class="flex flex-col gap-5">
+            <div class="flex flex-col gap-2">
+                <label class="text-xs font-bold text-gray-600 dark:text-gray-400 tracking-wide uppercase text-center">
+                    Kod autoryzacyjny (Format: xxx-xxx-xxx-xxx)
+                </label>
+                
+                <input type="text" id="code2fa" name="kod_2fa" required 
+                    placeholder="000-000-000-000" 
+                    maxlength="15"
+                    oninput="formatuj2FA(this)"
+                    class="p-4 rounded-xl bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 focus:ring-brand transition duration-200 text-center text-xl font-mono tracking-widest uppercase">
+            </div>
+
+            <button type="submit" 
+                class="w-full py-3.5 bg-brand hover:bg-brand/90 text-white font-extrabold rounded-xl shadow-lg shadow-brand/20 transition duration-200 transform active:scale-[0.98] text-sm">
+                Zweryfikuj i przejdź do panelu
             </button>
         </form>
+
+        <div class="text-center text-xs text-gray-400 dark:text-gray-500">
+            Nie otrzymałeś kodu? Sprawdź aplikację Telegram lub skontaktuj się z administratorem systemu.
+        </div>
+
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Automatyczny fokus na pole kodu po otwarciu strony
+    window.addEventListener('DOMContentLoaded', (event) => {
+        const input = document.getElementById('code2fa');
+        if (input) input.focus();
+    });
+
+    // Funkcja dynamicznie formatująca kod do postaci xxx-xxx-xxx-xxx podczas pisania
+    function formatuj2FA(input) {
+        let wartosc = input.value.replace(/\D/g, ''); // Pozostaw tylko cyfry
+        let bloki = [];
+        
+        for (let i = 0; i < wartosc.length; i += 3) {
+            if (bloki.length < 4) {
+                bloki.push(wartosc.substring(i, i + 3));
+            }
+        }
+        
+        input.value = bloki.join('-');
+    }
+</script>
 {% endblock %}

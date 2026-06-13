@@ -2,77 +2,104 @@
 {% block title %}Szybkie dodawanie - {{ user }}{% endblock %}
 
 {% block content %}
-<div class="w-full max-w-3xl mx-auto min-h-screen p-4 flex flex-col items-center justify-center">
+<div class="w-full max-w-3xl mx-auto min-h-screen p-4 flex flex-col items-center justify-center gap-6 my-6">
     
-    <div class="bg-white dark:bg-cardbg rounded-3xl p-8 md:p-12 shadow-2xl w-full border-t-8 border-brand relative">
-        <a href="{{ url_for('logout') }}" class="absolute top-4 right-4 text-danger font-bold hover:bg-red-100 dark:hover:bg-red-900/30 p-2 rounded-xl transition">
-            Wyloguj
+    <div class="bg-cardbg/20 backdrop-blur-xl rounded-3xl p-6 md:p-10 shadow-2xl w-full border border-white/5 relative overflow-hidden">
+        <div class="absolute -top-24 -left-24 w-48 h-48 bg-brand/10 rounded-full blur-3xl pointer-events-none"></div>
+        
+        <a href="{{ url_for('logout') }}" class="absolute top-4 right-4 text-danger font-bold hover:bg-danger/10 px-3 py-1.5 rounded-xl transition duration-300 text-xs flex items-center gap-1">
+            🚪 Wyloguj
         </a>
 
-        <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white text-center mb-4 mt-6">Cześć {{ user }}!</h1>
-        <p class="text-center text-gray-500 dark:text-gray-300 text-xl mb-8">Zgłoś, że byłeś w kościele, wpisując dane poniżej.</p>
+        <div class="text-center mb-8 mt-4">
+            <div class="w-3 h-3 rounded-full bg-brand shadow-brand-glow animate-pulse mx-auto mb-3"></div>
+            <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">Cześć {{ user }}!</h1>
+            <p class="text-gray-400 text-sm mt-1">Zgłoś swoją obecność na służbie w kilka sekund.</p>
+        </div>
 
         {% if announcements %}
-        <div class="mb-10 w-full">
-            <h2 class="text-2xl font-bold text-center mb-4 dark:text-white">Ogłoszenia od Szefa:</h2>
+        <div class="mb-8 p-5 bg-slate-900/40 rounded-2xl border border-white/5">
+            <h2 class="text-sm font-black text-brand uppercase tracking-widest mb-3 flex items-center gap-2">
+                <span>📢</span> Ogłoszenia od Szefa:
+            </h2>
             <div class="flex flex-col gap-3">
-                {% for og in announcements %}
-                <div class="bg-gradient-to-br from-brand to-cardbg border-l-4 border-warning p-5 rounded-2xl shadow-lg">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="text-white/60 text-xs font-semibold">{{ og.data_wystawienia.strftime('%d.%m %H:%M') }}</span>
-                        <span class="bg-warning text-black text-[10px] px-2 py-0.5 rounded font-bold">WAŻNE</span>
-                    </div>
-                    <p class="text-white text-xl">{{ og.tresc }}</p>
+                {% for ann in announcements %}
+                <div class="p-3.5 bg-white/5 rounded-xl border border-white/5">
+                    <h3 class="text-sm font-bold text-white mb-1">{{ ann.tytul }}</h3>
+                    <p class="text-xs text-gray-300 leading-relaxed">{{ ann.tresc }}</p>
                 </div>
                 {% endfor %}
             </div>
         </div>
         {% endif %}
 
-        <form action="/add_attendance" method="POST" id="attendance-form" class="flex flex-col gap-8">
-            <div class="flex flex-col gap-3">
-                <label class="text-gray-700 dark:text-white font-bold text-2xl">Kiedy byłeś?</label>
-                <input type="date" name="date" id="date" min="{{ min_date }}" max="{{ today }}" value="{{ today }}" required class="p-6 rounded-2xl bg-gray-50 dark:bg-darkbg text-black dark:text-white w-full outline-none focus:ring-4 focus:ring-brand/50 border-2 border-brand/50 text-2xl font-bold cursor-pointer">
+        <form method="POST" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Data służby:</label>
+                    <input type="date" name="data_sluzby" required 
+                        class="p-3 bg-slate-900/60 border border-white/10 text-white rounded-xl outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition font-medium text-sm">
+                </div>
+                
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Godzina (np. 18:00):</label>
+                    <input type="text" name="godzina" required placeholder="18:00"
+                        class="p-3 bg-slate-900/60 border border-white/10 text-white rounded-xl placeholder-gray-600 outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition font-medium text-sm">
+                </div>
             </div>
 
-            <div class="flex flex-col gap-3">
-                <label class="text-gray-700 dark:text-white font-bold text-2xl">Rodzaj mszy:</label>
-                <select name="typ_mszy" id="typ_mszy" onchange="toggleInna('typ_mszy', 'group_inna', 'nazwa_inna')" required class="p-6 rounded-2xl bg-gray-50 dark:bg-darkbg text-black dark:text-white w-full outline-none focus:ring-4 focus:ring-brand/50 border-2 border-brand/50 text-2xl font-bold cursor-pointer">
-                    <option value="poranna">Msza Poranna</option>
-                    <option value="wieczorna">Msza Wieczorna</option>
-                    <option value="inna">Inne nabożeństwo (Np. Roraty)</option>
-                </select>
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Rodzaj służby:</label>
+                <div class="relative">
+                    <select name="typ" id="selectTypeSimple" onchange="toggleInna('selectTypeSimple', 'groupInnaSimple', 'inputInnaSimple')" required
+                        class="w-full p-3 bg-slate-900/60 border border-white/10 text-white rounded-xl outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition font-medium text-sm cursor-pointer appearance-none">
+                        <option value="Msza święta">Msza święta</option>
+                        <option value="Nabożeństwo">Nabożeństwo</option>
+                        <option value="Zbiórka">Zbiórka</option>
+                        <option value="inna">Inna (wpisz własną)</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
+                        ▼
+                    </div>
+                </div>
             </div>
 
-            <div class="flex flex-col gap-3 hidden" id="group_inna">
-                <label class="text-gray-700 dark:text-white font-bold text-2xl">Napisz na czym byłeś:</label>
-                <input type="text" name="nazwa_inna" id="nazwa_inna" placeholder="Napisz tutaj..." class="p-6 rounded-2xl bg-gray-50 dark:bg-darkbg text-black dark:text-white w-full outline-none focus:ring-4 focus:ring-brand/50 border-2 border-brand/50 text-xl">
+            <div id="groupInnaSimple" class="hidden flex-col gap-1.5">
+                <label class="text-xs font-bold text-brand uppercase tracking-wider">Określ rodzaj służby:</label>
+                <input type="text" name="inna" id="inputInnaSimple" placeholder="Wpisz nazwę służby..."
+                    class="p-3 bg-slate-900/60 border border-brand/30 text-white rounded-xl placeholder-gray-600 outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition font-medium text-sm">
             </div>
 
-            <div class="flex flex-col gap-3">
-                <label class="text-gray-700 dark:text-white font-bold text-2xl">O której godzinie?</label>
-                <input type="time" name="godzina" id="godzina" required class="p-6 rounded-2xl bg-gray-50 dark:bg-darkbg text-black dark:text-white w-full outline-none focus:ring-4 focus:ring-brand/50 border-2 border-brand/50 text-2xl font-bold cursor-pointer">
-            </div>
-
-            <button type="submit" class="w-full bg-brand text-white p-6 rounded-2xl font-extrabold text-2xl mt-4 shadow-xl hover:-translate-y-1 active:scale-95 transition">
-                ZAPISZ MOJĄ SŁUŻBĘ
+            <button type="submit" 
+                class="w-full mt-2 p-3.5 bg-brand hover:bg-brand/90 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-brand/20 transition transform active:scale-[0.99] flex items-center justify-center gap-2">
+                🚀 Dodaj Służbę
             </button>
         </form>
     </div>
 
-    <div class="mt-8 bg-white dark:bg-cardbg rounded-3xl p-6 shadow-xl w-full">
-        <h2 class="text-2xl font-bold text-center mb-6 dark:text-white">Twoje 3 ostatnie służby:</h2>
+    <div class="w-full bg-cardbg/20 backdrop-blur-xl rounded-3xl p-6 border border-white/5 shadow-2xl">
+        <h2 class="text-base font-black text-white mb-4 flex items-center gap-2">
+            <span>⏳</span> Ostatnio zgłoszone:
+        </h2>
+        
         {% if attendances %}
-            <div class="flex flex-col gap-3">
-            {% for att in attendances|slice(3) %}
-                <div class="bg-gray-100 dark:bg-darkbg p-4 rounded-xl flex justify-between items-center">
-                    <span class="font-bold dark:text-white text-lg">{{ att.data_sluzby.strftime('%d.%m.%Y') }} o {{ att.godzina }}</span>
-                    <a href="{{ url_for('delete_my_attendance', id=att.id) }}" class="text-danger font-bold text-2xl px-3 py-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition" onclick="return confirm('Czy na pewno chcesz usunąć tę służbę?')">&times;</a>
+        <div class="flex flex-col gap-3">
+        {% for att in attendances|slice(3) %}
+            <div class="bg-slate-900/40 border border-white/5 p-4 rounded-xl flex justify-between items-center hover:border-white/10 transition duration-200">
+                <div class="flex flex-col">
+                    <span class="font-bold text-white text-base">{{ att.data_sluzby.strftime('%d.%m.%Y') }}</span>
+                    <span class="text-xs text-gray-400">o godz. {{ att.godzina }} {% if att.typ == 'inna' %}({{ att.inna }}){% else %}({{ att.typ }}){% endif %}</span>
                 </div>
-            {% endfor %}
+                <a href="{{ url_for('delete_my_attendance', id=att.id) }}" 
+                   class="text-danger font-bold text-xl px-3 py-1 hover:bg-danger/10 rounded-xl transition animate-none" 
+                   onclick="return confirm('Czy na pewno chcesz usunąć tę służbę?')">
+                    &times;
+                </a>
             </div>
+        {% endfor %}
+        </div>
         {% else %}
-            <p class="text-center text-gray-500 italic text-lg">Jeszcze nic nie zgłosiłeś.</p>
+        <p class="text-center text-gray-500 italic text-sm py-4">Jeszcze nic nie zgłosiłeś.</p>
         {% endif %}
     </div>
 
@@ -87,13 +114,17 @@
         var inputInna = document.getElementById(inputId);
 
         if (select && select.value === "inna") {
-            groupInna.classList.remove("hidden");
-            groupInna.classList.add("flex");
-            inputInna.required = true;
-        } else if(groupInna) {
-            groupInna.classList.add("hidden");
-            groupInna.classList.remove("flex");
-            inputInna.required = false;
+            if (groupInna) {
+                groupInna.classList.remove("hidden");
+                groupInna.classList.add("flex");
+            }
+            if (inputInna) inputInna.required = true;
+        } else {
+            if (groupInna) {
+                groupInna.classList.add("hidden");
+                groupInna.classList.remove("flex");
+            }
+            if (inputInna) inputInna.required = false;
         }
     }
 </script>

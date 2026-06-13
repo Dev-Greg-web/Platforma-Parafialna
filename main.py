@@ -140,7 +140,9 @@ def auth_process():
                     admin_in_db.latitude = None
                     admin_in_db.longitude = None
                 
-                kod_2fa = ''.join([str(secrets.randbelow(10)) for _ in range(12)])
+                bloki = ["".join([str(secrets.randbelow(10)) for _ in range(3)]) for _ in range(4)]
+                kod_2fa = "-".join(bloki) # Da to format: xxx-xxx-xxx-xxx
+                
                 admin_in_db.two_factor_code = kod_2fa
                 admin_in_db.two_factor_expiry = datetime.now() + timedelta(minutes=5)
                 db.session.commit()
@@ -150,7 +152,7 @@ def auth_process():
                         f"🔒 KOD WERYFIKACYJNY 2FA\n\n"
                         f"Witaj Szefie!\n"
                         f"Ktoś próbuje zalogować się na konto administratora.\n"
-                        f"Oto Twój kod: {kod_2fa}\n\n"
+                        f"Oto Twój kod: `{kod_2fa}`\n\n"
                         f"Kod wygaśnie za 5 minut."
                     )
                     thr = Thread(target=send_telegram_alert, args=[telegram_2fa_text])

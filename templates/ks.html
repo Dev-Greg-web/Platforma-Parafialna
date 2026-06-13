@@ -3,115 +3,196 @@
 
 {% block Extra_styles %}
 <style>
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background-color: #1a1a2e; border-radius: 9999px; }
-    ::-webkit-scrollbar-thumb { background-color: rgba(94, 59, 238, 0.3); border-radius: 9999px; }
-    ::-webkit-scrollbar-thumb:hover { background-color: rgba(94, 59, 238, 0.6); }
+    /* Niestandardowa personalizacja pasków przewijania dla nowoczesnego efektu */
+    ::-webkit-scrollbar { 
+        width: 8px; 
+        height: 8px; 
+    }
+    ::-webkit-scrollbar-track { 
+        background-color: #1a1a2e; 
+        border-radius: 9999px; 
+    }
+    ::-webkit-scrollbar-thumb { 
+        background-color: rgba(94, 59, 238, 0.3); 
+        border-radius: 9999px; 
+        border: 2px solid transparent;
+        background-clip: padding-box;
+    }
+    ::-webkit-scrollbar-thumb:hover { 
+        background-color: rgba(94, 59, 238, 0.6); 
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="w-full min-h-screen flex flex-col md:flex-row">
+<div class="w-full min-h-screen flex flex-col md:flex-row bg-gray-50 dark:bg-darkbg font-sans antialiased">
     
-    <aside class="w-full md:w-80 bg-[#16213e] border-b-2 md:border-b-0 md:border-r-2 border-brand p-6 md:p-8 flex flex-col shrink-0 overflow-y-auto">
-        <div class="text-white text-2xl md:text-3xl font-extrabold mb-10 text-center">Panel Księdza</div>
+    <aside class="w-full md:w-80 bg-[#16213e] border-b-2 md:border-b-0 md:border-r-2 border-brand p-6 md:p-8 flex flex-col shrink-0 overflow-y-auto shadow-2xl relative z-10">
+        <div class="flex items-center justify-center gap-3 text-white text-2xl md:text-3xl font-black mb-10 text-center tracking-wide">
+            <svg class="w-8 h-8 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 21l-8-18h16l-8 18z" />
+            </svg>
+            <span>Panel Księdza</span>
+        </div>
+        
         <nav class="flex flex-col gap-3 flex-grow">
-            <button onclick="showSection('sluzby')" id="btn-sluzby" class="nav-btn bg-brand text-white p-4 text-left rounded-xl font-bold transition">Przegląd Służb</button>
-            <button onclick="showSection('ogloszenia')" id="btn-ogloszenia" class="nav-btn text-gray-300 hover:bg-brand/50 p-4 text-left rounded-xl font-bold transition">Tablica Ogłoszeń</button>
-            <button onclick="showSection('plan')" id="btn-plan" class="nav-btn text-gray-300 hover:bg-brand/50 p-4 text-left rounded-xl font-bold transition">Plan Służb (Dyżury)</button>
-            <button onclick="showSection('podsumowanie')" id="btn-podsumowanie" class="nav-btn text-gray-300 hover:bg-brand/50 p-4 text-left rounded-xl font-bold transition">Podsumowanie</button>
+            <button onclick="showSection('sluzby')" id="btn-sluzby" class="nav-btn w-full flex items-center gap-3 bg-brand text-white p-4 text-left rounded-2xl font-bold transition-all duration-300 shadow-lg shadow-brand/20 hover:scale-[1.02]">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                <span>Przegląd Służb</span>
+            </button>
             
-            <footer class="mt-auto pt-6 text-center text-sm text-gray-400">
+            <button onclick="showSection('ogloszenia')" id="btn-ogloszenia" class="nav-btn w-full flex items-center gap-3 text-gray-300 hover:bg-brand/30 hover:text-white p-4 text-left rounded-2xl font-bold transition-all duration-300">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                <span>Tablica Ogłoszeń</span>
+            </button>
+            
+            <button onclick="showSection('plan')" id="btn-plan" class="nav-btn w-full flex items-center gap-3 text-gray-300 hover:bg-brand/30 hover:text-white p-4 text-left rounded-2xl font-bold transition-all duration-300">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <span>Plan Służb (Dyżury)</span>
+            </button>
+            
+            <button onclick="showSection('podsumowanie')" id="btn-podsumowanie" class="nav-btn w-full flex items-center gap-3 text-gray-300 hover:bg-brand/30 hover:text-white p-4 text-left rounded-2xl font-bold transition-all duration-300">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                <span>Podsumowanie</span>
+            </button>
+            
+            <footer class="mt-auto pt-6 text-center text-xs text-gray-400 border-t border-gray-700/50">
                 &copy All rights reserved, Grześ Gładysz 2026
             </footer>
         </nav>
     </aside>
 
-    <main class="flex-1 p-4 md:p-10 bg-gray-100 dark:bg-darkbg overflow-y-auto pb-32 min-w-0">
+    <main class="flex-1 p-6 md:p-12 overflow-y-auto pb-32 min-w-0 transition-all duration-300">
         
-        <section id="section-sluzby" class="admin-section block">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Przegląd Służb</h1>
+        <section id="section-sluzby" class="admin-section block animate-fadeIn">
+            <div class="mb-8">
+                <h1 class="text-3xl md:text-4xl font-black text-gray-900 dark:text-white tracking-tight">Przegląd Służb</h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Monitoruj historyczną i bieżącą obecność ministrantów na nabożeństwach.</p>
+            </div>
             
-            <div class="flex flex-wrap gap-2 mb-6 p-4 bg-white dark:bg-cardbg rounded-2xl shadow-lg">
-                <button class="filter-btn bg-brand text-white border border-brand px-4 py-2 rounded-lg font-bold transition shadow-[0_0_10px_rgba(94,59,238,0.6)]" onclick="filterUser('all', this)">Wszyscy</button>
-                {% for u in users %}
-                    <button class="filter-btn bg-gray-200 dark:bg-darkbg text-gray-800 dark:text-white border border-gray-300 dark:border-brand px-4 py-2 rounded-lg font-bold hover:bg-brand/30 transition" onclick="filterUser('{{ u.username }}', this)">{{ u.username }}</button>
-                {% endfor %}
+            <div class="flex flex-col gap-3 mb-8 p-5 bg-white dark:bg-cardbg rounded-3xl shadow-xl border border-gray-100 dark:border-white/5">
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">Filtruj według ministranta:</span>
+                <div class="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-1">
+                    <button class="filter-btn bg-brand text-white border border-brand px-5 py-2.5 rounded-xl font-bold transition-all shadow-[0_4px_12px_rgba(94,59,238,0.3)] hover:scale-105 text-sm" onclick="filterUser('all', this)">
+                        Wszyscy
+                    </button>
+                    {% for u in users %}
+                        <button class="filter-btn bg-gray-100 dark:bg-darkbg text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-white/10 px-5 py-2.5 rounded-xl font-bold hover:bg-brand/20 hover:border-brand/40 transition-all text-sm hover:scale-105" onclick="filterUser('{{ u.username }}', this)">
+                            {{ u.username }}
+                        </button>
+                    {% endfor %}
+                </div>
             </div>
 
-            <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto w-full">
-                <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[600px]">
-                    <thead>
-                        <tr class="border-b-2 border-brand text-lg">
-                            <th class="p-4">Ministrant</th><th class="p-4">Data Służby</th><th class="p-4">Godzina</th><th class="p-4">Rodzaj Mszy</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for att, user in attendances %}
-                        <tr class="attendance-row border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition" data-username="{{ user.username }}">
-                            <td class="p-4"><strong>{{ user.username }}</strong> <span class="text-sm text-gray-500 dark:text-gray-300">({{ user.imie }} {{ user.nazwisko }})</span></td>
-                            <td class="p-4">{{ att.data_sluzby.strftime('%d.%m.%Y') }}</td>
-                            <td class="p-4">{{ att.godzina }}</td>
-                            <td class="p-4">
-                                {% if att.typ_mszy == 'inna' %}
-                                    <span class="bg-success text-white px-3 py-1 rounded-md font-bold text-xs">{{ att.nazwa_inna }}</span>
-                                {% else %}
-                                    <span class="bg-[#4834d4] text-white px-3 py-1 rounded-md font-bold text-xs">{{ att.typ_mszy|capitalize }}</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="bg-white dark:bg-cardbg rounded-3xl shadow-2xl border border-gray-100 dark:border-white/5 overflow-hidden w-full">
+                <div class="overflow-x-auto w-full">
+                    <table class="w-full text-left text-gray-800 dark:text-gray-200 border-collapse min-w-[700px]">
+                        <thead>
+                            <tr class="bg-gray-50 dark:bg-black/20 border-b-2 border-brand text-sm uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                <th class="p-5 font-bold">Ministrant</th>
+                                <th class="p-5 font-bold">Data Służby</th>
+                                <th class="p-5 font-bold">Godzina</th>
+                                <th class="p-5 font-bold">Rodzaj Mszy</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for att, user in attendances %}
+                            <tr class="attendance-row border-b border-gray-100 dark:border-white/5 hover:bg-gray-50/80 dark:hover:bg-white/5 transition-all duration-200" data-username="{{ user.username }}">
+                                <td class="p-5">
+                                    <div class="flex flex-col">
+                                        <strong class="text-gray-900 dark:text-white font-bold text-base tracking-wide">{{ user.username }}</strong>
+                                        <span class="text-xs text-gray-400 dark:text-gray-400 font-medium">{{ user.imie }} {{ user.nazwisko }}</span>
+                                    </div>
+                                </td>
+                                <td class="p-5 font-semibold text-gray-700 dark:text-gray-300">{{ att.data_sluzby.strftime('%d.%m.%Y') }}</td>
+                                <td class="p-5 font-bold text-brand dark:text-purple-400">{{ att.godzina }}</td>
+                                <td class="p-5">
+                                    {% if att.typ_mszy == 'inna' %}
+                                        <span class="inline-block bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-xl font-bold text-xs tracking-wide uppercase">{{ att.nazwa_inna }}</span>
+                                    {% else %}
+                                        <span class="inline-block bg-brand/10 text-brand dark:text-purple-400 border border-brand/20 px-3 py-1.5 rounded-xl font-bold text-xs tracking-wide uppercase">{{ att.typ_mszy|capitalize }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
-        <section id="section-ogloszenia" class="admin-section hidden">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Tablica Ogłoszeń</h1>
-            <div class="bg-white dark:bg-cardbg rounded-2xl p-6 shadow-xl mb-8">
-                <form action="/admin/add_announcement" method="POST" class="flex flex-col md:flex-row gap-4 w-full">
-                    <input type="text" name="tresc" placeholder="Wpisz nowe ogłoszenie dla ministrantów..." required class="flex-grow p-4 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-brand w-full">
-                    <button type="submit" class="bg-brand text-white px-8 py-4 rounded-xl font-bold hover:-translate-y-1 hover:shadow-lg transition shrink-0">Opublikuj</button>
+        <section id="section-ogloszenia" class="admin-section hidden animate-fadeIn">
+            <div class="mb-8">
+                <h1 class="text-3xl md:text-4xl font-black text-gray-900 dark:text-white tracking-tight">Tablica Ogłoszeń</h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Publikuj komunikaty, które pojawią się na pulpicie głównym każdego zalogowanego ministranta.</p>
+            </div>
+            
+            <div class="bg-white dark:bg-cardbg rounded-3xl p-6 shadow-xl border border-gray-100 dark:border-white/5 mb-8">
+                <form action="/admin/add_announcement" method="POST" class="flex flex-col md:flex-row gap-4 w-full items-stretch">
+                    <div class="relative flex-grow">
+                        <input type="text" name="tresc" placeholder="Wpisz nowe ogłoszenie dla ministrantów..." required 
+                               class="w-full p-4 pr-12 rounded-2xl border-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all placeholder-gray-400 dark:placeholder-gray-500 font-medium">
+                    </div>
+                    <button type="submit" class="bg-brand hover:bg-brand/90 text-white px-8 py-4 rounded-2xl font-black shadow-lg shadow-brand/20 hover:-translate-y-0.5 active:translate-y-0 transition-all shrink-0 flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                        <span>Opublikuj</span>
+                    </button>
                 </form>
             </div>
-            <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto w-full">
-                <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[500px]">
-                    <thead><tr class="border-b-2 border-brand text-lg"><th class="p-4">Treść</th><th class="p-4">Data</th></tr></thead>
-                    <tbody>
-                        {% for og in announcements %}
-                        <tr class="border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition">
-                            <td class="p-4">{{ og.tresc }}</td><td class="p-4">{{ og.data_wystawienia.strftime('%d.%m %H:%M') }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+
+            <div class="bg-white dark:bg-cardbg rounded-3xl shadow-xl border border-gray-100 dark:border-white/5 overflow-hidden w-full">
+                <div class="overflow-x-auto w-full">
+                    <table class="w-full text-left text-gray-800 dark:text-gray-200 border-collapse min-w-[500px]">
+                        <thead>
+                            <tr class="bg-gray-50 dark:bg-black/20 border-b-2 border-brand text-sm uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                <th class="p-5 font-bold w-3/4">Treść Ogłoszenia</th>
+                                <th class="p-5 font-bold w-1/4">Data i Godzina</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for og in announcements %}
+                            <tr class="border-b border-gray-100 dark:border-white/5 hover:bg-gray-50/50 dark:hover:bg-white/5 transition-all">
+                                <td class="p-5 text-gray-900 dark:text-white font-medium leading-relaxed">{{ og.tresc }}</td>
+                                <td class="p-5 font-semibold text-xs text-gray-400 dark:text-gray-400 flex items-center gap-1.5 mt-2 md:mt-0">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    {{ og.data_wystawienia.strftime('%d.%m %H:%M') }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
-        <section id="section-plan" class="admin-section hidden">
-            <div class="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-8">
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Plan Służb (Stałe Dyżury)</h1>
-                <a href="{{ url_for('export_schedule') }}" class="w-full sm:w-auto bg-success text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:-translate-y-1 transition flex items-center justify-center gap-2 shrink-0">
-                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Pobierz Plan Służb (Excel)
+        <section id="section-plan" class="admin-section hidden animate-fadeIn">
+            <div class="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-8 w-full">
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-black text-gray-900 dark:text-white tracking-tight">Plan Służb (Stałe Dyżury)</h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Zarządzaj stałym tygodniowym harmonogramem asysty liturgicznej.</p>
+                </div>
+                <a href="{{ url_for('export_schedule') }}" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3.5 rounded-2xl font-bold shadow-lg shadow-emerald-600/10 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>Pobierz Plan (Excel)</span>
                 </a>
             </div>
             
-            <div class="bg-white dark:bg-cardbg rounded-3xl p-8 shadow-2xl mb-12 border border-brand/30">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Plan Służb (Stałe Dyżury)</h1>
-            
-            <div class="bg-white dark:bg-cardbg rounded-3xl p-8 shadow-2xl mb-12 border border-brand/30">
+            <div class="bg-white dark:bg-cardbg rounded-3xl p-6 md:p-8 shadow-2xl mb-12 border border-brand/20">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-5 flex items-center gap-2">
+                    <span class="p-1.5 bg-brand/10 text-brand rounded-lg">➕</span> Dodaj Przydział Stałego Dyżuru
+                </h3>
                 <form action="/admin/add_schedule" method="POST" class="flex flex-col lg:flex-row gap-6 items-stretch lg:items-end w-full">
                     
                     <div class="flex-grow flex flex-col gap-2 w-full lg:w-auto min-w-0">
-                        <label class="font-bold dark:text-white text-gray-700">Wybierz ministranta:</label>
-                        <select name="user_id" required class="w-full max-w-full p-4 rounded-2xl border-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:border-brand focus:ring-2 focus:ring-brand truncate">
+                        <label class="font-bold text-sm text-gray-600 dark:text-gray-300 px-1">Wybierz ministranta:</label>
+                        <select name="user_id" required class="w-full p-4 rounded-2xl border-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all font-medium truncate">
                             {% for u in users %}<option value="{{ u.id }}">{{ u.username }} ({{ u.imie }} {{ u.nazwisko }})</option>{% endfor %}
                         </select>
                     </div>
                     
-                    <div class="flex flex-col gap-2 w-full lg:w-60 shrink-0 min-w-0">
-                        <label class="font-bold dark:text-white text-gray-700">Dzień tygodnia:</label>
-                        <select name="dzien" id="planDzien" onchange="updateGodziny()" class="w-full max-w-full p-4 rounded-2xl border-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:border-brand focus:ring-2 focus:ring-brand truncate">
+                    <div class="flex flex-col gap-2 w-full lg:w-64 shrink-0 min-w-0">
+                        <label class="font-bold text-sm text-gray-600 dark:text-gray-300 px-1">Dzień tygodnia:</label>
+                        <select name="dzien" id="planDzien" onchange="updateGodziny()" class="w-full p-4 rounded-2xl border-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all font-medium truncate">
                             <option value="Poniedziałek">Poniedziałek</option><option value="Wtorek">Wtorek</option>
                             <option value="Środa">Środa</option><option value="Czwartek">Czwartek</option>
                             <option value="Piątek">Piątek</option><option value="Sobota">Sobota</option>
@@ -119,47 +200,47 @@
                         </select>
                     </div>
                     
-                    <div class="flex flex-col gap-2 w-full lg:w-48 shrink-0 min-w-0">
-                        <label class="font-bold dark:text-white text-gray-700">Godzina mszy:</label>
-                        <select name="godzina" id="planGodzina" class="w-full max-w-full p-4 rounded-2xl border-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:border-brand focus:ring-2 focus:ring-brand truncate">
+                    <div class="flex flex-col gap-2 w-full lg:w-52 shrink-0 min-w-0">
+                        <label class="font-bold text-sm text-gray-600 dark:text-gray-300 px-1">Godzina mszy:</label>
+                        <select name="godzina" id="planGodzina" class="w-full p-4 rounded-2xl border-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all font-medium truncate">
                         </select>
                     </div>
 
-                    <button type="submit" class="w-full lg:w-auto bg-gradient-to-r from-success to-green-400 text-white px-10 py-4 h-[65px] rounded-2xl font-extrabold shadow-lg hover:scale-105 active:scale-95 transition whitespace-nowrap shrink-0 flex items-center justify-center gap-2">
-                        + Dodaj dyżur
+                    <button type="submit" class="w-full lg:w-auto bg-gradient-to-r from-emerald-600 to-teal-500 text-white px-8 py-4 h-[58px] rounded-2xl font-black shadow-lg shadow-emerald-600/20 hover:scale-[1.03] active:scale-95 transition-all whitespace-nowrap shrink-0 flex items-center justify-center gap-2">
+                        <span>+ Dodaj dyżur</span>
                     </button>
                 </form>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
                 {% for dzien, godziny_grupy in plan.items() %}
-                <div class="bg-white dark:bg-cardbg rounded-3xl p-6 shadow-xl flex flex-col w-full min-w-0 border-t-4 border-brand">
+                <div class="bg-white dark:bg-cardbg rounded-3xl p-5 shadow-xl flex flex-col w-full min-w-0 border-t-4 border-brand border border-gray-100 dark:border-white/5">
                     
-                    <div class="flex justify-between items-center mb-5 shrink-0">
-                        <h2 class="text-2xl font-extrabold text-gray-900 dark:text-white m-0 truncate">{{ dzien }}</h2>
-                        <span class="bg-brand/20 text-brand px-3 py-1 rounded-lg text-sm font-bold">{{ liczniki[dzien] }} osób</span>
+                    <div class="flex justify-between items-center mb-4 shrink-0">
+                        <h2 class="text-xl font-black text-gray-900 dark:text-white truncate">{{ dzien }}</h2>
+                        <span class="bg-brand/10 text-brand dark:text-purple-400 px-3 py-1 rounded-xl text-xs font-bold">{{ liczniki[dzien] }} osób</span>
                     </div>
                     
                     {% if godziny_grupy %}
                         <div class="flex flex-col gap-4 w-full">
                             {% for godzina, ministranci in godziny_grupy.items() %}
-                                <div class="bg-gray-50 dark:bg-darkbg p-4 rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden">
+                                <div class="bg-gray-50 dark:bg-darkbg/50 p-4 rounded-2xl border border-gray-200/60 dark:border-white/5">
                                     
-                                    <div class="bg-brand/10 p-2 rounded-lg mb-3 shrink-0">
-                                        <span class="font-extrabold text-brand flex items-center gap-2">
-                                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                                    <div class="bg-brand/5 p-2 rounded-xl mb-3 shrink-0 border border-brand/10">
+                                        <span class="font-bold text-sm text-brand dark:text-purple-400 flex items-center gap-1.5">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                             Godzina: {{ godzina }}
                                         </span>
                                     </div>
 
-                                    <ul class="flex flex-col gap-1 w-full min-w-0">
+                                    <ul class="flex flex-col gap-2 w-full min-w-0">
                                         {% for m in ministranci %}
-                                            <li class="flex justify-between items-center w-full min-w-0 group hover:bg-white/10 px-2 py-1.5 rounded-lg transition overflow-hidden">
-                                                <div class="flex flex-col sm:flex-row sm:items-center gap-0 sm:gap-2 min-w-0 truncate">
-                                                    <strong class="text-gray-800 dark:text-white truncate">{{ m.user.username }}</strong>
-                                                    <span class="text-xs text-gray-500 font-normal truncate">({{ m.user.imie }} {{ m.user.nazwisko }})</span>
+                                            <li class="flex justify-between items-center w-full min-w-0 group hover:bg-gray-100 dark:hover:bg-white/5 px-2 py-1.5 rounded-xl transition-all">
+                                                <div class="flex flex-col min-w-0 truncate">
+                                                    <strong class="text-gray-900 dark:text-white font-bold text-sm truncate">{{ m.user.username }}</strong>
+                                                    <span class="text-[11px] text-gray-400 font-medium truncate">({{ m.user.imie }} {{ m.user.nazwisko }})</span>
                                                 </div>
-                                                <a href="{{ url_for('delete_schedule', id=m.id) }}" class="text-gray-400 group-hover:text-danger text-2xl font-bold transition px-2 shrink-0 ml-2" onclick="return confirm('Usunąć ten dyżur?')">&times;</a>
+                                                <a href="{{ url_for('delete_schedule', id=m.id) }}" class="text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 w-7 h-7 flex items-center justify-center rounded-lg text-lg font-bold transition-all shrink-0 ml-2 shadow-sm" onclick="return confirm('Czy na pewno chcesz usunąć ten stały dyżur?')">&times;</a>
                                             </li>
                                         {% endfor %}
                                     </ul>
@@ -167,21 +248,27 @@
                             {% endfor %}
                         </div>
                     {% else %}
-                        <p class="text-sm text-gray-500 dark:text-gray-400 italic">Brak zapisanych dyżurów.</p>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 italic mt-2 flex items-center gap-1">
+                            <span>ℹ️</span> Brak zapisanych dyżurów.
+                        </p>
                     {% endif %}
                 </div>
                 {% endfor %}
             </div>
         </section>
 
-        <section id="section-podsumowanie" class="admin-section hidden">
+        <section id="section-podsumowanie" class="admin-section hidden animate-fadeIn">
             <div class="flex flex-col xl:flex-row flex-wrap justify-between items-start xl:items-center gap-4 mb-8 w-full">
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Podsumowanie Statystyk</h1>
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-black text-gray-900 dark:text-white tracking-tight">Podsumowanie Statystyk</h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Rankingi punktowe, podziały na typy nabożeństw i generowanie raportów okresowych.</p>
+                </div>
+                
                 <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-4 w-full xl:w-auto">
-                    <div class="flex items-center gap-2 bg-white dark:bg-cardbg px-3 py-2 rounded-xl shadow border border-gray-200 dark:border-brand w-full sm:w-auto shrink-0 min-w-0">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" class="text-brand dark:text-gray-300 shrink-0" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9M3 12h5m0 0v8m0 0l-3-3m3 3l3-3"></path></svg>
-                        <label class="font-bold text-gray-700 dark:text-white shrink-0">Sortuj:</label>
-                        <select id="sortPodsumowanie" onchange="sortTable('tbody-podsumowanie', this.value, 'podsumowanie')" class="bg-transparent text-gray-900 dark:text-white outline-none font-semibold cursor-pointer w-full truncate">
+                    <div class="flex items-center gap-2 bg-white dark:bg-cardbg px-4 py-3 rounded-2xl shadow border border-gray-100 dark:border-white/5 w-full sm:w-auto shrink-0 min-w-0">
+                        <svg class="w-5 h-5 text-brand shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9M3 12h5m0 0v8m0 0l-3-3m3 3l3-3"/></svg>
+                        <label class="font-bold text-sm text-gray-500 dark:text-gray-400 shrink-0">Sortuj:</label>
+                        <select id="sortPodsumowanie" onchange="sortTable('tbody-podsumowanie', this.value, 'podsumowanie')" class="bg-transparent text-sm text-gray-900 dark:text-white outline-none font-bold cursor-pointer w-full truncate">
                             <option value="ranga-nazwisko" class="text-black">Punkty + Nazwisko</option>
                             <option value="ranga-imie" class="text-black">Punkty + Imię</option>
                             <option value="ranga-user" class="text-black">Punkty + Login</option>
@@ -190,34 +277,54 @@
                             <option value="alfa-user" class="text-black">Alfabetycznie (Login)</option>
                         </select>
                     </div>
-                    <a href="{{ url_for('export_raport') }}" class="w-full sm:w-auto bg-success text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:-translate-y-1 transition flex items-center justify-center gap-2 shrink-0">
-                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Pobierz Excel
+                    
+                    <a href="{{ url_for('export_raport') }}" class="w-full sm:w-auto bg-brand hover:bg-brand/90 text-white px-6 py-3.5 rounded-2xl font-bold shadow-lg shadow-brand/20 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 shrink-0 text-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        <span>Pobierz Całościowy Excel</span>
                     </a>
                 </div>
             </div>
             
-            <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto w-full">
-                <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[600px]">
-                    <thead>
-                        <tr class="border-b-2 border-brand text-lg">
-                            <th class="p-4">Ministrant</th><th class="p-4">Suma</th><th class="p-4">Poranne</th><th class="p-4">Wieczorne</th><th class="p-4">Inne</th><th class="p-4">Ranking</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody-podsumowanie">
-                        {% for s in stats %}
-                        <tr class="border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition" data-imie="{{ s.imie|lower }}" data-nazwisko="{{ s.nazwisko|lower }}" data-user="{{ s.username|lower }}" data-points="{{ s.total }}">
-                            <td class="p-4"><strong>{{ s.username }}</strong><br><span class="text-sm text-gray-500 dark:text-gray-300">{{ s.full_name }}</span></td>
-                            <td class="p-4 text-2xl font-bold text-warning">{{ s.total }}</td>
-                            <td class="p-4">{{ s.morning }}</td><td class="p-4">{{ s.evening }}</td><td class="p-4">{{ s.other }}</td>
-                            <td class="p-4">
-                                {% if s.total >= 20 %} <span class="bg-yellow-400 text-black px-3 py-1 rounded-md font-bold text-xs">LIDER</span>
-                                {% elif s.total >= 5 %} <span class="bg-gray-300 text-black px-3 py-1 rounded-md font-bold text-xs">AKTYWNY</span>
-                                {% else %} <span class="bg-[#cd7f32] text-white px-3 py-1 rounded-md font-bold text-xs">POCZĄTKUJĄCY</span> {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="bg-white dark:bg-cardbg rounded-3xl shadow-2xl border border-gray-100 dark:border-white/5 overflow-hidden w-full">
+                <div class="overflow-x-auto w-full">
+                    <table class="w-full text-left text-gray-800 dark:text-gray-200 border-collapse min-w-[750px]">
+                        <thead>
+                            <tr class="bg-gray-50 dark:bg-black/20 border-b-2 border-brand text-sm uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                <th class="p-5 font-bold">Ministrant</th>
+                                <th class="p-5 font-bold">Suma Służb</th>
+                                <th class="p-5 font-bold">Poranne</th>
+                                <th class="p-5 font-bold">Wieczorne</th>
+                                <th class="p-5 font-bold">Inne (Niedzielne/Dodatkowe)</th>
+                                <th class="p-5 font-bold">Poziom Aktywności</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-podsumowanie">
+                            {% for s in stats %}
+                            <tr class="border-b border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-all duration-150" data-imie="{{ s.imie|lower }}" data-nazwisko="{{ s.nazwisko|lower }}" data-user="{{ s.username|lower }}" data-points="{{ s.total }}">
+                                <td class="p-5">
+                                    <div class="flex flex-col">
+                                        <strong class="text-gray-900 dark:text-white text-base font-bold">{{ s.username }}</strong>
+                                        <span class="text-xs text-gray-400 dark:text-gray-400 font-semibold">{{ s.full_name }}</span>
+                                    </div>
+                                </td>
+                                <td class="p-5 text-3xl font-black text-amber-500 tracking-tight">{{ s.total }}</td>
+                                <td class="p-5 font-bold text-gray-700 dark:text-gray-300">{{ s.morning }}</td>
+                                <td class="p-5 font-bold text-gray-700 dark:text-gray-300">{{ s.evening }}</td>
+                                <td class="p-5 font-bold text-gray-700 dark:text-gray-300">{{ s.other }}</td>
+                                <td class="p-5">
+                                    {% if s.total >= 20 %} 
+                                        <span class="inline-block bg-yellow-400/20 text-yellow-600 dark:text-yellow-400 border border-yellow-400/30 px-3 py-1.5 rounded-xl font-black text-xs tracking-wider">LIDER</span>
+                                    {% elif s.total >= 5 %} 
+                                        <span class="inline-block bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/30 px-3 py-1.5 rounded-xl font-black text-xs tracking-wider">AKTYWNY</span>
+                                    {% else %} 
+                                        <span class="inline-block bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30 px-3 py-1.5 rounded-xl font-black text-xs tracking-wider">POCZĄTKUJĄCY</span> 
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
     </main>
@@ -226,6 +333,7 @@
 
 {% block scripts %}
 <script>
+    // Definicja stałych ram czasowych nabożeństw powiązanych z dniami tygodnia
     const godzinyPlan = {
         'Poniedziałek': ['06:30', '18:00'],
         'Wtorek': ['06:30', '18:00'],
@@ -236,6 +344,7 @@
         'Niedziela': ['07:00', '09:00', '09:30', '10:30', '11:00', '12:00', '14:00', '19:00']
     };
 
+    // Aktualizacja asynchroniczna kontenera select na bazie wybranego dnia tygodnia
     function updateGodziny() {
         const dzien = document.getElementById('planDzien').value;
         const selectGodzina = document.getElementById('planGodzina');
@@ -243,21 +352,22 @@
         selectGodzina.innerHTML = ''; 
         
         godzinyPlan[dzien].forEach(g => {
-            selectGodzina.innerHTML += `<option value="${g}">${g}</option>`;
+            const opt = document.createElement('option');
+            opt.value = g;
+            opt.textContent = g;
+            selectGodzina.appendChild(opt);
         });
     }
 
-    // --- NOWY SYSTEM SORTOWANIA ---
+    // Zaawansowany moduł algorytmu sortowania danych w tabeli podsumowań
     function sortTable(tbodyId, method, type, save = true) {
         const tbody = document.getElementById(tbodyId);
         if(!tbody) return;
         const rows = Array.from(tbody.querySelectorAll('tr'));
-
         const [mainCrit, subCrit] = method.split('-');
 
         rows.sort((a, b) => {
             let valA, valB, subA, subB;
-
             subA = a.getAttribute('data-' + subCrit) || '';
             subB = b.getAttribute('data-' + subCrit) || '';
 
@@ -286,10 +396,10 @@
         }
     }
 
+    // Obsługa zdarzeń ładowania drzewa DOM
     document.addEventListener("DOMContentLoaded", function() {
         if(document.getElementById('planDzien')) updateGodziny();
         
-        // ZAPAMIĘTYWANIE SORTOWANIA DLA PODSUMOWANIA
         const savedPod = localStorage.getItem('sort_tbody-podsumowanie') || 'ranga-nazwisko';
         const selectPod = document.getElementById('sortPodsumowanie');
         if (selectPod) {
@@ -298,11 +408,12 @@
         }
     });
 
+    // Filtrowanie wizualne rekordów tabeli obecności na bazie zaznaczonego użytkownika
     function filterUser(username, btnElement) {
         document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.className = "filter-btn bg-gray-200 dark:bg-darkbg text-gray-800 dark:text-white border border-gray-300 dark:border-brand px-4 py-2 rounded-lg font-bold hover:bg-brand/30 transition";
+            btn.className = "filter-btn bg-gray-100 dark:bg-darkbg text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-white/10 px-5 py-2.5 rounded-xl font-bold hover:bg-brand/20 hover:border-brand/40 transition-all text-sm hover:scale-105";
         });
-        btnElement.className = "filter-btn bg-brand text-white border border-brand px-4 py-2 rounded-lg font-bold transition shadow-[0_0_10px_rgba(94,59,238,0.6)]";
+        btnElement.className = "filter-btn bg-brand text-white border border-brand px-5 py-2.5 rounded-xl font-bold transition-all shadow-[0_4px_12px_rgba(94,59,238,0.3)] hover:scale-105 text-sm";
         
         const rows = document.querySelectorAll('.attendance-row');
         rows.forEach(row => {
@@ -310,22 +421,24 @@
         });
     }
 
+    // Przełączanie kart sekcji roboczych panelu z zarządzaniem klasami aktywności przycisków menu
     function showSection(name) {
         document.querySelectorAll('.admin-section').forEach(s => {
             s.classList.remove('block');
             s.classList.add('hidden');
         });
         document.querySelectorAll('.nav-btn').forEach(b => {
-            b.classList.remove('bg-brand', 'text-white');
-            b.classList.add('text-gray-300', 'hover:bg-brand/50');
+            b.classList.remove('bg-brand', 'text-white', 'shadow-lg', 'shadow-brand/20', 'scale-[1.02]');
+            b.classList.add('text-gray-300', 'hover:bg-brand/30', 'hover:text-white');
         });
         
-        document.getElementById('section-' + name).classList.remove('hidden');
-        document.getElementById('section-' + name).classList.add('block');
+        const targetSection = document.getElementById('section-' + name);
+        targetSection.classList.remove('hidden');
+        targetSection.classList.add('block');
         
         let activeBtn = document.getElementById('btn-' + name);
-        activeBtn.classList.remove('text-gray-300', 'hover:bg-brand/50');
-        activeBtn.classList.add('bg-brand', 'text-white');
+        activeBtn.classList.remove('text-gray-300', 'hover:bg-brand/30', 'hover:text-white');
+        activeBtn.classList.add('bg-brand', 'text-white', 'shadow-lg', 'shadow-brand/20', 'scale-[1.02]');
     }
 </script>
 {% endblock %}

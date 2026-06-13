@@ -3,163 +3,233 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Aplikacja dla Ministrantów{% endblock %} | Parafia WNMP</title>
+    <title>{% block title %}System Ministrancki{% endblock %} | Parafia WNMP</title>
     
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+        // Rozbudowana konfiguracja motywu oraz palety kolorów dla całego systemu
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
                         brand: '#5e3bee',
-                        darkbg: '#1a1a2e',
-                        cardbg: '#2f3e9e',
-                        danger: '#eb4d4b',
-                        success: '#27ae60',
-                        warning: '#f1c40f'
+                        darkbg: '#0b0f19',
+                        cardbg: '#1e293b',
+                        danger: '#ef4444',
+                        success: '#22c55e',
+                        warning: '#eab308'
+                    },
+                    boxShadow: {
+                        'brand-glow': '0 0 25px rgba(94, 59, 238, 0.35)',
+                        'success-glow': '0 0 25px rgba(34, 197, 94, 0.35)',
+                        'danger-glow': '0 0 25px rgba(239, 68, 68, 0.35)'
                     }
                 }
             }
         }
     </script>
+    
     {% block extra_styles %}{% endblock %}
 
     <style>
-    /* Definicja animacji wejścia toastu z góry */
-    @keyframes toastIn {
-        from {
-            opacity: 0;
-            transform: translateY(-20px) scale(0.95);
+        /* Nadpisanie domyślnego paska przewijania dla nowoczesnego wyglądu interfejsu */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
         }
-        to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
+        ::-webkit-scrollbar-track {
+            background-color: #0b0f19;
+            border-radius: 9999px;
         }
-    }
+        ::-webkit-scrollbar-thumb {
+            background-color: rgba(94, 59, 238, 0.25);
+            border-radius: 9999px;
+            border: 2px solid transparent;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(94, 59, 238, 0.55);
+        }
 
-    /* Klasa aktywująca animację */
-    .animate-toast-in {
-        animation: toastIn 0.35s ease-out forwards;
-    }
+        /* Deklaracje kluczowych klatek animacji dla powiadomień Toast */
+        @keyframes toast-in {
+            0% {
+                opacity: 0;
+                transform: translate3d(50px, 0, 0) scale(0.94);
+                filter: blur(5px);
+            }
+            100% {
+                opacity: 1;
+                transform: translate3d(0, 0, 0) scale(1);
+                filter: blur(0);
+            }
+        }
+        @keyframes toast-out {
+            0% {
+                opacity: 1;
+                transform: translate3d(0, 0, 0) scale(1);
+                filter: blur(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translate3d(50px, 0, 0) scale(0.94);
+                filter: blur(5px);
+            }
+        }
+
+        /* Aktywne klasy animacji interfejsu użytkownika */
+        .animate-toast-in {
+            animation: toast-in 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        .animate-toast-out {
+            animation: toast-out 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-darkbg text-gray-900 dark:text-white transition-colors duration-300 min-h-screen flex flex-col font-sans">
-    
-    <div class="fixed top-5 left-1/2 -translate-x-1/2 w-[92%] max-w-lg z-[9999] flex flex-col gap-3 pointer-events-none">
-        {% with messages = get_flashed_messages(with_categories=True) %}
+
+    <div id="toast-container" class="fixed top-6 right-6 z-[200] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+        {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="flash-toast pointer-events-auto flex items-start gap-4 px-5 py-4 rounded-2xl backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.25)] border animate-toast-in transition-all duration-300 hover:scale-[1.02]
-                        {% if category in ['danger', 'error'] %}
-                            bg-red-500/90 border-red-400 text-white
-                        {% elif category == 'warning' %}
-                            bg-amber-500/90 border-amber-400 text-white
+                    <div class="flash-toast animate-toast-in pointer-events-auto flex items-center gap-3 p-4 rounded-2xl shadow-xl border backdrop-blur-md transition-all duration-300
+                        {% if category == 'error' %}
+                            bg-red-500/10 border-danger text-danger shadow-danger-glow
+                        {% elif category == 'success' %}
+                            bg-green-500/10 border-success text-success shadow-success-glow
                         {% else %}
-                            bg-emerald-500/90 border-emerald-400 text-white
+                            bg-brand/10 border-brand text-white shadow-brand-glow
                         {% endif %}">
                         
-                        <div class="text-2xl shrink-0">
-                            {% if category in ['danger', 'error'] %}
-                                ❌
-                            {% elif category == 'warning' %}
-                                ⚠️
-                            {% else %}
-                                ✅
-                            {% endif %}
+                        <div class="flex-grow font-semibold text-sm">
+                            {{ message }}
                         </div>
-
-                        <div class="flex-1">
-                            <p class="font-black text-sm leading-relaxed">
-                                {{ message }}
-                            </p>
-                        </div>
-
-                        <button
-                            onclick="this.parentElement.remove()"
-                            class="text-white/70 hover:text-white text-xl transition-colors focus:outline-none"
-                            aria-label="Zamknij powiadomienie"
-                        >
-                            ×
-                        </button>
+                        
+                        <button onclick="dismissToast(this.parentElement)" class="text-xl opacity-70 hover:opacity-100 transition duration-150">&times;</button>
                     </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
     </div>
 
-    <div class="flex-grow flex flex-col w-full">
-        {% block content %}{% endblock %}
-    </div>
+    <header class="bg-white dark:bg-cardbg border-b border-gray-200 dark:border-gray-800 transition-colors duration-300 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl filter drop-shadow">🛡️</span>
+                <span class="font-black tracking-tight text-lg bg-gradient-to-r from-brand to-purple-500 bg-clip-text text-transparent">
+                    System Ministranci
+                </span>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <button id="theme-btn" onclick="toggleTheme()" class="px-4 py-2 text-xs font-bold bg-gray-50 dark:bg-darkbg hover:bg-gray-200 dark:hover:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 transition duration-200 shadow-sm">
+                    ☀️ Jasny Motyw
+                </button>
+            </div>
+        </div>
+    </header>
 
-    <div id="cookie-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4 hidden">
-        <div class="bg-white dark:bg-cardbg rounded-3xl p-6 max-w-md w-full shadow-2xl border border-gray-200 dark:border-white/10 text-center">
-            <p class="font-bold text-lg mb-4">Ta strona używa ciasteczek (cookies), aby działać poprawnie.</p>
-            <button onclick="acceptCookies()" class="bg-brand text-white px-6 py-2.5 rounded-full font-black hover:bg-opacity-90 transition">Rozumiem i akceptuję</button>
+    <main class="flex-grow flex flex-col">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="bg-white dark:bg-cardbg border-t border-gray-200 dark:border-gray-800 py-6 text-center text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300">
+        <p>&copy; 2026 Parafia WNMP. Wszelkie prawa zastrzeżone dla Służby Liturgicznej.</p>
+        <p class="mt-1 text-gray-400 dark:text-gray-600 font-medium">Oficjalna platforma monitorowania obecności i ogłoszeń szefa.</p>
+    </footer>
+
+    <div id="cookie-overlay" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[300] flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-cardbg border border-gray-200 dark:border-gray-800 max-w-md w-full p-6 rounded-3xl shadow-2xl text-center flex flex-col items-center gap-4 animate-toast-in">
+            <div class="text-4xl">🍪</div>
+            <h3 class="text-xl font-extrabold text-gray-900 dark:text-white">Polityka Prywatności i Cookies</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                Nasz system wykorzystuje pamięć lokalną oraz techniczne pliki cookie w celu autoryzacji bezpiecznej sesji ministranta. 
+                Dodatkowo zbieramy współrzędne geograficzne podczas logowania w celu potwierdzenia obecności w kościele.
+            </p>
+            <button onclick="acceptCookies()" class="w-full py-3 bg-brand hover:bg-brand/90 text-white font-bold rounded-xl shadow-brand-glow transition duration-200 transform active:scale-95">
+                Akceptuję i przechodzę do systemu
+            </button>
         </div>
     </div>
 
     <script>
+        // Logika przełączania motywu graficznego (Dark Mode / Light Mode)
         function toggleTheme() {
             const html = document.documentElement;
             const btn = document.getElementById('theme-btn');
+            
+            if (!html || !btn) return;
+            
             html.classList.toggle('dark');
-            if(html.classList.contains('dark')) {
-                if(btn) btn.innerText = "☀️ Jasny Motyw";
+            
+            if (html.classList.contains('dark')) {
+                btn.innerText = "☀️ Jasny Motyw";
                 localStorage.setItem('theme', 'dark');
             } else {
-                if(btn) btn.innerText = "🌙 Ciemny Motyw";
+                btn.innerText = "🌙 Ciemny Motyw";
                 localStorage.setItem('theme', 'light');
             }
         }
 
-        if(localStorage.getItem('theme') === 'light') {
+        // Sprawdzenie i odczyt zapisanego stanu motywu z pamięci LocalStorage
+        if (localStorage.getItem('theme') === 'light') {
             document.documentElement.classList.remove('dark');
             const btn = document.getElementById('theme-btn');
-            if(btn) btn.innerText = "🌙 Ciemny Motyw";
+            if (btn) {
+                btn.innerText = "🌙 Ciemny Motyw";
+            }
         }
 
+        // Sprawdzenie, czy użytkownik zaakceptował regulamin plików cookies
         function checkCookies() {
             if (!localStorage.getItem('cookiesAccepted')) {
                 const banner = document.getElementById('cookie-overlay');
-                if (banner) banner.classList.remove('hidden');
+                if (banner) {
+                    banner.classList.remove('hidden');
+                }
                 document.body.style.overflow = 'hidden';
             }
         }
 
+        // Przetwarzanie akceptacji ciasteczek przez użytkownika
         function acceptCookies() {
             localStorage.setItem('cookiesAccepted', 'true');
             const banner = document.getElementById('cookie-overlay');
-            if (banner) banner.classList.add('hidden');
+            if (banner) {
+                banner.classList.add('hidden');
+            }
             document.body.style.overflow = '';
         }
 
-        // OBSŁUGA AUTOMATYCZNEGO ZNIKANIA TOASTÓW
-        document.addEventListener("DOMContentLoaded", () => {
-            checkCookies();
-
-            // Znajdź wszystkie elementy toastów
-            const toasts = document.querySelectorAll(".flash-toast");
+        // Skrypt zamykający toasty z uwzględnieniem czasu animacji CSS
+        window.dismissToast = function(toast) {
+            if (!toast) return;
+            toast.classList.remove("animate-toast-in");
+            toast.classList.add("animate-toast-out");
             
-            toasts.forEach((toast) => {
-                // Po 5 sekundach (5000ms) rozpocznij animację znikania
+            // Usunięcie elementu powiadomienia z drzewa DOM po upływie 350ms
+            setTimeout(() => {
+                toast.remove();
+            }, 350);
+        };
+
+        // Wywołanie procedur startowych po pełnym załadowaniu struktury DOM
+        document.addEventListener("DOMContentLoaded", () => {
+            if (typeof checkCookies === "function") {
+                checkCookies();
+            }
+
+            // Automatyczne odliczanie i wygaszanie istniejących powiadomień
+            document.querySelectorAll(".flash-toast").forEach((toast) => {
                 setTimeout(() => {
-                    // Dodaj klasy Tailwinda do płynnego ukrycia
-                    toast.classList.add(
-                        "opacity-0",
-                        "-translate-y-3", // Delikatny ruch w górę przy znikaniu
-                        "transition-all",
-                        "duration-500" // Czas trwania animacji znikania
-                    );
-                    
-                    // Po zakończeniu animacji (kolejne 500ms) usuń element z DOM
-                    setTimeout(() => toast.remove(), 500);
+                    dismissToast(toast);
                 }, 5000);
             });
         });
     </script>
+    
     {% block scripts %}{% endblock %}
 </body>
 </html>

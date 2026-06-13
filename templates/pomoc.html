@@ -2,96 +2,113 @@
 {% block title %}Centrum Pomocy - System Ministranci{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50 dark:bg-[#0f172a] py-8 px-4 transition-colors duration-300">
+<div class="min-h-screen bg-gray-50 dark:bg-[#0f172a] py-12 px-4 sm:px-6 transition-colors duration-300 font-sans">
     <div class="max-w-4xl mx-auto">
         
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 bg-white dark:bg-[#1f2a44] p-6 rounded-3xl shadow-md border border-gray-100 dark:border-gray-700/50">
-            <div>
-                <span class="text-xs font-bold text-brand uppercase tracking-wider">Aplikacja Służby Liturgicznej</span>
-                <h1 class="text-2xl font-black text-gray-800 dark:text-white mt-1 flex items-center gap-2">
-                    <span>🛡️</span> Oficjalne Centrum Pomocy
-                </h1>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10 bg-white dark:bg-[#1f2a44] p-6 md:p-8 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700/50 transition-all">
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-brand/10 text-brand rounded-2xl">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m3.413-8.829a2.5 2.5 0 11-4.826 1.34c.046-.41.25-.834.584-1.168l2.122-2.121a2.5 2.5 0 013.536 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <span class="text-xs font-black text-brand uppercase tracking-widest block">Aplikacja Służby Liturgicznej</span>
+                    <h1 class="text-2xl md:text-3xl font-black text-gray-900 dark:text-white mt-0.5 tracking-tight">
+                        Oficjalne Centrum Pomocy
+                    </h1>
+                </div>
             </div>
-            <a href="{{ url_for('login_page') }}" class="px-5 py-2.5 bg-brand hover:bg-brand/90 text-white font-bold text-sm rounded-xl shadow-md transition-all transform active:scale-95 flex items-center gap-2">
-                ⬅️ Powrót do logowania
+            <a href="{{ url_for('login_page') }}" class="w-full sm:w-auto px-6 py-3 bg-brand hover:bg-brand/90 text-white font-bold text-sm rounded-xl shadow-lg shadow-brand/10 transition-all transform active:scale-95 flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Powrót do logowania</span>
             </a>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div class="bg-white dark:bg-[#1f2a44] p-6 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700 transition-transform hover:scale-[1.01]">
-                <div class="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center text-xl mb-4">🍪</div>
-                <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2">Co to są pliki Cookie (Ciasteczka)?</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-3">
-                    To bezpieczne, mikroskopijne pliki tekstowe zapisywane lokalnie w pamięci Twojej przeglądarki. Nasz system wykorzystuje je **wyłącznie do celów technicznych**.
-                </p>
-                <div class="bg-gray-50 dark:bg-black/20 p-3 rounded-xl border border-gray-100 dark:border-gray-700/50 text-xs text-gray-500 dark:text-gray-400">
-                    <strong>Ważne:</strong> Dzięki ciasteczkom system pamięta, że jesteś zalogowany podczas przechodzenia między podstronami. Nie śledzimy Cię, nie profilujemy i nie przekazujemy danych firmom reklamowym. Sesja wygasa bezpiecznie po 15 minutach bezczynności.
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+            <div class="bg-white dark:bg-[#1f2a44] p-6 md:p-8 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700/60 transition-all hover:scale-[1.01] flex flex-col justify-between">
+                <div>
+                    <div class="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center text-xl mb-4 text-amber-600 dark:text-amber-400">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Co to są pliki Cookie (Ciasteczka)?</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-4">
+                        To bezpieczne, mikroskopijne pliki tekstowe zapisywane lokalnie w pamięci Twojej przeglądarki. Nasz system wykorzystuje je **wyłącznie do celów technicznych**.
+                    </p>
+                </div>
+                <div class="bg-gray-50 dark:bg-black/20 p-4 rounded-2xl border border-gray-100 dark:border-gray-700/50 text-xs text-gray-500 dark:text-gray-400 font-medium leading-relaxed">
+                    <strong>Ważne bezpieczeństwo:</strong> Dzięki ciasteczkom system pamięta, że jesteś zalogowany podczas przechodzenia między podstronami. Nie śledzimy Cię, nie profilujemy i nie przekazujemy danych firmom reklamowym. Sesja wygasa bezpiecznie po 15 minutach bezczynności.
                 </div>
             </div>
 
-            <div class="bg-white dark:bg-[#1f2a44] p-6 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700 transition-transform hover:scale-[1.01] flex flex-col justify-between">
+            <div class="bg-white dark:bg-[#1f2a44] p-6 md:p-8 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700/60 transition-all hover:scale-[1.01] flex flex-col justify-between">
                 <div>
-                    <div class="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/40 flex items-center justify-center text-xl mb-4">📜</div>
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2">Regulamin i Ochrona Prywatności</h3>
+                    <div class="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/40 flex items-center justify-center text-xl mb-4 text-blue-600 dark:text-blue-400">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Regulamin i Ochrona Prywatności</h3>
                     <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-4">
                         Rejestrując profil w systemie, wyrażasz zgodę na przetwarzanie podstawowych danych (imię, nazwisko, historia obecności, adres IP oraz opcjonalnie współrzędne GPS) w celach organizacji pracy i grafików nabożeństw w parafii.
                     </p>
                 </div>
-                <div class="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/40 rounded-xl flex items-center justify-between gap-2">
-                    <div class="text-xs text-amber-900 dark:text-amber-400 font-medium">
-                        Dostępna jest pełna, rozszerzona wersja regulaminu w formacie PDF.
+                <div class="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/40 rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                    <div class="text-xs text-amber-900 dark:text-amber-400 font-semibold leading-normal">
+                        Dostępna jest pełna, rozszerzona wersja dokumentu regulaminowego w formacie cyfrowym.
                     </div>
-                    <a href="{{ url_for('pobierz_regulamin') }}" class="whitespace-nowrap px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg transition-colors shadow-sm">
+                    <a href="{{ url_for('pobierz_regulamin') }}" class="whitespace-nowrap px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-black text-xs rounded-xl transition-all shadow-md text-center">
                         📥 Pobierz PDF
                     </a>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-[#1f2a44] p-6 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700 mb-8">
-            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">🔑 Jak utworzyć konto i się zalogować?</h3>
+        <div class="bg-white dark:bg-[#1f2a44] p-6 md:p-8 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700 mb-10">
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-5 flex items-center gap-2">
+                <svg class="w-6 h-6 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                <span>Jak utworzyć konto i się zalogować?</span>
+            </h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                <div class="p-4 bg-gray-50 dark:bg-black/10 rounded-2xl border border-gray-100 dark:border-gray-700/50">
-                    <span class="font-bold text-brand block mb-1">1. Tworzenie konta:</span>
+                <div class="p-5 bg-gray-50 dark:bg-black/20 rounded-2xl border border-gray-100 dark:border-gray-700/50">
+                    <span class="font-extrabold text-brand text-base block mb-2">1. Tworzenie konta:</span>
                     Na ekranie logowania kliknij zakładkę "Rejestracja". Podaj swoje prawdziwe imię, nazwisko oraz unikalny login i silne hasło. System automatycznie sprawdzi i zapisze Twój bezpieczny adres IP.
                 </div>
-                <div class="p-4 bg-gray-50 dark:bg-black/10 rounded-2xl border border-gray-100 dark:border-gray-700/50">
-                    <span class="font-bold text-brand block mb-1">2. Logowanie i 2FA:</span>
-                    Wpisz swój login i hasło w pierwszej zakładce. 
+                <div class="p-5 bg-gray-50 dark:bg-black/20 rounded-2xl border border-gray-100 dark:border-gray-700/50">
+                    <span class="font-extrabold text-brand text-base block mb-2">2. Logowanie i 2FA:</span>
+                    Wpisz swój autoryzowany login i hasło w pierwszej zakładce formularza uwierzytelniania. Jeśli włączono zabezpieczenie 2FA, podaj kod autoryzacyjny.
                 </div>
             </div>
         </div>
 
-        <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Weryfikacja techniczna według urządzeń i przeglądarek</h2>
+        <h2 class="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4 px-1">Weryfikacja techniczna według urządzeń i przeglądarek</h2>
         
         <div class="space-y-4">
             
             <div class="bg-white dark:bg-[#1f2a44] rounded-3xl shadow-md border border-gray-100 dark:border-gray-700/60 overflow-hidden">
-                <button onclick="toggleSection('ios-box')" class="w-full flex items-center justify-between p-5 font-bold text-gray-800 dark:text-white text-left bg-gray-50/50 dark:bg-gray-800/20 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                    <span class="flex items-center gap-3 text-base">🍏 Apple iOS (iPhone)</span>
-                    <span id="icon-ios-box" class="text-xs transition-transform duration-200">🔽</span>
+                <button onclick="toggleSection('ios-box')" class="w-full flex items-center justify-between p-5 font-bold text-gray-800 dark:text-white text-left bg-gray-50/50 dark:bg-gray-800/10 hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-all">
+                    <span class="flex items-center gap-3 text-base font-bold">🍏 Apple iOS (iPhone)</span>
+                    <span id="icon-ios-box" class="text-xs font-bold transition-transform duration-200">🔽</span>
                 </button>
                 <div id="ios-box" class="hidden p-6 border-t border-gray-100 dark:border-gray-700/50 space-y-6">
                     <div class="border-l-4 border-blue-500 pl-4">
-                        <h4 class="font-extrabold text-blue-600 dark:text-blue-400 text-sm mb-2">🌐 Przeglądarka: Safari (Zalecana na iOS)</h4>
-                        <ul class="text-xs space-y-2 text-gray-600 dark:text-gray-300">
+                        <h4 class="font-black text-blue-600 dark:text-blue-400 text-sm mb-2">🌐 Przeglądarka: Safari (Zalecana na iOS)</h4>
+                        <ul class="text-xs space-y-3 text-gray-600 dark:text-gray-300 list-none pl-0">
                             <li><strong>Uprawnienia GPS:</strong> Wejdź w Ustawienia iPhone'a ➡️ Prywatność i bezpieczeństwo ➡️ Usługi lokalizacji. Upewnij się, że są włączone. Następnie przewiń na dół do "Witryny Safari" i zaznacz "Gdy używam aplikacji" oraz włącz suwak "Dokładna lokalizacja".</li>
-                            <li><strong>Ekran Główny (Instalacja PWA):</strong> Otwórz tę stronę w Safari. Stuknij ikonę <span class="bg-gray-200 dark:bg-gray-700 px-1 rounded">Udostępnij</span> (kwadrat ze strzałką w górę na dole ekranu), przewiń menu w dół i wybierz <strong>"Do ekranu początkowego"</strong>.</li>
+                            <li><strong>Ekran Główny (Instalacja PWA):</strong> Otwórz tę stronę w Safari. Stuknij ikonę <span class="bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded font-semibold text-[10px]">Udostępnij</span> (kwadrat ze strzałką w górę na dole ekranu), przewiń menu w dół i wybierz <strong>"Do ekranu początkowego"</strong>.</li>
                         </ul>
                     </div>
                     <div class="border-l-4 border-emerald-500 pl-4">
-                        <h4 class="font-extrabold text-emerald-600 dark:text-emerald-400 text-sm mb-2">🌐 Przeglądarka: Google Chrome (iOS)</h4>
+                        <h4 class="font-black text-emerald-600 dark:text-emerald-400 text-sm mb-2">🌐 Przeglądarka: Google Chrome (iOS)</h4>
                         <ul class="text-xs space-y-2 text-gray-600 dark:text-gray-300">
                             <li><strong>Uprawnienia GPS:</strong> Przejdź do Ustawień systemowych iPhone'a, przewiń listę na sam dół, znajdź aplikację <strong>Chrome</strong>, stuknij "Położenie" i wybierz "Zapytaj przy następnym razie lub podczas używania".</li>
                             <li><strong>Ekran Główny:</strong> Stuknij ikonę udostępniania w pasku adresu u góry lub menu trzech kropek na dole, wybierz "Dodaj do ekranu początkowego".</li>
                         </ul>
                     </div>
                     <div class="border-l-4 border-amber-500 pl-4">
-                        <h4 class="font-extrabold text-amber-600 dark:text-amber-400 text-sm mb-2">🔍 Wbudowana aplikacja "Google" / Widżet wyszukiwarki</h4>
-                        <div class="p-3 bg-amber-50 dark:bg-amber-950/20 text-xs text-amber-800 dark:text-amber-400 rounded-xl mb-2">
+                        <h4 class="font-black text-amber-600 dark:text-amber-400 text-sm mb-2">🔍 Wbudowana aplikacja "Google" / Widżet wyszukiwarki</h4>
+                        <div class="p-3 bg-amber-50 dark:bg-amber-950/20 text-xs text-amber-800 dark:text-amber-400 rounded-xl mb-2 font-medium">
                             <strong>⚠️ UWAGA KLUCZOWA:</strong> Czasami Aplikacja Google (wyszukiwarka) na iPhone blokuje zaawansowane skrypty Geolocation API!
                         </div>
-                        <p class="text-xs text-gray-600 dark:text-gray-300">
+                        <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
                             Jeśli otwarłeś link bezpośrednio z widżetu Google lub kodu QR i system wyświetla błędy lokalizacji, natychmiast skopiuj adres URL strony i wklej go bezpośrednio do czystej przeglądarki <strong>Safari</strong> lub <strong>Chrome</strong>. Wbudowane aplikacje typu "In-App Browser" nie obsługują instalacji PWA.
                         </p>
                     </div>
@@ -99,82 +116,60 @@
             </div>
 
             <div class="bg-white dark:bg-[#1f2a44] rounded-3xl shadow-md border border-gray-100 dark:border-gray-700/60 overflow-hidden">
-                <button onclick="toggleSection('android-box')" class="w-full flex items-center justify-between p-5 font-bold text-gray-800 dark:text-white text-left bg-gray-50/50 dark:bg-gray-800/20 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                    <span class="flex items-center gap-3 text-base">🤖 Android (Samsung, Xiaomi, Realme, Motorola itp.)</span>
-                    <span id="icon-android-box" class="text-xs transition-transform duration-200">🔽</span>
+                <button onclick="toggleSection('android-box')" class="w-full flex items-center justify-between p-5 font-bold text-gray-800 dark:text-white text-left bg-gray-50/50 dark:bg-gray-800/10 hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-all">
+                    <span class="flex items-center gap-3 text-base font-bold">🤖 Android (Samsung, Xiaomi, Motorola itp.)</span>
+                    <span id="icon-android-box" class="text-xs font-bold transition-transform duration-200">🔽</span>
                 </button>
                 <div id="android-box" class="hidden p-6 border-t border-gray-100 dark:border-gray-700/50 space-y-6">
                     <div class="border-l-4 border-emerald-500 pl-4">
-                        <h4 class="font-extrabold text-emerald-600 dark:text-emerald-400 text-sm mb-2">🌐 Przeglądarka: Google Chrome (Zalecana na Androidzie)</h4>
+                        <h4 class="font-black text-emerald-600 dark:text-emerald-400 text-sm mb-2">🌐 Przeglądarka: Google Chrome (Zalecana na Androidzie)</h4>
                         <ul class="text-xs space-y-2 text-gray-600 dark:text-gray-300">
                             <li><strong>Uprawnienia GPS:</strong> Ściągnij górny pasek powiadomień telefonu i upewnij się, że ikona "Lokalizacja" jest podświetlona (włączona). Jeśli przeglądarka zgłasza blokadę, kliknij ikonę kłódeczki obok adresu URL strony ➡️ Ustawienia witryn ➡️ Lokalizacja ➡️ Zezwól.</li>
                             <li><strong>Ekran Główny:</strong> Kliknij trzy kropki w prawym górnym rogu przeglądarki Chrome, wybierz opcję <strong>"Dodaj do ekranu głównego"</strong> lub <strong>"Zainstaluj aplikację"</strong>.</li>
                         </ul>
                     </div>
                     <div class="border-l-4 border-purple-500 pl-4">
-                        <h4 class="font-extrabold text-purple-600 dark:text-purple-400 text-sm mb-2">🌐 Przeglądarka: Samsung Internet</h4>
+                        <h4 class="font-black text-purple-600 dark:text-purple-400 text-sm mb-2">🌐 Przeglądarka: Samsung Internet</h4>
                         <ul class="text-xs space-y-2 text-gray-600 dark:text-gray-300">
                             <li><strong>Uprawnienia GPS:</strong> Kliknij menu (trzy poziome kreski w prawym dolnym rogu) ➡️ Ustawienia ➡️ Prywatność i zabezpieczenia ➡️ Uprawnienia witryn. Sprawdź, czy Lokalizacja ma stan "Zezwolono".</li>
-                            <li><strong>Ekran Główny:</strong> Stuknij ikonę "+" na pasku adresu lub wybierz z menu dolnego opcję "Dodaj stronę do ➡️ Ekran startowy".</li>
-                        </ul>
-                    </div>
-                    <div class="border-l-4 border-orange-500 pl-4">
-                        <h4 class="font-extrabold text-orange-600 dark:text-orange-400 text-sm mb-2">🌐 Przeglądarka: Mozilla Firefox</h4>
-                        <ul class="text-xs space-y-2 text-gray-600 dark:text-gray-300">
-                            <li><strong>Uprawnienia GPS:</strong> Kliknij ikonę trzech kropek obok paska adresu ➡️ Ustawienia ➡️ Uprawnienia witryn ➡️ Lokalizacja i upewnij się, że zaznaczone jest "Zezwalaj".</li>
-                            <li><strong>Ekran Główny:</strong> Kliknij trzy kropki, wybierz opcję "Zainstaluj" (skrót PWA zostanie automatycznie przypięty do pulpitu urządzenia).</li>
                         </ul>
                     </div>
                 </div>
             </div>
 
             <div class="bg-white dark:bg-[#1f2a44] rounded-3xl shadow-md border border-gray-100 dark:border-gray-700/60 overflow-hidden">
-                <button onclick="toggleSection('windows-box')" class="w-full flex items-center justify-between p-5 font-bold text-gray-800 dark:text-white text-left bg-gray-50/50 dark:bg-gray-800/20 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                    <span class="flex items-center gap-3 text-base">💻 Microsoft Windows (PC / Laptop)</span>
-                    <span id="icon-windows-box" class="text-xs transition-transform duration-200">🔽</span>
+                <button onclick="toggleSection('windows-box')" class="w-full flex items-center justify-between p-5 font-bold text-gray-800 dark:text-white text-left bg-gray-50/50 dark:bg-gray-800/10 hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-all">
+                    <span class="flex items-center gap-3 text-base font-bold">💻 Microsoft Windows (PC / Laptop)</span>
+                    <span id="icon-windows-box" class="text-xs font-bold transition-transform duration-200">🔽</span>
                 </button>
                 <div id="windows-box" class="hidden p-6 border-t border-gray-100 dark:border-gray-700/50 space-y-6">
                     <div class="border-l-4 border-blue-500 pl-4">
-                        <h4 class="font-extrabold text-blue-600 dark:text-blue-400 text-sm mb-2">🌐 Google Chrome oraz Microsoft Edge</h4>
-                        <ul class="text-xs space-y-2 text-gray-600 dark:text-gray-300">
-                            <li><strong>Weryfikacja lokalizacji sieciowej:</strong> Na komputerach stacjonarnych bez wbudowanego odbiornika GPS, system pobiera współrzędne z punktów dostępowych Wi-Fi lub stosuje procedurę zapasową IP. Kliknij **ikonę kłódeczki** po lewej stronie paska adresu, znajdź "Lokalizacja" i przełącz na "Zezwalaj".</li>
-                            <li><strong>Instalacja na pulpicie:</strong> W pasku adresu przeglądarki (po prawej stronie) kliknij charakterystyczną ikonę komputera z małą strzałką w dół (dymek podpowie: "Zainstaluj aplikację"). Aplikacja otworzy się w niezależnym oknie systemowym.</li>
-                        </ul>
-                    </div>
-                    <div class="border-l-4 border-orange-500 pl-4">
-                        <h4 class="font-extrabold text-orange-600 dark:text-orange-400 text-sm mb-2">🌐 Mozilla Firefox (PC)</h4>
-                        <p class="text-xs text-gray-600 dark:text-gray-300">
-                            Jeśli zablokowałeś lokalizację, kliknij ikonę przekreślonej pinezki/kłódeczki obok adresu URL, usuń blokadę uprawnienia "Udostępnianie położenia" krzyżykiem, a następnie odśwież stronę (klawisz F5) i kliknij "Zezwól".
+                        <h4 class="font-black text-blue-600 dark:text-blue-400 text-sm mb-2">🌐 Google Chrome oraz Microsoft Edge</h4>
+                        <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                            Na komputerach stacjonarnych bez GPS system pobiera współrzędne z punktów Wi-Fi lub stosuje procedurę zapasową IP. Kliknij **ikonę kłódeczki** po lewej stronie paska adresu, znajdź "Lokalizacja" i przełącz na "Zezwalaj".
                         </p>
                     </div>
                 </div>
             </div>
 
             <div class="bg-white dark:bg-[#1f2a44] rounded-3xl shadow-md border border-gray-100 dark:border-gray-700/60 overflow-hidden">
-                <button onclick="toggleSection('macos-box')" class="w-full flex items-center justify-between p-5 font-bold text-gray-800 dark:text-white text-left bg-gray-50/50 dark:bg-gray-800/20 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                    <span class="flex items-center gap-3 text-base">🖥️ Apple macOS (MacBook / iMac)</span>
-                    <span id="icon-macos-box" class="text-xs transition-transform duration-200">🔽</span>
+                <button onclick="toggleSection('macos-box')" class="w-full flex items-center justify-between p-5 font-bold text-gray-800 dark:text-white text-left bg-gray-50/50 dark:bg-gray-800/10 hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-all">
+                    <span class="flex items-center gap-3 text-base font-bold">🖥️ Apple macOS (MacBook / iMac)</span>
+                    <span id="icon-macos-box" class="text-xs font-bold transition-transform duration-200">🔽</span>
                 </button>
                 <div id="macos-box" class="hidden p-6 border-t border-gray-100 dark:border-gray-700/50 space-y-4">
-                    <div class="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-2xl border border-blue-100 dark:border-blue-900/40 text-xs">
-                        <strong>🛡️ Dwuetapowa zgoda systemowa na komputerach Mac:</strong><br>
-                        System macOS chroni prywatność rygorystycznie. Aby współrzędne zostały przesłane:
-                        <ol class="list-decimal pl-4 mt-2 space-y-1">
-                            <li>Kliknij kłódeczkę w pasku adresu przeglądarki (Safari lub Chrome) i zezwól stronie na dostęp do lokalizacji.</li>
-                            <li>Otwórz menu Apple (lewy górny róg ekranu) ➡️ <strong>Ustawienia systemowe</strong> ➡️ <strong>Prywatność i ochrona</strong> ➡️ <strong>Usługi lokalizacji</strong>. Upewnij się, że ogólne usługi są włączone oraz zaznacz ptaszkiem swoją przeglądarką na liście dozwolonych programów.</li>
-                        </ol>
-                    </div>
-                    <div class="text-xs text-gray-600 dark:text-gray-300">
-                        <strong>Instalacja w Docku (Safari):</strong> W menu górnym Safari wybierz kolejno opcje <strong>Plik</strong> ➡️ <strong>Dodaj do Docka...</strong>. Ikona Systemu Ministranci pojawi się obok innych Twoich programów systemowych.
+                    <div class="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-2xl border border-blue-100 dark:border-blue-900/40 text-xs leading-relaxed">
+                        <strong>🛡️ Zgoda systemowa na komputerach Mac:</strong><br>
+                        Otwórz menu Apple (lewy górny róg) ➡️ <strong>Ustawienia systemowe</strong> ➡️ <strong>Prywatność i ochrona</strong> ➡️ <strong>Usługi lokalizacji</strong>. Upewnij się, że ogólne usługi są włączone oraz zaznacz swoją przeglądarkę na liście.
                     </div>
                 </div>
             </div>
 
         </div>
 
-        <div class="mt-8 text-center text-xs text-gray-400 dark:text-gray-500">
-            Centrum Pomocy technicznej zweryfikowane na dzień: 11 czerwca 2026 r.<br>
-            W przypadku problemów z autoryzacją kodu 2FA skontaktuj się bezpośrednio z Szefem Służby Liturgicznej.
+        <div class="mt-12 text-center text-xs text-gray-400 dark:text-gray-500 font-medium space-y-1">
+            <div>Centrum Pomocy technicznej zweryfikowane na dzień: 11 czerwca 2026 r.</div>
+            <div class="text-brand font-semibold">W przypadku problemów z autoryzacją kodu 2FA skontaktuj się bezpośrednio z Szefem Służby Liturgicznej.</div>
         </div>
 
     </div>
@@ -183,17 +178,20 @@
 
 {% block scripts %}
 <script>
+    // Zarządzanie widocznością sekcji akordeonu (zwijanie/rozwijanie) z podmianą ikon statusu
     function toggleSection(id) {
         const content = document.getElementById(id);
         const icon = document.getElementById('icon-' + id);
+        if (!content || !icon) return;
+        
         if (content.classList.contains('hidden')) {
             content.classList.remove('hidden');
             icon.innerText = "🔼";
-            icon.className = "text-xs transition-transform duration-200 font-bold text-brand";
+            icon.className = "text-xs transition-transform duration-200 font-black text-brand";
         } else {
             content.classList.add('hidden');
             icon.innerText = "🔽";
-            icon.className = "text-xs transition-transform duration-200";
+            icon.className = "text-xs transition-transform duration-200 font-bold";
         }
     }
 </script>

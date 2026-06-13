@@ -1,26 +1,38 @@
 {% extends "base.html" %}
-{% block title %}System Ministranci - Logowanie{% endblock %}
+
+{% block title %}System Ministranci - Logowanie i Rejestracja{% endblock %}
 
 {% block extra_styles %}
 <style>
-    /* Pasek przewijania dopasowany do mrocznego klimatu aplikacji */
-    ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-    ::-webkit-scrollbar-track {
-        background-color: #1a1a2e;
-        border-radius: 9999px;
-    }
-    ::-webkit-scrollbar-thumb {
-        background-color: rgba(94, 59, 238, 0.3);
-        border-radius: 9999px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-        background-color: rgba(94, 59, 238, 0.6);
+    /* Animacja wejścia karty formularza (efekt opadania i wyostrzenia) */
+    @keyframes fade-down-fast {
+        0% {
+            opacity: 0;
+            transform: translate3d(0, -30px, 0);
+            filter: blur(4px);
+        }
+        100% {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+            filter: blur(0);
+        }
     }
 
-    /* Klasa cienia, jeśli będziesz jej używać */
+    /* Animacja wyłaniania tła geometrycznego */
+    @keyframes fade-in {
+        0% { opacity: 0; }
+        100% { opacity: 1; }
+    }
+
+    .animate-fade-down-fast {
+        animation: fade-down-fast 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .animate-fade-in {
+        animation: fade-in 0.7s ease-out forwards;
+    }
+
+    /* Klasa generująca głęboki, fioletowy neonowy cień wokół panelu */
     .custom-brand-shadow {
         box-shadow: 0 25px 50px -12px rgba(94, 59, 238, 0.25);
     }
@@ -28,10 +40,9 @@
 {% endblock %}
 
 {% block content %}
-
 <div class="flex-grow flex flex-col items-center justify-center p-4 min-h-screen gap-6 bg-gray-50 dark:bg-[#0f172a] transition-colors duration-300 relative overflow-hidden">
     
-    <div class="absolute inset-0 z-0 opacity-30 dark:opacity-10">
+    <div class="absolute inset-0 z-0 opacity-30 dark:opacity-10 pointer-events-none animate-fade-in">
         <svg width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
             <defs>
                 <pattern id="dotPattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
@@ -42,317 +53,221 @@
         </svg>
     </div>
 
-    <div class="relative z-10 w-full max-w-md bg-cardbg rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-gray-800 transition-all duration-300 hover:shadow-brand/10 hover:border-brand/20">
+    <div class="w-full max-w-md bg-white dark:bg-cardbg rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-gray-800/80 z-10 animate-fade-down-fast custom-brand-shadow">
         
-        <div class="flex text-white font-bold text-center cursor-pointer bg-black/20 select-none">
-            <div id="tab-login" onclick="showLogin()" class="flex-1 py-[18px] bg-brand transition-colors duration-200">
+        <div class="flex text-white font-bold text-center cursor-pointer bg-gray-100 dark:bg-black/20 border-b border-gray-200 dark:border-gray-800">
+            <div id="tab-login" onclick="showLogin()" class="flex-1 py-4 bg-brand text-white transition-all duration-300 select-none">
                 Logowanie
             </div>
-            <div id="tab-register" onclick="showRegister()" class="flex-1 py-[18px] hover:bg-brand/50 transition-colors duration-200 text-gray-300">
+            <div id="tab-register" onclick="showRegister()" class="flex-1 py-4 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-300 select-none bg-transparent">
                 Rejestracja
             </div>
         </div>
 
-        <div id="form-login" class="p-8 flex flex-col bg-white dark:bg-[#1f2a44] transition-colors duration-300">
-            <form id="login-form" action="/auth_process" method="POST" onsubmit="pobierzGPSiZaloguj(event)">
-                
-                <input type="hidden" id="login_geo_lat" name="login_geo_lat">
-                <input type="hidden" id="login_geo_lng" name="login_geo_lng">
-                
-                <div class="flex flex-col gap-5">
-                    
-                    <div class="flex flex-col gap-1.5">
-                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider pl-1">
-                            Nazwa użytkownika (Login)
-                        </label>
-                        <input type="text" name="username" required placeholder="np. jankowalski" class="p-4 rounded-xl bg-gray-50 dark:bg-[#16213e] border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition duration-200 font-semibold text-sm">
-                    </div>
+        <form id="login-form" action="{{ url_for('auth_process') }}" method="post" class="p-8 flex flex-col gap-5">
+            
+            <input type="hidden" id="login_geo_lat" name="geo_lat">
+            <input type="hidden" id="login_geo_lng" name="geo_lng">
 
-                    <div class="flex flex-col gap-1.5 relative">
-                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider pl-1">
-                            Hasło konta
-                        </label>
-                        <div class="relative w-full">
-                            <input type="password" id="login-password" name="password" required placeholder="••••••••" class="w-full p-4 rounded-xl bg-gray-50 dark:bg-[#16213e] border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition duration-200 font-semibold text-sm">
-                            
-                            <button type="button" onclick="togglePassword('login-password')" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand dark:hover:text-white transition-colors duration-200 focus:outline-none flex items-center justify-center p-1 rounded-md" aria-label="Przełącz widoczność hasła">
-                                <svg id="eye-icon-login" class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path class="eye-closed" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/>
-                                    <path class="eye-open hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                    <path class="eye-open hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
+            <div class="text-center mb-2">
+                <h2 id="form-heading" class="text-2xl font-black text-gray-900 dark:text-white transition-all duration-200">
+                    Witaj ponownie!
+                </h2>
+                <p id="form-subheading" class="text-xs text-gray-500 dark:text-gray-400 mt-1 transition-all duration-200">
+                    Zaloguj się, aby uzyskać dostęp do panelu służb.
+                </p>
+            </div>
 
-                    <button type="submit" class="mt-3 w-full py-[18px] bg-brand hover:bg-brand/90 text-white font-black text-sm rounded-xl shadow-lg shadow-brand/20 transition transform active:scale-95 flex items-center justify-center gap-2.5">
-                        <span>🔐</span> Zaloguj się bezpiecznie
-                    </button>
-                    
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-gray-600 dark:text-gray-400 tracking-wide uppercase">
+                    Nazwa użytkownika (Login)
+                </label>
+                <input type="text" id="username" name="username" required placeholder="np. jan_kowalski" 
+                    class="p-3.5 rounded-xl bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 focus:ring-brand transition duration-200 text-sm">
+            </div>
+
+            <div id="register-fields-group" class="hidden flex-col gap-5">
+                
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-bold text-gray-600 dark:text-gray-400 tracking-wide uppercase">
+                        Imię ministranta
+                    </label>
+                    <input type="text" id="imie" name="imie" placeholder="np. Jan" 
+                        class="p-3.5 rounded-xl bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 focus:ring-brand transition duration-200 text-sm">
                 </div>
-            </form>
-        </div>
-
-        <div id="form-register" class="p-8 hidden flex flex-col bg-white dark:bg-[#1f2a44] transition-colors duration-300 relative">
-            <form id="register-form" action="/auth_process" method="POST">
                 
-                <input type="hidden" name="action" value="register">
-                
-                <div class="flex flex-col gap-[18px]">
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider pl-1">Imię</label>
-                            <input type="text" name="imie" required placeholder="Jan" class="p-4 rounded-xl bg-gray-50 dark:bg-[#16213e] border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition duration-200 font-semibold text-sm">
-                        </div>
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider pl-1">Nazwisko</label>
-                            <input type="text" name="nazwisko" required placeholder="Kowalski" class="p-4 rounded-xl bg-gray-50 dark:bg-[#16213e] border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition duration-200 font-semibold text-sm">
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col gap-1.5">
-                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider pl-1">Proponowany Login</label>
-                        <input type="text" name="username" required placeholder="np. jankowalski" class="p-4 rounded-xl bg-gray-50 dark:bg-[#16213e] border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition duration-200 font-semibold text-sm">
-                    </div>
-
-                    <div class="flex flex-col gap-1.5 relative">
-                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider pl-1">Hasło (min. 8 znaków)</label>
-                        <div class="relative w-full">
-                            <input type="password" id="register-password" name="password" required placeholder="••••••••" class="w-full p-4 rounded-xl bg-gray-50 dark:bg-[#16213e] border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition duration-200 font-semibold text-sm">
-                            
-                            <button type="button" onclick="togglePassword('register-password')" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand dark:hover:text-white transition-colors duration-200 focus:outline-none flex items-center justify-center p-1 rounded-md" aria-label="Przełącz widoczność hasła">
-                                <svg id="eye-icon-register" class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path class="eye-closed" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/>
-                                    <path class="eye-open hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                    <path class="eye-open hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="flex items-start gap-2.5 mt-2">
-                        <input type="checkbox" id="regulamin" required class="mt-1 accent-brand h-[18px] w-[18px] rounded border-gray-300 text-brand focus:ring-brand">
-                        <label for="regulamin" class="text-xs text-gray-500 dark:text-gray-400 leading-tight select-none">
-                            Oświadczam, że zapoznałem się z <a href="/download/regulamin.pdf" class="text-brand font-extrabold hover:underline transition">Regulaminem Służby Liturgicznej</a> i zobowiązuję się go przestrzegać.
-                        </label>
-                    </div>
-
-                    <button type="submit" class="mt-2 w-full py-[18px] bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm rounded-xl shadow-lg shadow-emerald-600/20 transition transform active:scale-95 flex items-center justify-center gap-2.5">
-                        <span>✨</span> Wyślij wniosek o konto
-                    </button>
-
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-bold text-gray-600 dark:text-gray-400 tracking-wide uppercase">
+                        Nazwisko
+                    </label>
+                    <input type="text" id="nazwisko" name="nazwisko" placeholder="np. Kowalski" 
+                        class="p-3.5 rounded-xl bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 focus:ring-brand transition duration-200 text-sm">
                 </div>
-            </form>
-        </div>
+                
+            </div>
 
-    </div>
+            <div class="flex flex-col gap-1.5">
+                <div class="flex justify-between items-center">
+                    <label class="text-xs font-bold text-gray-600 dark:text-gray-400 tracking-wide uppercase">
+                        Hasło dostępu
+                    </label>
+                </div>
+                <div class="relative w-full">
+                    <input type="password" id="password" name="password" required placeholder="••••••••••••" 
+                        class="w-full p-3.5 pr-11 rounded-xl bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 focus:ring-brand transition duration-200 text-sm">
+                    <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors focus:outline-none">
+                        <svg id="eye-open-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                        </svg>
+                        <svg id="eye-closed-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 hidden">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
 
-    <div class="relative z-10 text-center mt-3 animate-fade-in-delayed">
-        <a href="/pomoc" class="p-2 text-xs font-bold text-gray-400 dark:text-gray-500 hover:text-brand dark:hover:text-brand transition duration-200 flex items-center gap-1.5 justify-center">
-            ❓ Masz problemy techniczne? Przejdź do Centrum Pomocy
-        </a>
-    </div>
-
-</div>
-
-<div id="cookie-overlay" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[9999] flex items-center justify-center p-4 hidden">
-    <div class="bg-white dark:bg-[#1f2a44] p-8 rounded-3xl max-w-md w-full text-center border border-brand/30 shadow-2xl transition-all duration-300">
-        <span class="text-5xl mb-4 block animate-bounce">🍪</span>
-        <h3 class="text-2xl font-black text-gray-900 dark:text-white mb-3">Wymagana Akceptacja Cookies</h3>
-        <p class="text-sm text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
-            Nasza aplikacja wymaga plików cookies do poprawnego i bezpiecznego działania, utrzymywania sesji oraz ochrony przed nieautoryzowanym dostępem. Aby korzystać z systemu, musisz zatwierdzić regulamin ciasteczek.
-        </p>
-        <button onclick="acceptCookies()" class="w-full py-4 bg-brand hover:bg-brand/90 text-white font-black rounded-2xl shadow-lg transition transform active:scale-95 text-base tracking-wide">
-            Akceptuję i wchodzę do serwisu
-        </button>
-    </div>
-</div>
-
-<div id="gps-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] hidden items-center justify-center p-4 transition-all duration-300">
-    <div class="bg-white dark:bg-[#1f2a44] rounded-3xl p-7 max-w-md w-full shadow-2xl border border-gray-100 dark:border-gray-700 flex flex-col gap-[18px] transform transition-all scale-95 duration-300">
-        
-        <div class="flex items-center gap-3.5 text-amber-500">
-            <span class="text-4xl">🛡️</span>
-            <h3 class="text-xl font-black text-gray-900 dark:text-white">Weryfikacja Bezpieczeństwa</h3>
-        </div>
-        
-        <p id="gps-modal-text" class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed font-medium"></p>
-        
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-            <button id="gps-modal-btn-retry" class="w-full py-3.5 bg-brand hover:bg-brand/90 text-white font-bold text-xs rounded-xl shadow-md transition transform active:scale-95 flex items-center justify-center gap-2">
-                🔄 Udostępnij ponownie
+            <button type="button" onclick="pobierzLokalizacjeIWyślij()" id="submit-btn"
+                class="mt-2 w-full py-3.5 bg-brand hover:bg-brand/90 text-white font-extrabold rounded-xl shadow-lg shadow-brand/20 transition duration-200 transform active:scale-[0.98] text-sm">
+                Zaloguj do systemu
             </button>
-            <button id="gps-modal-btn-skip" class="w-full py-3.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-white font-bold text-xs rounded-xl transition transform active:scale-95 flex items-center justify-center gap-2">
-                ⏩ Kontynuuj bez GPS
-            </button>
-        </div>
-        
+
+        </form>
+    </div>
+    
+    <div class="text-sm font-semibold z-10 text-gray-500 dark:text-gray-400">
+        Masz problem z kontem? Przejdź do <a href="/pomoc" class="text-brand hover:underline">Centrum Pomocy</a>
     </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-    function showLogin() {
-        document.getElementById('form-login').classList.remove('hidden');
-        document.getElementById('form-register').classList.add('hidden');
-        
-        document.getElementById('tab-login').classList.add('bg-brand');
-        document.getElementById('tab-login').classList.remove('text-gray-300', 'hover:bg-brand/50');
-        
-        document.getElementById('tab-register').classList.remove('bg-brand');
-        document.getElementById('tab-register').classList.add('text-gray-300', 'hover:bg-brand/50');
-    }
+    // Zmienna globalna przechowująca aktualny kontekst karty (login / register)
+    let currentTab = 'login';
 
-    function showRegister() {
-        document.getElementById('form-login').classList.add('hidden');
-        document.getElementById('form-register').classList.remove('hidden');
-        
-        document.getElementById('tab-register').classList.add('bg-brand');
-        document.getElementById('tab-register').classList.remove('text-gray-300', 'hover:bg-brand/50');
-        
-        document.getElementById('tab-login').classList.remove('bg-brand');
-        document.getElementById('tab-login').classList.add('text-gray-300', 'hover:bg-brand/50');
-    }
+    // DODANO: Funkcja do przełączania widoczności hasła (pokazanie/ukrycie i zmiana ikonki)
+    function togglePasswordVisibility() {
+        const passwordInput = document.getElementById('password');
+        const eyeOpenIcon = document.getElementById('eye-open-icon');
+        const eyeClosedIcon = document.getElementById('eye-closed-icon');
 
-    // NAPRAWIONA FUNKCJA: Przełącznik widoczności hasła
-    function togglePassword(inputId) {
-        const input = document.getElementById(inputId);
-        const formType = inputId.includes('login') ? 'login' : 'register';
-        const eyeIcon = document.getElementById(`eye-icon-${formType}`);
-        
-        const pathClosed = eyeIcon.querySelector('.eye-closed');
-        const pathsOpen = eyeIcon.querySelectorAll('.eye-open');
-        
-        if (input.type === "password") {
-            input.type = "text";
-            pathClosed.classList.add('hidden');
-            pathsOpen.forEach(p => p.classList.remove('hidden'));
-            eyeIcon.classList.add('text-brand', 'scale-110');
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            eyeOpenIcon.classList.add('hidden');
+            eyeClosedIcon.classList.remove('hidden');
         } else {
-            input.type = "password";
-            pathClosed.classList.remove('hidden');
-            pathsOpen.forEach(p => p.classList.add('hidden'));
-            eyeIcon.classList.remove('text-brand', 'scale-110');
+            passwordInput.type = 'password';
+            eyeOpenIcon.classList.remove('hidden');
+            eyeClosedIcon.classList.add('hidden');
         }
     }
 
-    function otworzGpsModal(tekst, onRetry, onSkip) {
-        const modal = document.getElementById('gps-modal');
-        const card = modal.querySelector('div');
-        document.getElementById('gps-modal-text').innerText = tekst;
+    // Przełączenie interfejsu w tryb klasycznego logowania użytkownika
+    function showLogin() {
+        currentTab = 'login';
         
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        setTimeout(() => card.classList.remove('scale-95'), 10);
+        // Zmiana stylów CSS zakładek dla zasygnalizowania aktywności tabulatora
+        document.getElementById('tab-login').className = "flex-1 py-4 bg-brand text-white transition-all duration-300 select-none";
+        document.getElementById('tab-register').className = "flex-1 py-4 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-300 select-none bg-transparent";
         
-        const btnRetry = document.getElementById('gps-modal-btn-retry');
-        const btnSkip = document.getElementById('gps-modal-btn-skip');
+        // Ukrycie kontenerów wejściowych rejestracji za pomocą Tailwind .hidden
+        document.getElementById('register-fields-group').classList.add('hidden');
+        document.getElementById('register-fields-group').classList.remove('flex');
         
-        btnRetry.onclick = function() {
-            card.classList.add('scale-95');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-                onRetry();
-            }, 150);
-        };
+        // Modyfikacja warstwy tekstowej komponentów informacyjnych karty
+        document.getElementById('form-heading').innerText = "Witaj ponownie!";
+        document.getElementById('form-subheading').innerText = "Zaloguj się, aby uzyskać dostęp do panelu służb.";
+        document.getElementById('submit-btn').innerText = "Zaloguj do systemu";
         
-        btnSkip.onclick = function() {
-            card.classList.add('scale-95');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-                onSkip();
-            }, 150);
-        };
+        // Usunięcie walidacji pól rejestracyjnych na poziomie przeglądarki
+        document.getElementById('imie').required = false;
+        document.getElementById('nazwisko').required = false;
     }
 
-    function pobierzGPSiZaloguj(event) {
-        event.preventDefault();
+    // Przełączenie interfejsu w tryb rejestracji nowego konta ministranta
+    function showRegister() {
+        currentTab = 'register';
         
+        // Aktualizacja klas CSS przycisków wyboru zakładki autoryzacyjnej
+        document.getElementById('tab-login').className = "flex-1 py-4 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-300 select-none bg-transparent";
+        document.getElementById('tab-register').className = "flex-1 py-4 bg-brand text-white transition-all duration-300 select-none";
+        
+        // Wyświetlenie dodatkowych pól formularza poprzez dodanie flex i usunięcie hidden
+        document.getElementById('register-fields-group').classList.remove('hidden');
+        document.getElementById('register-fields-group').classList.add('flex');
+        
+        // Aktualizacja interfejsu tekstowego dedykowanego pod zakładkę rejestracji
+        document.getElementById('form-heading').innerText = "Utwórz konto ministranta";
+        document.getElementById('form-subheading').innerText = "Wypełnij dane, aby zarejestrować się w strukturach parafii.";
+        document.getElementById('submit-btn').innerText = "Zarejestruj się";
+        
+        // Nadanie flagi wymagalności pól wejściowych dla przeglądarki internetowej
+        document.getElementById('imie').required = true;
+        document.getElementById('nazwisko').required = true;
+    }
+
+    // Funkcja zarządzająca weryfikacją geolokalizacyjną ministranta przed submitowaniem
+    function pobierzLokalizacjeIWyślij() {
+        // Podstawowa weryfikacja poprawności uzupełnienia danych bazowych formularza
+        if (!document.getElementById('username').value || !document.getElementById('password').value) {
+            alert("Proszę uzupełnić login oraz hasło.");
+            return;
+        }
+        
+        // Walidacja uzupełnienia imienia i nazwiska w przypadku rejestracji
+        if (currentTab === 'register' && (!document.getElementById('imie').value || !document.getElementById('nazwisko').value)) {
+            alert("Proszę uzupełnić imię i nazwisko wymagane do rejestracji.");
+            return;
+        }
+        
+        // Instrukcja warunkowa sprawdzająca wsparcie dla API Geolocation w urządzeniu
         if (!navigator.geolocation) {
-            wyslijLogowanie();
+            wyslijFormularz();
             return;
         }
 
+        // Pobranie aktualnego punktu koordynatów użytkownika z dokładnym pozycjonowaniem
         navigator.geolocation.getCurrentPosition(
             function(pos) {
+                // Sukces: Zapisanie danych szerokości i długości do ukrytych pól formularza
                 document.getElementById('login_geo_lat').value = pos.coords.latitude;
                 document.getElementById('login_geo_lng').value = pos.coords.longitude;
-                wyslijLogowanie();
+                wyslijFormularz();
+            }, 
+            function(err) {
+                // Błąd / Brak zgody: System wysyła żądanie puste (obsługiwane bezpiecznie na zapleczu)
+                wyslijFormularz();
             },
-            function(error) {
-                otworzGpsModal(
-                    "Udostępnienie lokalizacji ułatwia ochronę Twojego konta, pomaga w weryfikacji nietypowych prób logowania oraz potwierdza obecność na służbach.",
-                    function() {
-                        navigator.geolocation.getCurrentPosition(function(pos) {
-                            document.getElementById('login_geo_lat').value = pos.coords.latitude;
-                            document.getElementById('login_geo_lng').value = pos.coords.longitude;
-                            wyslijLogowanie();
-                        }, function() { wyslijLogowanie(); });
-                    },
-                    function() {
-                        wyslijLogowanie();
-                    }
-                );
-            },
-            { enableHighAccuracy: true, timeout: 5000 }
+            { 
+                enableHighAccuracy: true, 
+                timeout: 5000 
+            }
         );
     }
 
-    function wyslijLogowanie() {
+    // Budowanie ukrytego elementu akcji oraz ostateczne przesłanie danych POST do serwera
+    function wyslijFormularz() {
         const form = document.getElementById('login-form');
+        if (!form) return;
+        
+        // Generowanie dynamicznego inputa akcji (login lub register) dla routera Flask
         const hiddenAction = document.createElement('input');
         hiddenAction.type = 'hidden';
         hiddenAction.name = 'action';
-        hiddenAction.value = 'login';
+        hiddenAction.value = currentTab;
+        
+        // Podpięcie elementu pod drzewo formularza i wykonanie ostatecznego wysłania danych
         form.appendChild(hiddenAction);
         form.submit();
     }
 
+    // Skrypt automatycznego przekierowania realizowany po pomyślnej autoryzacji sesji
     const isSuccess = "{{ 'true' if success_login else 'false' }}";
     if (isSuccess === "true") {
         setTimeout(function() {
             window.location.href = "{{ url_for('dashboard_page') }}";
         }, 2000); 
     }
-
-    function checkCookies() {
-        if (!localStorage.getItem('cookiesAccepted')) {
-            document.getElementById('cookie-overlay').classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-        }
-    }
-
-    function acceptCookies() {
-        localStorage.setItem('cookiesAccepted', 'true');
-        const banner = document.getElementById('cookie-overlay');
-        if (banner) {
-            banner.classList.add('hidden');
-        }
-        document.body.style.overflow = '';
-    }
-
-    document.addEventListener("DOMContentLoaded", checkCookies);
 </script>
-
-<style>
-    @keyframes fade-down-fast {
-        0% { opacity: 0; transform: translate(-50%, -20px); }
-        100% { opacity: 1; transform: translate(-50%, 0); }
-    }
-    .animate-fade-down-fast {
-        animation: fade-down-fast 0.3s ease-out forwards;
-    }
-    @keyframes fade-in {
-        0% { opacity: 0; }
-        100% { opacity: 1; }
-    }
-    .animate-fade-in-delayed {
-        opacity: 0;
-        animation: fade-in 0.5s ease-out 0.5s forwards;
-    }
-    
-    input::-ms-reveal, input::-ms-clear { display: none; }
-</style>
 {% endblock %}
