@@ -18,7 +18,7 @@ class Users(db.Model):
     longitude = db.Column(db.String(30), nullable=True)
     
     # Kolumny dla weryfikacji dwuetapowej 2FA
-    two_factor_code = db.Column(db.String(12), nullable=True)
+    two_factor_code = db.Column(db.String(20), nullable=True)
     two_factor_expiry = db.Column(db.DateTime, nullable=True)
     
     # Flaga zatwierdzenia konta przez Szefa (Admina)
