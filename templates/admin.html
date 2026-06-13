@@ -131,11 +131,11 @@
                     </button>
                 </div>
                 <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto w-full">
-                    <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[600px]">
+                    <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[750px]">
                         <thead>
                             <tr class="border-b-2 border-brand text-lg">
                                 <th class="p-4 w-12"><input type="checkbox" class="w-6 h-6 accent-danger cursor-pointer" onclick="toggleAll(this, 'usr-chk')"></th>
-                                <th class="p-4">Imię</th><th class="p-4">Nazwisko</th><th class="p-4">User</th><th class="p-4">Hasło</th><th class="p-4">Ranga</th><th class="p-4">Akcje</th>
+                                <th class="p-4">Imię</th><th class="p-4">Nazwisko</th><th class="p-4">User</th><th class="p-4">Hasło</th><th class="p-4">Ranga</th><th class="p-4">Ostatnie IP / Lokalizacja</th><th class="p-4">Akcje</th>
                             </tr>
                         </thead>
                         <tbody id="tbody-users">
@@ -149,6 +149,18 @@
                                     <span class="px-3 py-1 rounded-md font-bold text-xs {{ 'bg-warning text-black' if u.role == 'admin' else 'bg-purple-600 text-white' if u.role == 'ksiądz' else 'bg-gray-600 text-white' }}">
                                         {{ u.role|capitalize }}
                                     </span>
+                                </td>
+                                <td class="p-4">
+                                    <div class="flex flex-col gap-0.5 text-xs">
+                                        <span class="font-mono text-gray-600 dark:text-gray-300">🌐 {{ u.last_ip if u.last_ip else 'Brak' }}</span>
+                                        {% if u.last_geo_lat and u.last_geo_lng %}
+                                            <a href="https://www.google.com/maps?q={{ u.last_geo_lat }},{{ u.last_geo_lng }}" target="_blank" class="text-brand hover:underline font-bold flex items-center gap-0.5">
+                                                📍 {{ u.last_geo_lat|round(4) }}, {{ u.last_geo_lng|round(4) }} 🔗
+                                            </a>
+                                        {% else %}
+                                            <span class="text-gray-400 italic">Brak GPS</span>
+                                        {% endif %}
+                                    </div>
                                 </td>
                                 <td class="p-4">
                                     <div class="relative inline-block text-left">
@@ -286,324 +298,329 @@
 
         <section id="section-weryfikacja" class="admin-section hidden">
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Oczekujące Rejestracje</h1>
-            
             {% if pending_users %}
-            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 w-full">
-                {% for pu in pending_users %}
-                <div class="bg-white dark:bg-cardbg rounded-3xl p-6 shadow-xl border border-gray-100 dark:border-brand/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 w-full min-w-0">
-                    <div class="flex items-center gap-4 min-w-0">
-                        <div class="w-14 h-14 rounded-2xl bg-brand/10 flex items-center justify-center text-2xl shrink-0">👤</div>
-                        <div class="min-w-0 truncate">
-                            <h3 class="text-xl font-black text-gray-800 dark:text-white truncate">{{ pu.imie }} {{ pu.nazwisko }}</h3>
-                            <div class="flex flex-col gap-0.5 mt-1">
-                                <span class="text-sm font-mono text-brand font-bold truncate">@{{ pu.username }}</span>
-                                <span class="text-xs text-gray-400 dark:text-gray-500">Zarejestrowano: {{ pu.created_at.strftime('%d.%m.%Y %H:%M') if pu.created_at else 'Brak daty' }}</span>
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 w-full">
+                    {% for pu in pending_users %}
+                    <div class="bg-white dark:bg-cardbg rounded-3xl p-6 shadow-xl border border-gray-100 dark:border-brand/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 w-full min-w-0">
+                        <div class="flex items-center gap-4 min-w-0">
+                            <div class="w-14 h-14 rounded-2xl bg-brand/10 flex items-center justify-center text-2xl shrink-0">👤</div>
+                            <div class="min-w-0 truncate">
+                                <h3 class="text-xl font-black text-gray-800 dark:text-white truncate">{{ pu.imie }} {{ pu.nazwisko }}</h3>
+                                <div class="flex flex-col gap-0.5 mt-1">
+                                    <span class="text-sm font-mono text-brand font-bold truncate">@{{ pu.username }}</span>
+                                    <span class="text-xs text-gray-400 dark:text-gray-500">Zarejestrowano: {{ pu.created_at.strftime('%d.%m.%Y %H:%M') if pu.created_at else 'Brak daty' }}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="flex flex-col gap-1.5 text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-darkbg p-3 rounded-xl border border-gray-100 dark:border-white/5 shrink-0">
-                        <div class="flex items-center gap-2">🌐 <strong class="text-gray-700 dark:text-gray-300">IP:</strong> {{ pu.registration_ip or 'Nieznane' }}</div>
-                        <div class="flex items-center gap-2">📍 <strong class="text-gray-700 dark:text-gray-300">GPS:</strong> 
-                            {% if pu.latitude %}{{ pu.latitude[:7] }}, {{ pu.longitude[:7] }}{% else %}Brak{% endif %}
+                        <div class="flex flex-col gap-1.5 text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-darkbg p-3 rounded-xl border border-gray-100 dark:border-white/5 shrink-0">
+                            <div class="flex items-center gap-2">🌐 <strong>IP:</strong> <span class="font-mono">{{ pu.last_ip if pu.last_ip else 'Brak' }}</span></div>
+                            {% if pu.last_geo_lat and pu.last_geo_lng %}
+                                <div class="flex items-center gap-2">📍 <strong>GPS:</strong> 
+                                    <a href="https://www.google.com/maps?q={{ pu.last_geo_lat }},{{ pu.last_geo_lng }}" target="_blank" class="text-brand font-bold hover:underline">Pokaż mapę 🔗</a>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <form action="{{ url_for('przetworz_weryfikacje', user_id=pu.id, akcja='zatwierdz') }}" method="POST">
+                                <button type="submit" class="bg-success text-white px-4 py-2.5 rounded-xl font-bold shadow hover:bg-green-600 transition flex items-center gap-1 text-sm">✅ Zatwierdź</button>
+                            </form>
+                            <form action="{{ url_for('przetworz_weryfikacje', user_id=pu.id, akcja='odrzuc') }}" method="POST" onsubmit="return confirm('Usunąć to zgłoszenie?')">
+                                <button type="submit" class="bg-danger text-white px-4 py-2.5 rounded-xl font-bold shadow hover:bg-red-700 transition flex items-center gap-1 text-sm">❌ Odrzuć</button>
+                            </form>
                         </div>
                     </div>
-
-                    <div class="flex gap-3 w-full sm:w-auto shrink-0">
-                        <form action="{{ url_for('verify_action', user_id=pu.id, akcja='zatwierdz') }}" method="POST" class="flex-1 sm:flex-none">
-                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-5 rounded-xl transition shadow-lg shadow-emerald-900/20 whitespace-nowrap">Zatwierdź</button>
-                        </form>
-                        <form action="{{ url_for('verify_action', user_id=pu.id, akcja='odrzuc') }}" method="POST" class="flex-1 sm:flex-none" onsubmit="return confirm('Czy na pewno chcesz odrzucić rejestrację użytkownika {{ pu.username }}?')">
-                            <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 px-5 rounded-xl transition whitespace-nowrap">Odrzuć</button>
-                        </form>
-                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
-            </div>
             {% else %}
-            <div class="bg-white dark:bg-cardbg rounded-3xl p-16 shadow-xl text-center flex flex-col items-center gap-4 border border-gray-100 dark:border-white/5">
-                <div class="text-6xl animate-bounce">✨</div>
-                <h2 class="text-2xl font-bold text-gray-400 dark:text-gray-500">Wszystkie konta są zweryfikowane</h2>
-                <p class="text-gray-500 dark:text-gray-400">Obecnie nie ma nowych wniosków o dostęp do systemu.</p>
-            </div>
+                <div class="bg-white dark:bg-cardbg rounded-3xl p-12 text-center text-gray-500 shadow-xl max-w-md mx-auto flex flex-col items-center gap-3">
+                    <span class="text-5xl">🎉</span>
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white">Wszystko czyste!</h3>
+                    <p class="text-sm text-gray-400">Brak nowych wniosków o rejestrację w systemie.</p>
+                </div>
             {% endif %}
         </section>
 
         <section id="section-podsumowanie" class="admin-section hidden">
-            <div class="flex flex-col xl:flex-row flex-wrap justify-between items-start xl:items-center gap-4 mb-8 w-full">
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Podsumowanie</h1>
-                <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-4 w-full xl:w-auto">
-                    <div class="flex items-center gap-2 bg-white dark:bg-cardbg px-3 py-2 rounded-xl shadow border border-gray-200 dark:border-brand w-full sm:w-auto shrink-0 min-w-0">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" class="text-brand dark:text-gray-300 shrink-0" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9M3 12h5m0 0v8m0 0l-3-3m3 3l3-3"></path></svg>
-                        <label class="font-bold text-gray-700 dark:text-white shrink-0">Sortuj:</label>
-                        <select id="sortPodsumowanie" onchange="sortTable('tbody-podsumowanie', this.value, 'podsumowanie')" class="bg-transparent text-gray-900 dark:text-white outline-none font-semibold cursor-pointer w-full truncate">
-                            <option value="ranga-nazwisko" class="text-black">Punkty + Nazwisko</option>
-                            <option value="ranga-imie" class="text-black">Punkty + Imię</option>
-                            <option value="ranga-user" class="text-black">Punkty + Login</option>
-                            <option value="alfa-nazwisko" class="text-black">Alfabetycznie (Nazwisko)</option>
-                            <option value="alfa-imie" class="text-black">Alfabetycznie (Imię)</option>
-                            <option value="alfa-user" class="text-black">Alfabetycznie (Login)</option>
-                        </select>
-                    </div>
-                    <a href="{{ url_for('export_raport') }}" class="w-full sm:w-auto bg-success text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:-translate-y-1 transition flex items-center justify-center gap-2 shrink-0">
-                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Pobierz Excel
-                    </a>
+            <div class="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Podsumowanie i Statystyki</h1>
+                <div class="flex items-center gap-2 bg-white dark:bg-cardbg px-3 py-2 rounded-xl shadow border border-gray-200 dark:border-brand w-full sm:w-auto">
+                    <label class="font-bold text-gray-700 dark:text-white whitespace-nowrap">Miesiąc:</label>
+                    <select id="selectMiesiac" onchange="wybierzMiesiac()" class="bg-transparent text-gray-900 dark:text-white outline-none font-semibold cursor-pointer w-full">
+                        <option value="all" class="text-black">Wszystkie wpisy</option>
+                        <option value="01" class="text-black">Styczeń</option><option value="02" class="text-black">Luty</option>
+                        <option value="03" class="text-black">Marzec</option><option value="04" class="text-black">Kwiecień</option>
+                        <option value="05" class="text-black">Maj</option><option value="06" class="text-black">Czerwiec</option>
+                        <option value="07" class="text-black">Lipiec</option><option value="08" class="text-black">Sierpień</option>
+                        <option value="09" class="text-black">Wrzesień</option><option value="10" class="text-black">Październik</option>
+                        <option value="11" class="text-black">Listopad</option><option value="12" class="text-black">Grudzień</option>
+                    </select>
                 </div>
             </div>
-            
+
             <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto w-full">
-                <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[600px]">
+                <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[500px]">
                     <thead>
                         <tr class="border-b-2 border-brand text-lg">
-                            <th class="p-4">Ministrant</th><th class="p-4">Suma</th><th class="p-4">Poranne</th><th class="p-4">Wieczorne</th><th class="p-4">Inne</th><th class="p-4">Ranking</th>
+                            <th class="p-4">Miejsce</th><th class="p-4">Użytkownik</th>
+                            <th class="p-4">Imię i Nazwisko</th><th class="p-4 text-center">Liczba Służb</th>
                         </tr>
                     </thead>
                     <tbody id="tbody-podsumowanie">
-                        {% for s in stats %}
-                        <tr class="border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition" data-imie="{{ s.imie|lower }}" data-nazwisko="{{ s.nazwisko|lower }}" data-user="{{ s.username|lower }}" data-points="{{ s.total }}">
-                            <td class="p-4"><strong>{{ s.username }}</strong><br><span class="text-sm text-gray-500 dark:text-gray-300">{{ s.full_name }}</span></td>
-                            <td class="p-4 text-2xl font-bold text-warning">{{ s.total }}</td>
-                            <td class="p-4">{{ s.morning }}</td><td class="p-4">{{ s.evening }}</td><td class="p-4">{{ s.other }}</td>
-                            <td class="p-4">
-                                {% if s.total >= 20 %} <span class="bg-yellow-400 text-black px-3 py-1 rounded-md font-bold text-xs">LIDER</span>
-                                {% elif s.total >= 5 %} <span class="bg-gray-300 text-black px-3 py-1 rounded-md font-bold text-xs">AKTYWNY</span>
-                                {% else %} <span class="bg-[#cd7f32] text-white px-3 py-1 rounded-md font-bold text-xs">POCZĄTKUJĄCY</span> {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
         </section>
+
     </main>
+</div>
 
-    <div id="editModal" class="fixed inset-0 bg-black/80 hidden justify-center items-center z-[10000] p-4">
-        <div class="bg-white dark:bg-cardbg p-8 rounded-3xl w-full max-w-md shadow-2xl">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Poprawianie wpisu</h2>
-            <form id="editForm" method="POST" class="flex flex-col gap-4">
-                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Data:</label><input type="date" name="date" id="editDate" required class="p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50"></div>
-                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Godzina:</label><input type="time" name="godzina" id="editTime" required class="p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50"></div>
-                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Rodzaj:</label>
-                    <select name="typ_mszy" id="editType" onchange="toggleInna('editType', 'groupInnaEdit')" class="p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50">
-                        <option value="poranna">Poranna</option><option value="wieczorna">Wieczorna</option><option value="inna">Inna</option>
-                    </select>
-                </div>
-                <div class="flex-col gap-1 hidden" id="groupInnaEdit"><label class="text-gray-700 dark:text-white font-bold">Nazwa:</label><input type="text" name="nazwa_inna" id="editInna" class="p-3 rounded-xl border dark:border-none bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50"></div>
-                <div class="flex justify-end gap-3 mt-4">
-                    <button type="button" class="px-6 py-3 rounded-xl font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10 transition" onclick="closeModal('editModal')">Anuluj</button>
-                    <button type="submit" class="bg-brand text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:-translate-y-1 transition">Zapisz</button>
-                </div>
-            </form>
+<div id="addAttendanceModal" class="modal fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 transition-all duration-300">
+    <div class="bg-white dark:bg-cardbg rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-brand/20 transform scale-95 transition-all duration-300">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-black text-gray-900 dark:text-white m-0">Dodaj nową służbę</h2>
+            <button onclick="closeModal('addAttendanceModal')" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
         </div>
-    </div>
-
-    <div id="editUserModal" class="fixed inset-0 bg-black/80 hidden justify-center items-center z-[10000] p-4">
-        <div class="bg-white dark:bg-cardbg p-8 rounded-3xl w-full max-w-md shadow-2xl">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Poprawianie Ministranta</h2>
-            <form id="editUserForm" method="POST" class="flex flex-col gap-4">
-                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Imię:</label><input type="text" name="imie" id="editUserImie" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50"></div>
-                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Nazwisko:</label><input type="text" name="nazwisko" id="editUserNazwisko" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50"></div>
-                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Login:</label><input type="text" name="username" id="editUserLogin" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50"></div>
-                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Hasło:</label><input type="text" name="password" id="editUserPass" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50"></div>
-                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Ranga:</label>
-                    <select name="role" id="editUserRole" class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50">
-                        <option value="user">Użytkownik</option><option value="ksiądz">Ksiądz</option><option value="admin">Admin</option>
-                    </select>
-                </div>
-                
-                <div class="flex items-center gap-3 bg-brand/10 p-4 rounded-xl mt-2 border border-brand/20">
-                    <input type="checkbox" name="uproszczony" id="editUserUproszczony" class="w-6 h-6 accent-brand cursor-pointer">
-                    <label for="editUserUproszczony" class="text-gray-900 dark:text-white font-bold cursor-pointer">Włącz "Tryb Uproszczony" dla tego konta</label>
-                </div>
-
-                <div class="flex justify-end gap-3 mt-4">
-                    <button type="button" class="px-6 py-3 rounded-xl font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10" onclick="closeModal('editUserModal')">Anuluj</button>
-                    <button type="submit" class="bg-brand text-white px-6 py-3 rounded-xl font-bold shadow-lg">Zapisz</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="addAttendanceModal" class="fixed inset-0 bg-black/80 hidden justify-center items-center z-[10000] p-4">
-        <div class="bg-white dark:bg-cardbg p-8 rounded-3xl w-full max-w-md shadow-2xl">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Dodaj służbę</h2>
-            <form action="/admin/add_attendance_admin" method="POST" class="flex flex-col gap-4">
-                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Wybierz ministranta:</label>
-                    <select name="user_id" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50">
-                        {% for u in users %}<option value="{{ u.id }}">{{ u.username }} ({{ u.imie }} {{ u.nazwisko }})</option>{% endfor %}
-                    </select>
-                </div>
-                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Data:</label><input type="date" name="date" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black"></div>
-                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Godzina:</label><input type="time" name="godzina" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black"></div>
-                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Rodzaj:</label>
-                    <select name="typ_mszy" id="addType" onchange="toggleInna('addType', 'groupInnaAdd')" class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black">
-                        <option value="poranna">Poranna</option><option value="wieczorna">Wieczorna</option><option value="inna">Inna</option>
-                    </select>
-                </div>
-                <div class="flex-col gap-1 hidden" id="groupInnaAdd"><label class="text-gray-700 dark:text-white font-bold">Nazwa:</label><input type="text" name="nazwa_inna" id="addInna" class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black"></div>
-                <div class="flex justify-end gap-3 mt-4">
-                    <button type="button" class="px-6 py-3 rounded-xl font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10" onclick="closeModal('addAttendanceModal')">Anuluj</button>
-                    <button type="submit" class="bg-success text-white px-6 py-3 rounded-xl font-bold shadow-lg">Dodaj służbę</button>
-                </div>
-            </form>
-        </div>
-    </div>
-    
-    <div id="editOgModal" class="fixed inset-0 bg-black/80 hidden justify-center items-center z-[10000] p-4">
-        <div class="bg-white dark:bg-cardbg p-8 rounded-3xl w-full max-w-md shadow-2xl">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Poprawianie Ogłoszenia</h2>
-            <form id="editOgForm" method="POST" class="flex flex-col gap-4">
-                <div class="flex flex-col gap-1"><label class="text-gray-700 dark:text-white font-bold">Treść:</label><textarea name="tresc" id="editOgTresc" rows="4" required class="p-3 rounded-xl bg-gray-50 dark:bg-white text-black outline-none focus:ring-4 focus:ring-brand/50"></textarea></div>
-                <div class="flex justify-end gap-3 mt-4">
-                    <button type="button" class="px-6 py-3 rounded-xl font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10" onclick="closeModal('editOgModal')">Anuluj</button>
-                    <button type="submit" class="bg-brand text-white px-6 py-3 rounded-xl font-bold shadow-lg">Zapisz</button>
-                </div>
-            </form>
-        </div>
+        <form action="/admin/add_attendance" method="POST" class="flex flex-col gap-4">
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Wybierz użytkownika:</label>
+                <select name="user_id" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+                    {% for u in users %}<option value="{{ u.id }}">{{ u.username }} ({{ u.imie }} {{ u.nazwisko }})</option>{% endfor %}
+                </select>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Data:</label>
+                <input type="date" name="data_sluzby" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Godzina:</label>
+                <input type="time" name="godzina" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Rodzaj Mszy:</label>
+                <select name="typ_mszy" id="add_typ_mszy" onchange="toggleInnaNazwa('add_typ_mszy', 'add_inna_container')" class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+                    <option value="niedzielna">Niedzielna</option>
+                    <option value="tygodniowa">Tygodniowa</option>
+                    <option value="inna">Inna (np. Ślub, Pogrzeb, Nabożeństwo)</option>
+                </select>
+            </div>
+            <div id="add_inna_container" class="flex flex-col gap-1.5 hidden">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Własna nazwa służby:</label>
+                <input type="text" name="nazwa_inna" placeholder="np. Ślub, Droga Krzyżowa" class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+            </div>
+            <button type="submit" class="bg-brand text-white p-4 rounded-xl font-bold mt-2 shadow-lg hover:bg-brand/90 transition w-full">Zapisz służbę</button>
+        </form>
     </div>
 </div>
+
+<div id="editAttendanceModal" class="modal fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-cardbg rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-brand/20">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-black text-gray-900 dark:text-white m-0">Popraw wpis służby</h2>
+            <button onclick="closeModal('editAttendanceModal')" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
+        </div>
+        <form action="/admin/edit_attendance" method="POST" class="flex flex-col gap-4">
+            <input type="hidden" name="att_id" id="edit_att_id">
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Data:</label>
+                <input type="date" name="data_sluzby" id="edit_data_sluzby" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Godzina:</label>
+                <input type="time" name="godzina" id="edit_godzina" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Rodzaj Mszy:</label>
+                <select name="typ_mszy" id="edit_typ_mszy" onchange="toggleInnaNazwa('edit_typ_mszy', 'edit_inna_container')" class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+                    <option value="niedzielna">Niedzielna</option>
+                    <option value="tygodniowa">Tygodniowa</option>
+                    <option value="inna">Inna (Własna nazwa)</option>
+                </select>
+            </div>
+            <div id="edit_inna_container" class="flex flex-col gap-1.5 hidden">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Własna nazwa służby:</label>
+                <input type="text" name="nazwa_inna" id="edit_nazwa_inna" placeholder="np. Ślub, Pogrzeb" class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+            </div>
+            <button type="submit" class="bg-brand text-white p-4 rounded-xl font-bold mt-2 shadow-lg hover:bg-brand/90 transition w-full">Zatwierdź zmiany</button>
+        </form>
+    </div>
+</div>
+
+<div id="editUserModal" class="modal fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-cardbg rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-brand/20">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-black text-gray-900 dark:text-white m-0">Popraw dane / Rangę</h2>
+            <button onclick="closeModal('editUserModal')" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
+        </div>
+        <form action="/admin/edit_user" method="POST" class="flex flex-col gap-4">
+            <input type="hidden" name="user_id" id="edit_user_id">
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Imię:</label>
+                <input type="text" name="imie" id="edit_user_imie" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Nazwisko:</label>
+                <input type="text" name="nazwisko" id="edit_user_nazwisko" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Login (Username):</label>
+                <input type="text" name="username" id="edit_user_username" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Hasło logowania:</label>
+                <input type="text" name="password" id="edit_user_password" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Ranga systemowa:</label>
+                <select name="role" id="edit_user_role" class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+                    <option value="user">User (Ministrant)</option>
+                    <option value="ksiądz">Ksiądz</option>
+                    <option value="admin">Admin (Szef)</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-3 p-1">
+                <input type="checkbox" name="uproszczony" id="edit_user_uproszczony" value="y" class="w-5 h-5 accent-brand cursor-pointer">
+                <label for="edit_user_uproszczony" class="font-bold text-gray-700 dark:text-gray-300 text-sm cursor-pointer select-none">Konto uproszczone (bez 2FA / GPS)</label>
+            </div>
+            <button type="submit" class="bg-brand text-white p-4 rounded-xl font-bold mt-2 shadow-lg hover:bg-brand/90 transition w-full">Zapisz poprawione dane</button>
+        </form>
+    </div>
+</div>
+
+<div id="editOgModal" class="modal fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-cardbg rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-brand/20">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-black text-gray-900 dark:text-white m-0">Popraw treść ogłoszenia</h2>
+            <button onclick="closeModal('editOgModal')" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
+        </div>
+        <form action="/admin/edit_announcement" method="POST" class="flex flex-col gap-4">
+            <input type="hidden" name="og_id" id="edit_og_id">
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Treść ogłoszenia:</label>
+                <textarea name="tresc" id="edit_og_tresc" required rows="4" class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full resize-none focus:ring-2 focus:ring-brand"></textarea>
+            </div>
+            <button type="submit" class="bg-brand text-white p-4 rounded-xl font-bold mt-2 shadow-lg hover:bg-brand/90 transition w-full">Zapisz zmiany</button>
+        </form>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
-    const godzinyPlan = {
-        'Poniedziałek': ['06:30', '18:00'],
-        'Wtorek': ['06:30', '18:00'],
-        'Środa': ['06:30', '18:00'],
-        'Czwartek': ['06:30', '18:00'],
-        'Piątek': ['06:30', '18:00'],
-        'Sobota': ['07:30', '08:00', '17:30', '18:00'],
-        'Niedziela': ['07:00', '09:00', '09:30', '10:30', '11:00', '12:00', '14:00', '19:00']
+    // Słownik z godzinami mszy dla planu stałego
+    const godzinyDni = {
+        "Poniedziałek": ["06:30", "18:00"],
+        "Wtorek": ["06:30", "18:00"],
+        "Środa": ["06:30", "18:00"],
+        "Czwartek": ["06:30", "18:00"],
+        "Piątek": ["06:30", "18:00"],
+        "Sobota": ["06:30", "17:00 (Wigilia Nd)"],
+        "Niedziela": ["07:00", "09:00", "10:30", "12:00", "18:00"]
     };
 
     function updateGodziny() {
-        const dzien = document.getElementById('planDzien').value;
-        const selectGodzina = document.getElementById('planGodzina');
-        if(!selectGodzina) return;
-        selectGodzina.innerHTML = ''; 
+        const dzien = document.getElementById("planDzien").value;
+        const selectGodzina = document.getElementById("planGodzina");
+        selectGodzina.innerHTML = "";
         
-        godzinyPlan[dzien].forEach(g => {
-            selectGodzina.innerHTML += `<option value="${g}">${g}</option>`;
-        });
-    }
-
-    function sortTable(tbodyId, method, type, save = true) {
-        const tbody = document.getElementById(tbodyId);
-        if(!tbody) return;
-        const rows = Array.from(tbody.querySelectorAll('tr'));
-
-        const [mainCrit, subCrit] = method.split('-');
-
-        rows.sort((a, b) => {
-            let valA, valB, subA, subB;
-
-            subA = a.getAttribute('data-' + subCrit) || '';
-            subB = b.getAttribute('data-' + subCrit) || '';
-
-            if (mainCrit === 'ranga') {
-                if (type === 'podsumowanie') {
-                    valA = parseInt(a.getAttribute('data-points')) || 0;
-                    valB = parseInt(b.getAttribute('data-points')) || 0;
-                    if (valA !== valB) return valB - valA; 
-                } else {
-                    const weights = { 'admin': 3, 'ksiądz': 2, 'user': 1 };
-                    valA = weights[a.getAttribute('data-role')] || 0;
-                    valB = weights[b.getAttribute('data-role')] || 0;
-                    if (valA !== valB) return valB - valA; 
-                }
-                return subA.localeCompare(subB);
-            } else {
-                return subA.localeCompare(subB);
-            }
-        });
-
-        tbody.innerHTML = '';
-        rows.forEach(row => tbody.appendChild(row));
-
-        if (save) {
-            localStorage.setItem('sort_' + tbodyId, method);
+        if (godzinyDni[dzien]) {
+            godzinyDni[dzien].forEach(g => {
+                let opt = document.createElement("option");
+                opt.value = g.split(" ")[0]; // Zapisujemy tylko czystą godzinę, np "17:00"
+                opt.innerText = g;
+                selectGodzina.appendChild(opt);
+            });
         }
     }
 
+    // Wywołaj na starcie, aby załadować poprawne godziny i statystyki
     document.addEventListener("DOMContentLoaded", function() {
-        if(document.getElementById('planDzien')) updateGodziny();
-        
-        const savedUsers = localStorage.getItem('sort_tbody-users') || 'ranga-nazwisko';
-        const selectUsers = document.getElementById('sortUsers');
-        if (selectUsers) {
-            selectUsers.value = savedUsers;
-            sortTable('tbody-users', savedUsers, 'users', false);
-        }
-
-        const savedPod = localStorage.getItem('sort_tbody-podsumowanie') || 'ranga-nazwisko';
-        const selectPod = document.getElementById('sortPodsumowanie');
-        if (selectPod) {
-            selectPod.value = savedPod;
-            sortTable('tbody-podsumowanie', savedPod, 'podsumowanie', false);
-        }
+        updateGodziny();
+        generujPodsumowanie();
     });
 
-    function filterUser(username, btnElement) {
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.className = "filter-btn bg-gray-200 dark:bg-darkbg text-gray-800 dark:text-white border border-gray-300 dark:border-brand px-4 py-2 rounded-lg font-bold hover:bg-brand/30 transition";
-        });
-        btnElement.className = "filter-btn bg-brand text-white border border-brand px-4 py-2 rounded-lg font-bold transition shadow-[0_0_10px_rgba(94,59,238,0.6)]";
-        
-        const rows = document.querySelectorAll('.attendance-row');
-        rows.forEach(row => {
-            row.style.display = (username === 'all' || row.dataset.username === username) ? '' : 'none';
-        });
+    // Modale - funkcje ogólne
+    function openModal(id) {
+        const modal = document.getElementById(id);
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+    function closeModal(id) {
+        const modal = document.getElementById(id);
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
     }
 
-    function toggleMenu(id) {
-        document.querySelectorAll('.dropdown-content').forEach(m => {
-            if(m.id !== id) m.classList.add('hidden');
-        });
-        document.getElementById(id).classList.toggle('hidden');
+    // Otwieranie szczegółowych modali edycji
+    function openEditModal(id, data, godzina, typ, inna) {
+        document.getElementById('edit_att_id').value = id;
+        document.getElementById('edit_data_sluzby').value = data;
+        document.getElementById('edit_godzina').value = godzina;
+        document.getElementById('edit_typ_mszy').value = typ;
+        document.getElementById('edit_nazwa_inna').value = inna;
+        toggleInnaNazwa('edit_typ_mszy', 'edit_inna_container');
+        openModal('editAttendanceModal');
     }
 
-    function openModal(modalId) { document.getElementById(modalId).style.display = "flex"; }
-    function closeModal(modalId) { document.getElementById(modalId).style.display = "none"; }
-
-    function openEditModal(id, date, time, type, inna) {
-        document.getElementById('editForm').action = "/admin/edit/" + id;
-        document.getElementById('editDate').value = date;
-        document.getElementById('editTime').value = time;
-        document.getElementById('editType').value = type;
-        document.getElementById('editInna').value = inna;
-        toggleInna('editType', 'groupInnaEdit');
-        openModal('editModal');
-    }
-
-    function openUserEditModal(id, imie, nazwisko, login, pass, role, uproszczony) {
-        document.getElementById('editUserForm').action = "/admin/edit_user/" + id;
-        document.getElementById('editUserImie').value = imie;
-        document.getElementById('editUserNazwisko').value = nazwisko;
-        document.getElementById('editUserLogin').value = login;
-        document.getElementById('editUserPass').value = pass;
-        document.getElementById('editUserRole').value = role; 
-        document.getElementById('editUserUproszczony').checked = (uproszczony === 'True');
+    function openUserEditModal(id, imie, nazwisko, username, password, role, uproszczony) {
+        document.getElementById('edit_user_id').value = id;
+        document.getElementById('edit_user_imie').value = imie;
+        document.getElementById('edit_user_nazwisko').value = nazwisko;
+        document.getElementById('edit_user_username').value = username;
+        document.getElementById('edit_user_password').value = password;
+        document.getElementById('edit_user_role').value = role;
+        document.getElementById('edit_user_uproszczony').checked = (uproszczony === 'True' || uproszczony === 'y' || uproszczony === 'true');
         openModal('editUserModal');
     }
 
     function openOgEditModal(id, tresc) {
-        document.getElementById('editOgForm').action = "/admin/edit_announcement/" + id;
-        document.getElementById('editOgTresc').value = tresc;
+        document.getElementById('edit_og_id').value = id;
+        document.getElementById('edit_og_tresc').value = tresc;
         openModal('editOgModal');
     }
-    
-    function toggleInna(selectId, groupId) {
-        const type = document.getElementById(selectId).value;
-        const group = document.getElementById(groupId);
-        if (type === 'inna') {
-            group.classList.remove('hidden');
-            group.classList.add('flex');
+
+    function toggleInnaNazwa(selectId, containerId) {
+        const val = document.getElementById(selectId).value;
+        const container = document.getElementById(containerId);
+        if(val === 'inna') {
+            container.classList.remove('hidden');
         } else {
-            group.classList.add('hidden');
-            group.classList.remove('flex');
+            container.classList.add('hidden');
         }
     }
 
+    // Przełączanie menu bocznego (Dropdown z trzema kropkami)
+    function toggleMenu(id) {
+        if (window.event) { window.event.stopPropagation(); }
+        const element = document.getElementById(id);
+        const isOpen = !element.classList.contains('hidden');
+        
+        document.querySelectorAll('.dropdown-content').forEach(el => el.classList.add('hidden'));
+        
+        if (!isOpen) {
+            element.classList.remove('hidden');
+        }
+    }
+
+    // Filtrowanie listy służb użytkownika
+    function filterUser(username, btn) {
+        document.querySelectorAll('.filter-btn').forEach(b => {
+            b.classList.remove('bg-brand', 'text-white', 'shadow-[0_0_10px_rgba(94,59,238,0.6)]');
+            b.classList.add('bg-gray-200', 'dark:bg-darkbg', 'text-gray-800', 'dark:text-white');
+        });
+        btn.classList.add('bg-brand', 'text-white', 'shadow-[0_0_10px_rgba(94,59,238,0.6)]');
+        btn.classList.remove('bg-gray-200', 'dark:bg-darkbg', 'text-gray-800', 'dark:text-white');
+
+        document.querySelectorAll('.attendance-row').forEach(row => {
+            if(username === 'all' || row.getAttribute('data-username') === username) {
+                row.style.display = 'table-row';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    // Pokazywanie odpowiedniej sekcji w panelu Szefa
     function showSection(name) {
         document.querySelectorAll('.admin-section').forEach(s => {
             s.classList.remove('block');
@@ -622,6 +639,7 @@
         activeBtn.classList.add('bg-brand', 'text-white');
     }
 
+    // Masowe zaznaczanie checkboxów
     function toggleAll(sourceCheckbox, targetClass) {
         const checkboxes = document.querySelectorAll('.' + targetClass);
         checkboxes.forEach(cb => {
@@ -631,10 +649,125 @@
         });
     }
 
+    // Zamknięcie menu kropkowego przy kliknięciu gdziekolwiek indziej
     window.onclick = function(event) {
-        if (!event.target.matches('button') && !event.target.closest('button')) {
-            document.querySelectorAll('.dropdown-content').forEach(m => m.classList.add('hidden'));
+        if (!event.target.matches('button')) {
+            document.querySelectorAll('.dropdown-content').forEach(el => el.classList.add('hidden'));
         }
+    }
+
+    // SORTS & STATS (Tabele rankingowe oraz sortowanie użytkowników)
+    function sortTable(tbodyId, criteria, type) {
+        const tbody = document.getElementById(tbodyId);
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+
+        rows.sort((a, b) => {
+            if (type === 'users') {
+                if (criteria.startsWith('ranga')) {
+                    const roleWeight = { 'admin': 3, 'ksiądz': 2, 'user': 1 };
+                    const rA = roleWeight[a.getAttribute('data-role')] || 0;
+                    const rB = roleWeight[b.getAttribute('data-role')] || 0;
+                    if (rB !== rA) return rB - rA;
+                    
+                    const sub = criteria.split('-')[1];
+                    return a.getAttribute('data-' + sub).localeCompare(b.getAttribute('data-' + sub));
+                } else {
+                    const sub = criteria.split('-')[1];
+                    return a.getAttribute('data-' + sub).localeCompare(b.getAttribute('data-' + sub));
+                }
+            }
+        });
+
+        rows.forEach(row => tbody.appendChild(row));
+    }
+
+    // Dynamiczne zbieranie danych ze struktury tabeli HTML (Zapobiega błędom parsera JS w VS Code)
+    function pobierzDaneSluzbZDOM() {
+        const sluzby = [];
+        const rows = document.querySelectorAll('.attendance-row');
+        
+        rows.forEach(row => {
+            const username = row.getAttribute('data-username');
+            const strongNode = row.querySelector('td:nth-child(2) strong');
+            const spanNode = row.querySelector('td:nth-child(2) span');
+            const dataNode = row.querySelector('td:nth-child(3)');
+            
+            if (username && dataNode) {
+                const fullName = strongNode && spanNode ? strongNode.innerText + " " + spanNode.innerText.replace(/[()]/g, '') : username;
+                const dataTekst = dataNode.innerText.trim(); // dd.mm.yyyy
+                const czesciDaty = dataTekst.split('.');
+                const miesiac = czesciDaty.length === 3 ? czesciDaty[1] : "01";
+                
+                sluzby.push({
+                    username: username,
+                    full_name: fullName,
+                    miesiac: miesiac
+                });
+            }
+        });
+        return sluzby;
+    }
+
+    function wybierzMiesiac() {
+        generujPodsumowanie();
+    }
+
+    function generujPodsumowanie() {
+        const wybranyMiesiac = document.getElementById("selectMiesiac").value;
+        const counts = {};
+        const names = {};
+        
+        // Pobieramy dane bezpiecznie przez JavaScript z DOM
+        const daneSluzb = pobierzDaneSluzbZDOM();
+
+        daneSluzb.forEach(item => {
+            if (wybranyMiesiac === 'all' || item.miesiac === wybranyMiesiac) {
+                counts[item.username] = (counts[item.username] || 0) + 1;
+                names[item.username] = item.full_name;
+            }
+        });
+
+        // Mapujemy wszystkich użytkowników widocznych w tabeli Zarządzania Użytkownikami (żeby uwzględnić tych z 0 służb)
+        const userRows = document.querySelectorAll('#tbody-users tr');
+        userRows.forEach(row => {
+            const uName = row.getAttribute('data-user');
+            if (uName) {
+                const imie = row.cells[1] ? row.cells[1].innerText.trim() : "";
+                const nazwisko = row.cells[2] ? row.cells[2].innerText.trim() : "";
+                if (!counts[uName]) {
+                    counts[uName] = 0;
+                    names[uName] = imie + " " + nazwisko;
+                }
+            }
+        });
+
+        const sorted = Object.keys(counts).map(username => ({
+            username: username,
+            name: names[username],
+            count: counts[username]
+        })).sort((a, b) => b.count - a.count);
+
+        const tbody = document.getElementById("tbody-podsumowanie");
+        if (!tbody) return;
+        tbody.innerHTML = "";
+
+        sorted.forEach((m, index) => {
+            let tr = document.createElement("tr");
+            tr.className = "border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition";
+            
+            let medal = index + 1;
+            if(index === 0) medal = "🥇";
+            else if(index === 1) medal = "🥈";
+            else if(index === 2) medal = "🥉";
+
+            tr.innerHTML = `
+                <td class="p-4 font-black text-lg">${medal}</td>
+                <td class="p-4 font-bold text-brand">@${m.username}</td>
+                <td class="p-4 font-semibold">${m.name}</td>
+                <td class="p-4 text-center"><span class="bg-brand text-white px-4 py-1.5 rounded-full font-extrabold text-sm">${m.count}</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
     }
 </script>
 {% endblock %}
