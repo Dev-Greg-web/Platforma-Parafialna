@@ -4,244 +4,255 @@
 {% block content %}
 <div class="flex-grow flex flex-col items-center justify-center p-4 min-h-screen gap-6 bg-gray-50 dark:bg-[#0f172a] transition-colors duration-300">
     
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="w-full max-w-md flex flex-col gap-2">
+                {% for category, message in messages %}
+                    <div class="p-4 rounded-2xl text-sm font-bold shadow-md text-white transition-all duration-300 {% if category == 'error' %}bg-danger{% else %}bg-success{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
     <div class="w-full max-w-md bg-cardbg rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-gray-800">
         
         <div class="flex text-white font-bold text-center cursor-pointer bg-black/20">
-            <div id="tab-login" onclick="showLogin()" class="flex-1 py-4 bg-brand transition-colors">Logowanie</div>
-            <div id="tab-register" onclick="showRegister()" class="flex-1 py-4 hover:bg-brand/50 transition-colors text-gray-300">Rejestracja</div>
+            <div id="tab-login" onclick="showLogin()" class="flex-1 py-4 bg-brand transition-colors duration-200">
+                Logowanie
+            </div>
+            <div id="tab-register" onclick="showRegister()" class="flex-1 py-4 hover:bg-brand/50 transition-colors duration-200 text-gray-300">
+                Rejestracja
+            </div>
         </div>
 
         <div id="form-login" class="p-8 flex flex-col bg-white dark:bg-[#1f2a44] transition-colors duration-300">
             <form id="login-form" action="/auth_process" method="POST" onsubmit="pobierzGPSiZaloguj(event)">
+                
                 <input type="hidden" id="login_geo_lat" name="login_geo_lat">
                 <input type="hidden" id="login_geo_lng" name="login_geo_lng">
-                <div class="flex flex-col gap-2 mb-4">
-                    <label class="text-brand dark:text-white font-bold text-sm">Nazwa Użytkownika (Login):</label>
-                    <input type="text" name="username" required class="p-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-brand focus:outline-none dark:bg-gray-800 dark:text-white transition-colors">
-                </div>
-                <div class="flex flex-col gap-2 mb-6">
-                    <label class="text-brand dark:text-white font-bold text-sm">Hasło:</label>
-                    <div class="relative">
-                        <input type="password" id="login-password" name="haslo" required class="w-full p-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-brand focus:outline-none dark:bg-gray-800 dark:text-white transition-colors">
-                        <button type="button" onclick="togglePass('login-password', 'login-eye-icon')" class="absolute right-3 top-3.5 text-gray-400 hover:text-brand transition-colors">
-                            <svg id="login-eye-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                <circle cx="12" cy="12" r="3"></circle>
-                            </svg>
-                        </button>
+                
+                <div class="flex flex-col gap-4">
+                    
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Nazwa użytkownika (Login)
+                        </label>
+                        <input type="text" name="username" required placeholder="np. jankowalski" class="p-3.5 rounded-xl bg-gray-50 dark:bg-[#16213e] border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand transition duration-200">
                     </div>
+
+                    <div class="flex flex-col gap-1 relative">
+                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Hasło konta
+                        </label>
+                        <div class="relative w-full">
+                            <input type="password" id="login-password" name="password" required placeholder="••••••••" class="w-full p-3.5 rounded-xl bg-gray-50 dark:bg-[#16213e] border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand transition duration-200">
+                            <button type="button" onclick="togglePassword('login-password')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand dark:hover:text-white text-xs font-bold transition duration-200">
+                                POKAŻ
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="mt-2 w-full py-4 bg-brand hover:bg-brand/90 text-white font-black text-sm rounded-xl shadow-md transition transform active:scale-95 flex items-center justify-center gap-2">
+                        <span>🔐</span> Zaloguj się bezpiecznie
+                    </button>
+                    
                 </div>
-                <button type="submit" class="w-full py-4 bg-brand hover:bg-brand/90 text-white font-bold rounded-xl shadow-lg transition-transform transform active:scale-95">Zaloguj się</button>
             </form>
         </div>
 
-        <div id="form-register" class="p-8 flex flex-col bg-white dark:bg-[#1f2a44] hidden transition-colors duration-300">
-            <form id="reg-form" action="/auth_process" method="POST" onsubmit="event.preventDefault(); wymusGPSiZarejestruj();">
-                <input type="hidden" id="geo_lat" name="geo_lat">
-                <input type="hidden" id="geo_lng" name="geo_lng">
-                <div class="flex flex-col gap-2 mb-4">
-                    <label class="text-brand dark:text-white font-bold text-sm">Imię:</label>
-                    <input type="text" name="imie" required class="p-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-brand focus:outline-none dark:bg-gray-800 dark:text-white transition-colors">
-                </div>
-                <div class="flex flex-col gap-2 mb-4">
-                    <label class="text-brand dark:text-white font-bold text-sm">Nazwisko:</label>
-                    <input type="text" name="nazwisko" required class="p-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-brand focus:outline-none dark:bg-gray-800 dark:text-white transition-colors">
-                </div>
-                <div class="flex flex-col gap-2 mb-4">
-                    <label class="text-brand dark:text-white font-bold text-sm">Nazwa Użytkownika (Login):</label>
-                    <input type="text" name="username" required class="p-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-brand focus:outline-none dark:bg-gray-800 dark:text-white transition-colors">
-                </div>
-                <div class="flex flex-col gap-2 mb-6">
-                    <label class="text-brand dark:text-white font-bold text-sm">Hasło:</label>
-                    <div class="relative">
-                        <input type="password" id="reg-password" name="haslo" required class="w-full p-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-brand focus:outline-none dark:bg-gray-800 dark:text-white transition-colors">
-                        <button type="button" onclick="togglePass('reg-password', 'reg-eye-icon')" class="absolute right-3 top-3.5 text-gray-400 hover:text-brand transition-colors">
-                            <svg id="reg-eye-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                <circle cx="12" cy="12" r="3"></circle>
-                            </svg>
-                        </button>
+        <div id="form-register" class="p-8 hidden flex flex-col bg-white dark:bg-[#1f2a44] transition-colors duration-300">
+            <form id="register-form" action="/auth_process" method="POST">
+                
+                <input type="hidden" name="action" value="register">
+                
+                <div class="flex flex-col gap-4">
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Imię</label>
+                            <input type="text" name="imie" required placeholder="Jan" class="p-3.5 rounded-xl bg-gray-50 dark:bg-[#16213e] border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand transition duration-200">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nazwisko</label>
+                            <input type="text" name="nazwisko" required placeholder="Kowalski" class="p-3.5 rounded-xl bg-gray-50 dark:bg-[#16213e] border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand transition duration-200">
+                        </div>
                     </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Proponowany Login</label>
+                        <input type="text" name="username" required placeholder="np. jankowalski" class="p-3.5 rounded-xl bg-gray-50 dark:bg-[#16213e] border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand transition duration-200">
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hasło (min. 8 znaków)</label>
+                        <div class="relative w-full">
+                            <input type="password" id="register-password" name="password" required placeholder="••••••••" class="w-full p-3.5 rounded-xl bg-gray-50 dark:bg-[#16213e] border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand transition duration-200">
+                            <button type="button" onclick="togglePassword('register-password')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand dark:hover:text-white text-xs font-bold transition duration-200">
+                                POKAŻ
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-2 mt-1">
+                        <input type="checkbox" id="regulamin" required class="mt-1 accent-brand h-4 w-4 rounded border-gray-300 text-brand focus:ring-brand">
+                        <label for="regulamin" class="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                            Oświadczam, że zapoznałem się z <a href="/download/regulamin.pdf" class="text-brand font-bold hover:underline">Regulaminem Służby Liturgicznej</a> i zobowiązuję się go przestrzegać.
+                        </label>
+                    </div>
+
+                    <button type="submit" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm rounded-xl shadow-md transition transform active:scale-95 flex items-center justify-center gap-2">
+                        <span>✨</span> Wyślij wniosek o konto
+                    </button>
+
                 </div>
-                <button type="submit" class="w-full py-4 bg-brand hover:bg-brand/90 text-white font-bold rounded-xl shadow-lg transition-transform transform active:scale-95">Zarejestruj się</button>
             </form>
         </div>
 
-        <div id="login-footer" class="p-4 bg-gray-50 dark:bg-black/10 text-center border-t border-gray-100 dark:border-gray-700/50 transition-colors duration-300">
-            <a href="#" class="text-xs text-brand hover:underline font-medium">Zapomniałeś hasła? Skontaktuj się z administratorem.</a>
-        </div>
     </div>
 
-    <div class="w-full max-w-md text-center">
-        <a href="/pomoc" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#1f2a44] text-xs font-bold text-gray-600 dark:text-gray-300 rounded-full shadow-sm border border-gray-100 dark:border-gray-700 hover:text-brand dark:hover:text-white transition-colors group">
-            <span>❓ Masz problem z GPS lub instalacją?</span>
-            <span class="text-brand group-hover:translate-x-1 transition-transform">Otwórz Centrum Pomocy ➡️</span>
+    <div class="text-center">
+        <a href="/pomoc" class="text-xs font-bold text-gray-400 dark:text-gray-500 hover:text-brand dark:hover:text-brand transition duration-200 flex items-center gap-1 justify-center">
+            ❓ Masz problemy techniczne? Przejdź do Centrum Pomocy
         </a>
     </div>
 
 </div>
 
-<div id="gps-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-all duration-300">
-    <div class="w-full max-w-md bg-white dark:bg-[#1f2a44] rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden transform scale-95 transition-transform duration-300">
-        <div class="bg-gradient-to-r from-amber-500 to-orange-600 p-4 flex items-center gap-3 text-white">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-            </svg>
-            <h3 class="font-bold text-lg">Zalecenie bezpieczeństwa</h3>
+<div id="gps-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 transition-all duration-300">
+    <div class="bg-white dark:bg-[#1f2a44] rounded-3xl p-6 max-w-md w-full shadow-2xl border border-gray-100 dark:border-gray-700 flex flex-col gap-4 transform transition-all scale-95 duration-300">
+        
+        <div class="flex items-center gap-3 text-amber-500">
+            <span class="text-3xl">🛡️</span>
+            <h3 class="text-lg font-black text-gray-900 dark:text-white">Weryfikacja Bezpieczeństwa</h3>
         </div>
-        <div class="p-6">
-            <p id="gps-modal-text" class="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
-                Udostępnienie lokalizacji ułatwia ochronę Twojego konta oraz pomaga w weryfikacji bezpiecznych logowań. Zalecamy włączenie GPS.
-            </p>
-            <div class="mt-4 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200/50 dark:border-amber-900/50 flex gap-2 items-start">
-                <span class="text-amber-600 dark:text-amber-400 font-bold">ℹ️</span>
-                <p class="text-xs text-amber-800 dark:text-amber-400">
-                    Jeśli odmówisz, możesz kontynuować – system automatycznie oszacuje wtedy Twoją lokalizację na podstawie adresu IP.
-                </p>
-            </div>
-        </div>
-        <div class="bg-gray-50 dark:bg-black/20 p-4 flex flex-col sm:flex-row-reverse gap-2 border-t border-gray-100 dark:border-gray-700/50">
-            <button id="gps-modal-accept" class="w-full sm:w-auto px-5 py-2.5 bg-brand hover:bg-brand/90 text-white text-sm font-bold rounded-xl transition-colors shadow-md">
-                Udostępnij GPS (Zalecane)
+        
+        <p id="gps-modal-text" class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed"></p>
+        
+        <div class="flex flex-col sm:flex-row gap-2 mt-2">
+            <button id="gps-modal-btn-retry" class="flex-1 py-3 bg-brand hover:bg-brand/90 text-white font-bold text-xs rounded-xl shadow-md transition transform active:scale-95">
+                🔄 Udostępnij ponownie
             </button>
-            <button id="gps-modal-skip" class="w-full sm:w-auto px-5 py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-xl transition-colors">
-                Pomiń i wejdź przez IP
+            <button id="gps-modal-btn-skip" class="flex-1 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-white font-bold text-xs rounded-xl transition transform active:scale-95">
+                ⏩ Kontynuuj bez GPS
             </button>
         </div>
+        
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
 <script>
-    // Funkcje do przełączania widoków kart formularzy
+    // Przełączanie na formularz logowania
     function showLogin() {
         document.getElementById('form-login').classList.remove('hidden');
         document.getElementById('form-register').classList.add('hidden');
+        
         document.getElementById('tab-login').classList.add('bg-brand');
+        document.getElementById('tab-login').classList.remove('text-gray-300', 'hover:bg-brand/50');
+        
         document.getElementById('tab-register').classList.remove('bg-brand');
+        document.getElementById('tab-register').classList.add('text-gray-300', 'hover:bg-brand/50');
     }
 
+    // Przełączanie na formularz rejestracji
     function showRegister() {
         document.getElementById('form-login').classList.add('hidden');
         document.getElementById('form-register').classList.remove('hidden');
+        
         document.getElementById('tab-register').classList.add('bg-brand');
+        document.getElementById('tab-register').classList.remove('text-gray-300', 'hover:bg-brand/50');
+        
         document.getElementById('tab-login').classList.remove('bg-brand');
+        document.getElementById('tab-login').classList.add('text-gray-300', 'hover:bg-brand/50');
     }
 
-    // FUNKCJA BLOKUJĄCA: Sprawdza ciasteczka i blokuje/odblokowuje formularze
-    function sprawdzZgodeNaCookies() {
-        const cookiesAccepted = localStorage.getItem('cookiesAccepted') === 'true';
-        // Wybieramy wszystkie inputy i przyciski w obu formularzach
-        const elementyFormularza = document.querySelectorAll('#login-form input, #register-form input, #login-form button, #register-form button');
+    // Przełącznik widoczności haseł tekstowych / zakropkowanych
+    function togglePassword(id) {
+        const input = document.getElementById(id);
+        const btn = input.nextElementSibling;
         
-        elementyFormularza.forEach(el => {
-            if (!cookiesAccepted) {
-                el.disabled = true;
-                el.classList.add('opacity-40', 'cursor-not-allowed');
-            } else {
-                el.disabled = false;
-                el.classList.remove('opacity-40', 'cursor-not-allowed');
-            }
-        });
-    }
-
-    // Uruchomienie sprawdzania po załadowaniu strony
-    document.addEventListener("DOMContentLoaded", function() {
-        sprawdzZgodeNaCookies();
-        
-        // Co 500ms sprawdzamy localStorage na wypadek, gdyby użytkownik kliknął akceptację na banerze z base.html
-        setInterval(sprawdzZgodeNaCookies, 500);
-    });
-
-    // UNIWERSALNY MODAL GPS - wyskoczy każdemu bez wyjątku
-    function otworzGpsModal(tekst, onZgoda, onOdmowa) {
-        let modal = document.getElementById('gps-alert-modal');
-        if (!modal) {
-            modal = document.createElement('div');
-            modal.id = 'gps-alert-modal';
-            modal.className = "fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm";
-            modal.innerHTML = `
-                <div class="bg-white dark:bg-[#1f2a44] p-6 rounded-3xl max-w-sm w-full border border-brand text-center shadow-2xl transition-colors duration-300">
-                    <div class="text-4xl mb-2">📍</div>
-                    <h3 class="text-lg font-black text-gray-800 dark:text-white">Weryfikacja Lokalizacji</h3>
-                    <p id="gps-modal-text" class="text-xs text-gray-500 dark:text-gray-300 my-4 leading-relaxed"></p>
-                    <div class="flex gap-3 justify-center">
-                        <button id="gps-btn-allow" class="px-5 py-2 bg-brand text-white font-bold text-xs rounded-xl shadow-md hover:bg-brand/90 transition transform active:scale-95">Udostępnij GPS</button>
-                        <button id="gps-btn-deny" class="px-5 py-2 bg-gray-500 text-white font-bold text-xs rounded-xl shadow-md hover:bg-gray-600 transition transform active:scale-95">Pomiń GPS (Tylko IP)</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
+        if (input.type === "password") {
+            input.type = "text";
+            btn.innerText = "UKRYJ";
+        } else {
+            input.type = "password";
+            btn.innerText = "POKAŻ";
         }
-        
-        document.getElementById('gps-modal-text').innerText = tekst;
-        modal.classList.remove('hidden');
+    }
 
-        document.getElementById('gps-btn-allow').onclick = function() {
+    // Funkcja otwierająca niestandardowy modal informacyjny o geolokalizacji
+    function otworzGpsModal(tekst, onRetry, onSkip) {
+        const modal = document.getElementById('gps-modal');
+        document.getElementById('gps-modal-text').innerText = tekst;
+        
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        const btnRetry = document.getElementById('gps-modal-btn-retry');
+        const btnSkip = document.getElementById('gps-modal-btn-skip');
+        
+        btnRetry.onclick = function() {
             modal.classList.add('hidden');
-            onZgoda();
+            modal.classList.remove('flex');
+            onRetry();
         };
-        document.getElementById('gps-btn-deny').onclick = function() {
+        
+        btnSkip.onclick = function() {
             modal.classList.add('hidden');
-            onOdmowa();
+            modal.classList.remove('flex');
+            onSkip();
         };
     }
 
-    // PRZECHWYCENIE SUBMITU: Wywoływane przy próbie wysłania formularza logowania/rejestracji
-    function procesujFormularz(event, formId, actionType) {
-        event.preventDefault(); // Zatrzymujemy natychmiastowe wysłanie formularza
+    // Główny mechanizm sprawdzania GPS i przechwytywania submitu formularza
+    function pobierzGPSiZaloguj(event) {
+        event.preventDefault();
         
-        const komunikat = "System wymaga autoryzacji dostępu w celu potwierdzenia obecności oraz zabezpieczenia Twojego konta przed nieautoryzowanym logowaniem.";
-        
-        otworzGpsModal(komunikat, 
-            // Scenariusz A: Użytkownik klika "Udostępnij GPS"
-            function() {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        function(pos) {
-                            // Przypisujemy pobrane współrzędne do ukrytych inputów
-                            document.getElementById(actionType + '_geo_lat').value = pos.coords.latitude;
-                            document.getElementById(actionType + '_geo_lng').value = pos.coords.longitude;
-                            wyslijForm(formId, actionType);
-                        },
-                        function(error) {
-                            // Błąd pobierania GPS (np. zablokowane w systemie operacyjnym) -> backend weźmie samo IP
-                            console.warn("Błąd geolokalizacji, przełączanie na IP:", error);
-                            wyslijForm(formId, actionType);
-                        },
-                        { enableHighAccuracy: true, timeout: 5000 }
-                    );
-                } else {
-                    // Brak wsparcia dla geolokalizacji w przeglądarce -> wysyłamy bez współrzędnych (tylko IP)
-                    wyslijForm(formId, actionType);
-                }
+        if (!navigator.geolocation) {
+            wyslijLogowanie();
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            function(pos) {
+                document.getElementById('login_geo_lat').value = pos.coords.latitude;
+                document.getElementById('login_geo_lng').value = pos.coords.longitude;
+                wyslijLogowanie();
             },
-            // Scenariusz B: Użytkownik klika "Pomiń GPS (Tylko IP)"
-            function() {
-                wyslijForm(formId, actionType);
-            }
+            function(error) {
+                otworzGpsModal(
+                    "Udostępnienie lokalizacji ułatwia ochronę Twojego konta i pomaga w weryfikacji nietypowych prób logowania. Zalecamy udostępnienie współrzędnych.",
+                    function() {
+                        navigator.geolocation.getCurrentPosition(function(pos) {
+                            document.getElementById('login_geo_lat').value = pos.coords.latitude;
+                            document.getElementById('login_geo_lng').value = pos.coords.longitude;
+                            wyslijLogowanie();
+                        }, function() { wyslijLogowanie(); });
+                    },
+                    function() {
+                        wyslijLogowanie();
+                    }
+                );
+            },
+            { enableHighAccuracy: true, timeout: 4000 }
         );
     }
 
-    // Funkcja pomocnicza budująca input 'action' i wysyłająca formularz do bazy
-    function wyslijForm(formId, actionType) {
-        const form = document.getElementById(formId);
-        let hiddenAction = form.querySelector('input[name="action"]');
-        if (!hiddenAction) {
-            hiddenAction = document.createElement('input');
-            hiddenAction.type = 'hidden';
-            hiddenAction.name = 'action';
-            form.appendChild(hiddenAction);
-        }
-        hiddenAction.value = actionType;
+    // Dodanie ukrytego parametru akcji logowania i wysłanie formularza POST
+    function wyslijLogowanie() {
+        const form = document.getElementById('login-form');
+        const hiddenAction = document.createElement('input');
+        hiddenAction.type = 'hidden';
+        hiddenAction.name = 'action';
+        hiddenAction.value = 'login';
+        form.appendChild(hiddenAction);
         form.submit();
     }
 
-    // Automatyczne przekierowanie po udanym logowaniu (obsługa sesji)
-    const isSuccess = "{{ 'true' if success_login else 'false' }}" === "true";
-    if (isSuccess) {
+    // Automatyczne przekierowanie po udanym zalogowaniu
+    const isSuccess = "{{ 'true' if success_login else 'false' }}";
+    if (isSuccess === "true") {
         setTimeout(function() {
             window.location.href = "{{ url_for('dashboard_page') }}";
         }, 2000); 

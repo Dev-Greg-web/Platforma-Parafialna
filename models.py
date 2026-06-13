@@ -17,12 +17,15 @@ class Users(db.Model):
     latitude = db.Column(db.String(30), nullable=True)
     longitude = db.Column(db.String(30), nullable=True)
     
-    # NOWE KOLUMNY DLA 2FA:
+    # Kolumny dla weryfikacji dwuetapowej 2FA
     two_factor_code = db.Column(db.String(12), nullable=True)
     two_factor_expiry = db.Column(db.DateTime, nullable=True)
-
+    
+    # Flaga zatwierdzenia konta przez Szefa (Admina)
     is_approved = db.Column(db.Boolean, default=False)
+
 class Attendance(db.Model):
+    __tablename__ = "attendance"
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     data_sluzby = db.Column(db.Date, nullable=False)
@@ -32,13 +35,15 @@ class Attendance(db.Model):
     data_wpisu = db.Column(db.DateTime, default=datetime.now)
 
 class Announcement(db.Model):
+    __tablename__ = "announcement"
     id = db.Column(db.Integer, primary_key=True)
-    tresc = db.Column(db.String(500), nullable=False)
-    data_wystawienia = db.Column(db.DateTime, default=datetime.now)
+    tytul = db.Column(db.String(100), nullable=False)
+    tresc = db.Column(db.Text, nullable=False)
+    data_dodania = db.Column(db.DateTime, default=datetime.now)
 
 class Schedule(db.Model):
     __tablename__ = "schedule"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    dzien_tygodnia = db.Column(db.String(20), nullable=False)
-    godzina = db.Column(db.String(10), nullable=False)
+    data = db.Column(db.Date, nullable=False)
+    godzina = db.Column(db.String(5), nullable=False)
+    opis = db.Column(db.String(205), nullable=False)
