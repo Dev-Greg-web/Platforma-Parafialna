@@ -179,502 +179,473 @@
             </div>
         </header>
 
-        <section id="section-dashboard" class="admin-section hidden space-y-8 animate-section">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                <div class="bg-slate-900/40 backdrop-blur-md border border-slate-800 p-6 rounded-2xl shadow-xl flex items-center justify-between hover:border-brand/50 transition duration-300 group">
-                    <div class="flex flex-col">
-                        <span class="text-xs font-bold text-slate-400 uppercase font-mono tracking-wider">Służby Łącznie</span>
-                        <span id="stat-total-services" class="text-3xl font-black text-white mt-1 group-hover:text-brand transition">0</span>
-                        <span class="text-[10px] text-emerald-400 font-bold flex items-center gap-1 mt-1 font-mono">📈 +12.4% m/m</span>
-                    </div>
-                    <div class="text-3xl bg-brand/10 p-3 rounded-xl border border-brand/20">⛪</div>
-                </div>
-                <div class="bg-slate-900/40 backdrop-blur-md border border-slate-800 p-6 rounded-2xl shadow-xl flex items-center justify-between hover:border-emerald-500/50 transition duration-300 group">
-                    <div class="flex flex-col">
-                        <span class="text-xs font-bold text-slate-400 uppercase font-mono tracking-wider">Aktywni Członkowie</span>
-                        <span class="text-3xl font-black text-white mt-1 group-hover:text-emerald-400 transition">28</span>
-                        <span class="text-[10px] text-slate-400 font-medium flex items-center gap-1 mt-1 font-mono">Zarejestrowanych kont</span>
-                    </div>
-                    <div class="text-3xl bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/20">👥</div>
-                </div>
-                <div class="bg-slate-900/40 backdrop-blur-md border border-slate-800 p-6 rounded-2xl shadow-xl flex items-center justify-between hover:border-amber-500/50 transition duration-300 group">
-                    <div class="flex flex-col">
-                        <span class="text-xs font-bold text-slate-400 uppercase font-mono tracking-wider">Frekwencja Średnia</span>
-                        <span class="text-3xl font-black text-white mt-1 group-hover:text-amber-400 transition">94.2%</span>
-                        <span class="text-[10px] text-amber-400 font-bold flex items-center gap-1 mt-1 font-mono">⭐ Cel kwartalny: 95%</span>
-                    </div>
-                    <div class="text-3xl bg-amber-500/10 p-3 rounded-xl border border-amber-500/20">📈</div>
-                </div>
-                <div class="bg-slate-900/40 backdrop-blur-md border border-slate-800 p-6 rounded-2xl shadow-xl flex items-center justify-between hover:border-red-500/50 transition duration-300 group">
-                    <div class="flex flex-col">
-                        <span class="text-xs font-bold text-slate-400 uppercase font-mono tracking-wider">Weryfikacje Geo</span>
-                        <span class="text-3xl font-black text-white mt-1 group-hover:text-red-400 transition">Aktywne</span>
-                        <span class="text-[10px] text-red-400 font-bold flex items-center gap-1 mt-1 font-mono">🛡️ GPS Secure Guard</span>
-                    </div>
-                    <div class="text-3xl bg-red-500/10 p-3 rounded-xl border border-red-500/20">📍</div>
-                </div>
+        <section id="section-sluzby" class="admin-section block">
+            <div class="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Zarządzanie Służbami</h1>
+                <button class="bg-gradient-to-r from-success to-green-400 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:-translate-y-1 transition flex items-center gap-2" onclick="openModal('addAttendanceModal')">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    Dodaj służbę
+                </button>
+            </div>
+            
+            <div class="flex flex-wrap gap-2 mb-6 p-4 bg-white dark:bg-cardbg rounded-2xl shadow-lg">
+                <button class="filter-btn bg-brand text-white border border-brand px-4 py-2 rounded-lg font-bold transition shadow-[0_0_10px_rgba(94,59,238,0.6)]" onclick="filterUser('all', this)">Wszyscy</button>
+                {% for u in users %}
+                    <button class="filter-btn bg-gray-200 dark:bg-darkbg text-gray-800 dark:text-white border border-gray-300 dark:border-brand px-4 py-2 rounded-lg font-bold hover:bg-brand/30 transition" onclick="filterUser('{{ u.username }}', this)">{{ u.username }}</button>
+                {% endfor %}
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="bg-slate-900/40 backdrop-blur-md border border-slate-800 p-6 rounded-3xl lg:col-span-2 space-y-6">
-                    <div class="flex justify-between items-center">
-                        <div class="flex flex-col">
-                            <h3 class="text-lg font-bold text-white">Rozkład Służb w Tygodniu</h3>
-                            <span class="text-xs text-slate-400">Statystyka zgłoszeń na przestrzeni ostatnich dni</span>
-                        </div>
-                        <span class="bg-brand/20 text-brand text-xs font-mono font-bold px-3 py-1 rounded-full border border-brand/30">Live Data</span>
-                    </div>
-                    <div class="h-64 flex items-end justify-between pt-8 px-4 border-b border-slate-800 font-mono text-xs text-slate-400 relative">
-                        <div class="absolute inset-x-0 bottom-16 border-t border-slate-800/40 pointer-events-none"></div>
-                        <div class="absolute inset-x-0 bottom-32 border-t border-slate-800/40 pointer-events-none"></div>
-                        <div class="absolute inset-x-0 bottom-48 border-t border-slate-800/40 pointer-events-none"></div>
-                        
-                        <div class="flex flex-col items-center gap-2 w-full group cursor-pointer">
-                            <div class="w-8 bg-slate-800 group-hover:bg-brand rounded-t-lg transition-all duration-300 shadow-md h-24 relative">
-                                <span class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-white opacity-0 group-hover:opacity-100 transition font-mono bg-slate-950 px-1.5 py-0.5 rounded border border-slate-700">12</span>
-                            </div>
-                            <span>Pon</span>
-                        </div>
-                        <div class="flex flex-col items-center gap-2 w-full group cursor-pointer">
-                            <div class="w-8 bg-slate-800 group-hover:bg-brand rounded-t-lg transition-all duration-300 shadow-md h-36 relative">
-                                <span class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-white opacity-0 group-hover:opacity-100 transition font-mono bg-slate-950 px-1.5 py-0.5 rounded border border-slate-700">18</span>
-                            </div>
-                            <span>Wt</span>
-                        </div>
-                        <div class="flex flex-col items-center gap-2 w-full group cursor-pointer">
-                            <div class="w-8 bg-slate-800 group-hover:bg-brand rounded-t-lg transition-all duration-300 shadow-md h-16 relative">
-                                <span class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-white opacity-0 group-hover:opacity-100 transition font-mono bg-slate-950 px-1.5 py-0.5 rounded border border-slate-700">8</span>
-                            </div>
-                            <span>Śr</span>
-                        </div>
-                        <div class="flex flex-col items-center gap-2 w-full group cursor-pointer">
-                            <div class="w-8 bg-slate-800 group-hover:bg-brand rounded-t-lg transition-all duration-300 shadow-md h-44 relative">
-                                <span class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-white opacity-0 group-hover:opacity-100 transition font-mono bg-slate-950 px-1.5 py-0.5 rounded border border-slate-700">22</span>
-                            </div>
-                            <span>Czw</span>
-                        </div>
-                        <div class="flex flex-col items-center gap-2 w-full group cursor-pointer">
-                            <div class="w-8 bg-slate-800 group-hover:bg-brand rounded-t-lg transition-all duration-300 shadow-md h-32 relative">
-                                <span class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-white opacity-0 group-hover:opacity-100 transition font-mono bg-slate-950 px-1.5 py-0.5 rounded border border-slate-700">16</span>
-                            </div>
-                            <span>Pt</span>
-                        </div>
-                        <div class="flex flex-col items-center gap-2 w-full group cursor-pointer">
-                            <div class="w-8 bg-gradient-to-t from-brand to-purple-500 rounded-t-lg shadow-lg shadow-brand/20 h-52 relative">
-                                <span class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-brand font-mono bg-slate-950 px-1.5 py-0.5 rounded border border-brand/50">34</span>
-                            </div>
-                            <span class="text-brand font-bold">Sob</span>
-                        </div>
-                        <div class="flex flex-col items-center gap-2 w-full group cursor-pointer">
-                            <div class="w-8 bg-gradient-to-t from-brand via-purple-500 to-indigo-400 rounded-t-lg shadow-lg shadow-brand/30 h-56 relative">
-                                <span class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-indigo-400 font-mono bg-slate-950 px-1.5 py-0.5 rounded border border-indigo-500/50">42</span>
-                            </div>
-                            <span class="text-indigo-400 font-bold">Niedz</span>
-                        </div>
-                    </div>
+            <form action="/admin/delete_bulk_attendances" method="POST" class="w-full">
+                <div class="flex justify-end mb-4">
+                    <button type="submit" class="bg-danger text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-red-700 hover:-translate-y-1 transition flex items-center gap-2" onclick="return confirm('Czy na pewno chcesz usunąć wszystkie ZAZNACZONE służby?')">
+                        🗑️ Usuń zaznaczone
+                    </button>
                 </div>
+                <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto w-full">
+                    <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[600px]">
+                        <thead>
+                            <tr class="border-b-2 border-brand text-lg">
+                                <th class="p-4 w-12"><input type="checkbox" class="w-6 h-6 accent-danger cursor-pointer" onclick="toggleAll(this, 'att-chk')"></th>
+                                <th class="p-4">Użytkownicy</th><th class="p-4">Data</th><th class="p-4">Godzina</th><th class="p-4">Rodzaj</th><th class="p-4">Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendance-tbody">
+                            {% for att, user in attendances %}
+                            <tr class="attendance-row border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition relative" data-username="{{ user.username }}">
+                                <td class="p-4"><input type="checkbox" name="att_ids" value="{{ att.id }}" class="att-chk w-6 h-6 accent-danger cursor-pointer"></td>
+                                <td class="p-4"><strong>{{ user.username }}</strong> <span class="text-sm text-gray-500 dark:text-gray-300">({{ user.imie }} {{ user.nazwisko }})</span></td>
+                                <td class="p-4">{{ att.data_sluzby.strftime('%d.%m.%Y') }}</td>
+                                <td class="p-4">{{ att.godzina }}</td>
+                                <td class="p-4">
+                                    {% if att.typ_mszy == 'inna' %}
+                                        <span class="bg-success text-white px-3 py-1 rounded-md font-bold text-xs">{{ att.nazwa_inna }}</span>
+                                    {% else %}
+                                        <span class="bg-[#4834d4] text-white px-3 py-1 rounded-md font-bold text-xs">{{ att.typ_mszy|capitalize }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="p-4">
+                                    <div class="relative inline-block text-left">
+                                        <button type="button" class="text-2xl font-bold px-2 py-1 hover:text-brand" onclick="toggleMenu('menu-att-{{att.id}}')">⋮</button>
+                                        <div id="menu-att-{{att.id}}" class="dropdown-content hidden absolute right-0 top-full mt-2 w-48 bg-white dark:bg-darkbg border border-gray-200 dark:border-brand rounded-xl shadow-2xl z-50 overflow-hidden">
+                                            {% set bezpieczna_nazwa = att.nazwa_inna if att.nazwa_inna else '' %}
+                                            <a href="javascript:void(0)" class="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-brand transition" onclick="openEditModal('{{att.id}}', '{{att.data_sluzby}}', '{{att.godzina}}', '{{att.typ_mszy}}', '{{bezpieczna_nazwa}}')">Popraw wpis</a>
+                                            <a href="{{ url_for('delete_entry', id=att.id) }}" class="block px-4 py-3 text-danger hover:bg-red-50 dark:hover:bg-red-900/30 transition" onclick="return confirm('Usunąć?')">Usuń wpis</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+        </section>
 
-                <div class="bg-slate-900/40 backdrop-blur-md border border-slate-800 p-6 rounded-3xl flex flex-col justify-between">
-                    <div class="flex flex-col">
-                        <h3 class="text-lg font-bold text-white">Struktura Zgłoszeń</h3>
-                        <span class="text-xs text-slate-400">Podział ze względu na charakter posługi</span>
+        <section id="section-uzytkownicy" class="admin-section hidden">
+            <div class="flex flex-col xl:flex-row flex-wrap justify-between items-start xl:items-center gap-4 mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Zarządzanie Użytkownikami</h1>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-white dark:bg-cardbg px-3 py-2 rounded-xl shadow border border-gray-200 dark:border-brand w-full sm:w-auto max-w-full overflow-hidden">
+                    <div class="flex items-center gap-2 shrink-0">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" class="text-brand dark:text-gray-300" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9M3 12h5m0 0v8m0 0l-3-3m3 3l3-3"></path></svg>
+                        <label class="font-bold text-gray-700 dark:text-white whitespace-nowrap">Sortuj:</label>
                     </div>
-                    
-                    <div class="my-6 flex justify-center relative">
-                        <svg class="w-36 h-36 transform -rotate-90" viewBox="0 0 32 32">
-                            <circle r="16" cx="16" cy="16" fill="transparent" stroke="#1e293b" stroke-width="4" />
-                            <circle r="16" cx="16" cy="16" fill="transparent" stroke="#5e3bee" stroke-width="4" stroke-dasharray="65 100" />
-                            <circle r="16" cx="16" cy="16" fill="transparent" stroke="#22c55e" stroke-width="4" stroke-dasharray="20 100" stroke-dashoffset="-65" />
-                            <circle r="16" cx="16" cy="16" fill="transparent" stroke="#eab308" stroke-width="4" stroke-dasharray="15 100" stroke-dashoffset="-85" />
-                        </svg>
-                        <div class="absolute inset-0 flex items-center justify-center flex-col">
-                            <span class="text-xl font-black text-white">3 Typy</span>
-                            <span class="text-[10px] text-slate-500 font-mono">GŁÓWNE</span>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-3 gap-2 text-center text-xs font-mono">
-                        <div class="flex flex-col p-2 bg-slate-950/40 rounded-xl border border-brand/20">
-                            <span class="w-2 h-2 rounded-full bg-brand inline-block mx-auto mb-1"></span>
-                            <span class="text-slate-400">Msza</span>
-                            <span class="text-white font-bold mt-0.5">65%</span>
-                        </div>
-                        <div class="flex flex-col p-2 bg-slate-950/40 rounded-xl border border-emerald-500/20">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mx-auto mb-1"></span>
-                            <span class="text-slate-400">Naboż.</span>
-                            <span class="text-white font-bold mt-0.5">20%</span>
-                        </div>
-                        <div class="flex flex-col p-2 bg-slate-950/40 rounded-xl border border-amber-500/20">
-                            <span class="w-2 h-2 rounded-full bg-amber-500 inline-block mx-auto mb-1"></span>
-                            <span class="text-slate-400">Inne</span>
-                            <span class="text-white font-bold mt-0.5">15%</span>
-                        </div>
-                    </div>
+                    <select id="sortUsers" onchange="sortTable('tbody-users', this.value, 'users')" class="bg-transparent text-gray-900 dark:text-white outline-none font-semibold cursor-pointer w-full max-w-full truncate">
+                        <option value="ranga-nazwisko" class="text-black">Ranga + Nazwisko</option>
+                        <option value="ranga-imie" class="text-black">Ranga + Imię</option>
+                        <option value="ranga-user" class="text-black">Ranga + Login</option>
+                        <option value="alfa-nazwisko" class="text-black">Alfabetycznie (Nazwisko)</option>
+                        <option value="alfa-imie" class="text-black">Alfabetycznie (Imię)</option>
+                        <option value="alfa-user" class="text-black">Alfabetycznie (Login)</option>
+                    </select>
                 </div>
             </div>
             
-            <div class="bg-gradient-to-r from-slate-900/60 to-purple-950/20 backdrop-blur-md border border-slate-800 rounded-3xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-2xl">
-                <div class="flex items-center gap-4">
-                    <span class="text-3xl bg-purple-500/10 p-3.5 rounded-2xl border border-purple-500/20 block text-center">🛡️</span>
-                    <div class="flex flex-col">
-                        <h4 class="text-md font-bold text-white flex items-center gap-2">Stan Bezpieczeństwa Aplikacji i Logowania 2FA</h4>
-                        <p class="text-xs text-slate-400 mt-0.5">Weryfikacja dwuetapowa działa bez zakłóceń. Koordynaty GPS sprawdzane są z dokładnością do 50 metrów wokół kościoła.</p>
-                    </div>
+            <form action="/admin/delete_bulk_users" method="POST" class="w-full">
+                <div class="flex justify-end mb-4">
+                    <button type="submit" class="bg-danger text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-red-700 hover:-translate-y-1 transition flex items-center gap-2" onclick="return confirm('UWAGA: Zaznaczeni użytkownicy zostaną usunięci razem z wszystkimi ich służbami! Jesteś pewien?')">
+                        🗑️ Usuń zaznaczonych
+                    </button>
                 </div>
-                <button onclick="showSection('ustawienia')" class="whitespace-nowrap px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs rounded-xl transition">
-                    Konfiguruj GPS Guard
-                </button>
+                <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto w-full">
+                    <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[750px]">
+                        <thead>
+                            <tr class="border-b-2 border-brand text-lg">
+                                <th class="p-4 w-12"><input type="checkbox" class="w-6 h-6 accent-danger cursor-pointer" onclick="toggleAll(this, 'usr-chk')"></th>
+                                <th class="p-4">Imię</th><th class="p-4">Nazwisko</th><th class="p-4">User</th><th class="p-4">Hasło</th><th class="p-4">Ranga / 2FA</th><th class="p-4">Rejestracja IP / GPS</th><th class="p-4">Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-users">
+                            {% for u in users %}
+                            <tr class="border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition" data-imie="{{ u.imie|lower }}" data-nazwisko="{{ u.nazwisko|lower }}" data-user="{{ u.username|lower }}" data-role="{{ u.role|default('user')|lower }}">
+                                <td class="p-4"><input type="checkbox" name="user_ids" value="{{u.id}}" class="usr-chk w-6 h-6 accent-danger cursor-pointer"></td>
+                                <td class="p-4">{{ u.imie }}</td><td class="p-4">{{ u.nazwisko }}</td>
+                                <td class="p-4 font-bold text-indigo-400">@{{ u.username }}</td>
+                                <td class="p-4"><code class="text-green-600 dark:text-green-400 font-mono text-xs">{{ u.password[:15] }}...</code></td>
+                                <td class="p-4">
+                                    <div class="flex flex-col gap-1.5 items-start">
+                                        <span class="px-3 py-1 rounded-md font-bold text-xs {{ 'bg-warning text-black' if u.role == 'admin' else 'bg-purple-600 text-white' if u.role == 'ksiądz' else 'bg-gray-600 text-white' }}">
+                                            {{ u.role|capitalize }}
+                                        </span>
+                                        {% if u.two_factor_code %}
+                                            <span class="text-[10px] bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded font-black uppercase tracking-wide">Wymaga resetu</span>
+                                        {% else %}
+                                            <span class="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded font-black uppercase tracking-wide">2FA Aktywne</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="flex flex-col gap-0.5 text-xs">
+                                        <span class="font-mono text-gray-600 dark:text-gray-300">🌐 {{ u.registration_ip if u.registration_ip else 'Brak' }}</span>
+                                        {% if u.latitude and u.longitude %}
+                                            <a href="https://www.google.com/maps?q={{ u.latitude }},{{ u.longitude }}" target="_blank" class="text-brand hover:underline font-bold flex items-center gap-0.5">
+                                                📍 {{ u.latitude|round(4) }}, {{ u.longitude|round(4) }} 🔗
+                                            </a>
+                                        {% else %}
+                                            <span class="text-gray-400 italic">Brak GPS</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="relative inline-block text-left">
+                                        <button type="button" class="text-2xl font-bold px-2 py-1 hover:text-brand" onclick="toggleMenu('menu-usr-{{u.id}}')">⋮</button>
+                                        <div id="menu-usr-{{u.id}}" class="dropdown-content hidden absolute right-0 top-full mt-2 w-56 bg-white dark:bg-darkbg border border-gray-200 dark:border-brand rounded-xl shadow-2xl z-50 overflow-hidden">
+                                            {% set bez_imie = u.imie if u.imie else '' %}
+                                            {% set bez_nazwisko = u.nazwisko if u.nazwisko else '' %}
+                                            <a href="javascript:void(0)" class="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-brand transition" onclick="openUserEditModal('{{u.id}}', '{{bez_imie}}', '{{bez_nazwisko}}', '{{u.username}}', '{{u.password}}', '{{u.role}}', '{{u.uproszczony}}')">Popraw dane / Rangę</a>
+                                            <a href="{{ url_for('delete_user', id=u.id) }}" class="block px-4 py-3 text-danger hover:bg-red-50 dark:hover:bg-red-900/30 transition" onclick="return confirm('Usunąć?')">Usuń</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+        </section>
+
+        <section id="section-ogloszenia" class="admin-section hidden">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Tablica Ogłoszeń</h1>
+            <div class="bg-white dark:bg-cardbg rounded-2xl p-6 shadow-xl mb-8">
+                <form action="/admin/add_announcement" method="POST" class="flex flex-col md:flex-row gap-4 w-full">
+                    <input type="text" name="tresc" placeholder="Co chcesz ogłosić?" required class="flex-grow p-4 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-brand w-full">
+                    <button type="submit" class="bg-brand text-white px-8 py-4 rounded-xl font-bold hover:-translate-y-1 hover:shadow-lg transition shrink-0">Opublikuj</button>
+                </form>
+            </div>
+            <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto w-full">
+                <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[500px]">
+                    <thead><tr class="border-b-2 border-brand text-lg"><th class="p-4">Treść</th><th class="p-4">Data</th><th class="p-4">Akcje</th></tr></thead>
+                    <tbody>
+                        {% for og in announcements %}
+                        <tr class="border-b border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition">
+                            <td class="p-4">{{ og.tresc }}</td><td class="p-4">{{ og.data_dodania.strftime('%d.%m %H:%M') }}</td>
+                            <td class="p-4">
+                                <div class="relative inline-block text-left">
+                                    <button type="button" class="text-2xl font-bold px-2 py-1 hover:text-brand" onclick="toggleMenu('menu-og-{{og.id}}')">⋮</button>
+                                    <div id="menu-og-{{og.id}}" class="dropdown-content hidden absolute right-0 top-full mt-2 w-48 bg-white dark:bg-darkbg border border-gray-200 dark:border-brand rounded-xl shadow-2xl z-50 overflow-hidden">
+                                        {% set bez_tresc = og.tresc|replace("'", "\\'") %}
+                                        <a href="javascript:void(0)" class="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-brand transition" onclick="openOgEditModal('{{og.id}}', '{{bez_tresc}}')">Popraw treść</a>
+                                        <a href="{{ url_for('delete_announcement', id=og.id) }}" class="block px-4 py-3 text-danger hover:bg-red-50 dark:hover:bg-red-900/30 transition" onclick="return confirm('Usunąć?')">Usuń</a>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </section>
 
-        <section id="section-sluzby" class="admin-section hidden space-y-6 animate-section">
-            <div class="bg-slate-900/40 backdrop-blur-md border border-slate-800 p-5 rounded-3xl grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                <div class="relative">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500 text-sm">🔍</span>
-                    <input type="text" id="filter-search-input" onkeyup="filterAttendanceTable()" placeholder="Szukaj po nicku lub imieniu..." class="w-full bg-slate-950/60 border border-slate-800 focus:border-brand rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand/20 transition">
+        <section id="section-plan" class="admin-section hidden">
+            <div class="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Plan Służb (Stałe Dyżury)</h1>
+                <a href="{{ url_for('export_schedule') }}" class="w-full sm:w-auto bg-success text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:-translate-y-1 transition flex items-center justify-center gap-2 shrink-0">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Pobierz Plan Służb (Excel)
+                </a>
+            </div>
+            
+            <div class="bg-white dark:bg-cardbg rounded-3xl p-8 shadow-2xl mb-12 border border-brand/30">
+                <form action="/admin/add_schedule" method="POST" class="flex flex-col lg:flex-row gap-6 items-stretch lg:items-end w-full">
+                    
+                    <div class="flex-grow flex flex-col gap-2 w-full lg:w-auto min-w-0">
+                        <label class="font-bold dark:text-white text-gray-700">Wybierz ministranta:</label>
+                        <select name="user_id" required class="w-full max-w-full p-4 rounded-2xl border-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:border-brand focus:ring-2 focus:ring-brand truncate">
+                            {% for u in users %}<option value="{{ u.id }}">{{ u.username }} ({{ u.imie }} {{ u.nazwisko }})</option>{% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="flex flex-col gap-2 w-full lg:w-60 shrink-0 min-w-0">
+                        <label class="font-bold dark:text-white text-gray-700">Dzień tygodnia:</label>
+                        <select name="dzien" id="planDzien" onchange="updateGodziny()" class="w-full max-w-full p-4 rounded-2xl border-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:border-brand focus:ring-2 focus:ring-brand truncate">
+                            <option value="Poniedziałek">Poniedziałek</option><option value="Wtorek">Wtorek</option>
+                            <option value="Środa">Środa</option><option value="Czwartek">Czwartek</option>
+                            <option value="Piątek">Piątek</option><option value="Sobota">Sobota</option>
+                            <option value="Niedziela">Niedziela</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex flex-col gap-2 w-full lg:w-48 shrink-0 min-w-0">
+                        <label class="font-bold dark:text-white text-gray-700">Godzina mszy:</label>
+                        <select name="godzina" id="planGodzina" class="w-full max-w-full p-4 rounded-2xl border-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none focus:border-brand focus:ring-2 focus:ring-brand truncate">
+                        </select>
+                    </div>
+
+                    <button type="submit" class="w-full lg:w-auto bg-gradient-to-r from-success to-green-400 text-white px-10 py-4 h-[65px] rounded-2xl font-extrabold shadow-lg hover:scale-105 active:scale-95 transition whitespace-nowrap shrink-0 flex items-center justify-center gap-2">
+                        + Dodaj dyżur
+                    </button>
+                </form>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
+                {% for dzien, godziny_grupy in plan.items() %}
+                <div class="bg-white dark:bg-cardbg rounded-3xl p-6 shadow-xl flex flex-col w-full min-w-0 border-t-4 border-brand">
+                    
+                    <div class="flex justify-between items-center mb-5 shrink-0">
+                        <h2 class="text-2xl font-extrabold text-gray-900 dark:text-white m-0 truncate">{{ dzien }}</h2>
+                        <span class="bg-brand/20 text-brand px-3 py-1 rounded-lg text-sm font-bold">{{ liczniki[dzien] }} osób</span>
+                    </div>
+                    
+                    {% if godziny_grupy %}
+                        <div class="flex flex-col gap-4 w-full">
+                            {% for godzina, ministranci in godziny_grupy.items() %}
+                                <div class="bg-gray-50 dark:bg-darkbg p-4 rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden">
+                                    
+                                    <div class="bg-brand/10 p-2 rounded-lg mb-3 shrink-0">
+                                        <span class="font-extrabold text-brand flex items-center gap-2">
+                                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                                            Godzina: {{ godzina }}
+                                        </span>
+                                    </div>
+
+                                    <ul class="flex flex-col gap-1 w-full min-w-0">
+                                        {% for m in ministranci %}
+                                            <li class="flex justify-between items-center w-full min-w-0 group hover:bg-white/10 px-2 py-1.5 rounded-lg transition overflow-hidden">
+                                                <div class="flex flex-col sm:flex-row sm:items-center gap-0 sm:gap-2 min-w-0 truncate">
+                                                    <strong class="text-gray-800 dark:text-white truncate">{{ m.user.username }}</strong>
+                                                    <span class="text-xs text-gray-500 font-normal truncate">({{ m.user.imie }} {{ m.user.nazwisko }})</span>
+                                                </div>
+                                                <a href="{{ url_for('delete_schedule', id=m.id) }}" class="text-gray-400 group-hover:text-danger text-2xl font-bold transition px-2 shrink-0 ml-2" onclick="return confirm('Usunąć ten dyżur?')">&times;</a>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-sm text-gray-500 dark:text-gray-400 italic">Brak zapisanych dyżurów.</p>
+                    {% endif %}
                 </div>
-                <div>
-                    <select id="filter-type-select" onchange="filterAttendanceTable()" class="w-full bg-slate-950/60 border border-slate-800 focus:border-brand rounded-xl px-4 py-2.5 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand/20 transition">
-                        <option value="all">Wszystkie rodzaje posługi</option>
-                        <option value="msza">Msza Święta</option>
-                        <option value="nabozenstwo">Nabożeństwo</option>
-                        <option value="inna">Inne / Nadprogramowe</option>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section id="section-weryfikacja" class="admin-section hidden">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Oczekujące Rejestracje</h1>
+            {% if pending_users %}
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 w-full">
+                    {% for pu in pending_users %}
+                    <div class="bg-white dark:bg-cardbg rounded-3xl p-6 shadow-xl border border-gray-100 dark:border-brand/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 w-full min-w-0">
+                        <div class="flex items-center gap-4 min-w-0">
+                            <div class="w-14 h-14 rounded-2xl bg-brand/10 flex items-center justify-center text-2xl shrink-0">👤</div>
+                            <div class="min-w-0 truncate">
+                                <h3 class="text-xl font-black text-gray-800 dark:text-white truncate">{{ pu.imie }} {{ pu.nazwisko }}</h3>
+                                <div class="flex flex-col gap-0.5 mt-1">
+                                    <span class="text-sm font-mono text-brand font-bold truncate">@{{ pu.username }}</span>
+                                    <span class="text-xs text-gray-400 dark:text-gray-500">Zarejestrowano: {{ pu.created_at.strftime('%d.%m.%Y %H:%M') if pu.created_at else 'Brak daty' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1.5 text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-darkbg p-3 rounded-xl border border-gray-100 dark:border-white/5 shrink-0">
+                            <div class="flex items-center gap-2">🌐 <strong>IP:</strong> <span class="font-mono">{{ pu.registration_ip if pu.registration_ip else 'Brak' }}</span></div>
+                            {% if pu.latitude and pu.longitude %}
+                                <div class="flex items-center gap-2">📍 <strong>GPS:</strong> 
+                                    <a href="https://www.google.com/maps?q={{ pu.latitude }},{{ pu.longitude }}" target="_blank" class="text-brand font-bold hover:underline">Pokaż mapę 🔗</a>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <form action="{{ url_for('przetworz_weryfikacje', user_id=pu.id, akcja='zatwierdz') }}" method="POST">
+                                <button type="submit" class="bg-success text-white px-4 py-2.5 rounded-xl font-bold shadow hover:bg-green-600 transition flex items-center gap-1 text-sm">✅ Zatwierdź</button>
+                            </form>
+                            <form action="{{ url_for('przetworz_weryfikacje', user_id=pu.id, akcja='odrzuc') }}" method="POST" onsubmit="return confirm('Usunąć to zgłoszenie?')">
+                                <button type="submit" class="bg-danger text-white px-4 py-2.5 rounded-xl font-bold shadow hover:bg-red-700 transition flex items-center gap-1 text-sm">❌ Odrzuć</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="bg-white dark:bg-cardbg rounded-3xl p-12 text-center text-gray-500 shadow-xl max-w-md mx-auto flex flex-col items-center gap-3">
+                    <span class="text-5xl">🎉</span>
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white">Wszystko czyste!</h3>
+                    <p class="text-sm text-gray-400">Brak nowych wniosków o rejestrację w systemie.</p>
+                </div>
+            {% endif %}
+        </section>
+
+        <section id="section-podsumowanie" class="admin-section hidden">
+            <div class="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white m-0">Podsumowanie i Statystyki</h1>
+                <div class="flex items-center gap-2 bg-white dark:bg-cardbg px-3 py-2 rounded-xl shadow border border-gray-200 dark:border-brand w-full sm:w-auto">
+                    <label class="font-bold text-gray-700 dark:text-white whitespace-nowrap">Miesiąc:</label>
+                    <select id="selectMiesiac" onchange="wybierzMiesiac()" class="bg-transparent text-gray-900 dark:text-white outline-none font-semibold cursor-pointer w-full">
+                        <option value="all" class="text-black">Wszystkie wpisy</option>
+                        <option value="01" class="text-black">Styczeń</option><option value="02" class="text-black">Luty</option>
+                        <option value="03" class="text-black">Marzec</option><option value="04" class="text-black">Kwiecień</option>
+                        <option value="05" class="text-black">Maj</option><option value="06" class="text-black">Czerwiec</option>
+                        <option value="07" class="text-black">Lipiec</option><option value="08" class="text-black">Sierpień</option>
+                        <option value="09" class="text-black">Wrzesień</option><option value="10" class="text-black">Październik</option>
+                        <option value="11" class="text-black">Listopad</option><option value="12" class="text-black">Grudzień</option>
                     </select>
                 </div>
-                <div>
-                    <input type="date" id="filter-date-input" onchange="filterAttendanceTable()" class="w-full bg-slate-950/60 border border-slate-800 focus:border-brand rounded-xl px-4 py-2.5 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand/20 transition">
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="clearAllFilters()" class="flex-grow py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 transition tracking-wider uppercase">
-                        ❌ Reset
-                    </button>
-                    <button onclick="aktualizujPodsumowanie()" class="px-4 py-2.5 bg-purple-900/50 hover:bg-purple-900 text-purple-200 border border-purple-800 font-bold text-xs rounded-xl transition tracking-wider uppercase">
-                        🔄 Rekalkuluj
-                    </button>
-                </div>
             </div>
 
-            <div class="bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
-                <div class="overflow-x-auto w-full">
-                    <table class="w-full text-left border-collapse" id="main-attendance-table">
-                        <thead>
-                            <tr class="border-b border-slate-800 bg-slate-950/40 text-[11px] font-black tracking-widest text-slate-400 uppercase font-mono">
-                                <th class="p-4 pl-6">ID</th>
-                                <th class="p-4">Użytkownik</th>
-                                <th class="p-4">Imię i Nazwisko</th>
-                                <th class="p-4">Data Służby</th>
-                                <th class="p-4">Godzina</th>
-                                <th class="p-4">Rodzaj Posługi</th>
-                                <th class="p-4">Weryfikacja Geograficzna</th>
-                                <th class="p-4 text-center pr-6">Akcje Menedżera</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-sluzby" class="divide-y divide-slate-800/50 text-sm font-medium text-slate-300">
-                            {% if attendances %}
-                                {% for att in attendances %}
-                                <tr class="attendance-row border-b border-slate-800/40 hover:bg-slate-800/20 transition-all duration-150" data-username="{{ att.username }}" data-type="{{ att.rodzaj_sluzby|default('msza') }}">
-                                    <td class="p-4 pl-6 font-mono text-xs text-slate-500 font-bold">#{{ att.id }}</td>
-                                    <td class="p-4 font-bold text-brand truncate-cell">@{{ att.username }}</td>
-                                    <td class="p-4 text-slate-200 font-semibold truncate-cell">{{ att.imie }} {{ att.nazwisko }}</td>
-                                    <td class="p-4 font-mono font-bold text-xs text-slate-300">{{ att.data_sluzby.strftime('%Y-%m-%d') if att.data_sluzby else '' }}</td>
-                                    <td class="p-4 font-mono font-bold text-emerald-400">{{ att.godzina }}</td>
-                                    <td class="p-4">
-                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-black tracking-wide uppercase border
-                                            {% if att.rodzaj_sluzby == 'msza' or not att.rodzaj_sluzby %} bg-brand/10 border-brand/30 text-brand
-                                            {% elif att.rodzaj_sluzby == 'nabozenstwo' %} bg-amber-500/10 border-amber-500/30 text-amber-400
-                                            {% else %} bg-indigo-500/10 border-indigo-500/30 text-indigo-400 {% endif %}">
-                                            {{ att.rodzaj_sluzby|default('Msza św.')|upper }}
-                                        </span>
-                                    </td>
-                                    <td class="p-4 font-mono text-xs">
-                                        {% if att.geo_lat and att.geo_lng %}
-                                            <span class="text-emerald-400 font-bold flex items-center gap-1" title="Szerokość: {{ att.geo_lat }}, Długość: {{ att.geo_lng }}">
-                                                🟢 Zgodna ({{ att.geo_lat|round(4) }}, {{ att.geo_lng|round(4) }})
-                                            </span>
-                                        {% else %}
-                                            <span class="text-slate-500 italic">Brak danych GPS</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="p-4 text-center pr-6">
-                                        <div class="flex items-center justify-center gap-1.5">
-                                            <button onclick="openAdminEditModal(`{{ att.id }}`, `{{ att.data_sluzby.strftime('%Y-%m-%d') if att.data_sluzby else '' }}`, `{{ att.godzina }}`, `{{ att.rodzaj_sluzby|default('msza') }}`, `{{ att.inna_nazwa|default('') }}`)" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition" title="Edytuj Służbę">
-                                                ✏️
-                                            </button>
-                                            <a href="/delete_attendance/{{ att.id }}" onclick="return confirm('Greg, czy na pewno usunąć rekord #{{ att.id }}?')" class="p-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-400 rounded-lg border border-red-900/30 transition" title="Usuń Służbę">
-                                                🗑️
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr id="no-results-row">
-                                    <td colspan="8" class="p-12 text-center text-slate-500 italic font-medium">
-                                        Brak jakichkolwiek zgłoszonych służb w bazie danych.
-                                    </td>
-                                </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
-                </div>
+            <div class="bg-white dark:bg-cardbg rounded-2xl p-4 shadow-xl overflow-x-auto w-full">
+                <table class="w-full text-left text-gray-800 dark:text-white border-collapse min-w-[500px]">
+                    <thead>
+                        <tr class="border-b-2 border-brand text-lg">
+                            <th class="p-4">Miejsce</th><th class="p-4">Użytkownik</th>
+                            <th class="p-4">Imię i Nazwisko</th><th class="p-4 text-center">Liczba Służb</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-podsumowanie">
+                    </tbody>
+                </table>
             </div>
         </section>
 
-        <section id="section-ranking" class="admin-section hidden space-y-8 animate-section">
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4 items-end">
-                <div class="bg-gradient-to-t from-slate-900/80 to-slate-800/40 border border-slate-700/60 p-6 rounded-3xl text-center shadow-xl order-2 sm:order-1 sm:h-48 flex flex-col justify-center relative overflow-hidden group">
-                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 text-4xl opacity-20 group-hover:scale-120 transition">🥈</div>
-                    <span class="text-4xl font-black text-slate-400 block mb-1">2</span>
-                    <span class="text-xs font-mono tracking-widest text-slate-400 font-bold uppercase">Wicemistrz</span>
-                    <div class="text-md font-extrabold text-white mt-2 truncate" id="podium-2-name">-</div>
-                </div>
-                <div class="bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-brand/20 border-2 border-brand/50 p-8 rounded-3xl text-center shadow-2xl order-1 sm:order-2 sm:h-56 flex flex-col justify-center relative overflow-hidden group shadow-brand/10">
-                    <div class="absolute -top-4 left-1/2 -translate-x-1/2 text-5xl opacity-40 neon-pulse">👑</div>
-                    <span class="text-5xl font-black text-brand block mb-1">1</span>
-                    <span class="text-xs font-mono tracking-widest text-brand font-bold uppercase">Lider Rankingu</span>
-                    <div class="text-lg font-black text-white mt-2 truncate" id="podium-1-name">-</div>
-                </div>
-                <div class="bg-gradient-to-t from-slate-900/80 to-slate-800/40 border border-slate-700/60 p-6 rounded-3xl text-center shadow-xl order-3 sm:order-3 sm:h-44 flex flex-col justify-center relative overflow-hidden group">
-                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 text-4xl opacity-20 group-hover:scale-120 transition">🥉</div>
-                    <span class="text-4xl font-black text-amber-700 block mb-1">3</span>
-                    <span class="text-xs font-mono tracking-widest text-amber-600 font-bold uppercase">II Wicemistrz</span>
-                    <div class="text-md font-extrabold text-white mt-2 truncate" id="podium-3-name">-</div>
-                </div>
+    </main>
+</div>
+
+<!-- MODALE POZOSTAJĄ BEZ ZMIAN STRUKTURALNYCH -->
+<div id="addAttendanceModal" class="modal fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4 transition-all duration-300">
+    <div class="bg-white dark:bg-cardbg rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-brand/20 transform scale-95 transition-all duration-300">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-black text-gray-900 dark:text-white m-0">Dodaj nową służbę</h2>
+            <button onclick="closeModal('addAttendanceModal')" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
+        </div>
+        <form action="/admin/add_attendance" method="POST" class="flex flex-col gap-4">
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Wybierz użytkownika:</label>
+                <select name="user_id" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+                    {% for u in users %}<option value="{{ u.id }}">{{ u.username }} ({{ u.imie }} {{ u.nazwisko }})</option>{% endfor %}
+                </select>
             </div>
-
-            <div class="bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
-                <div class="p-6 bg-slate-950/30 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <h3 class="text-lg font-bold text-white">Cyfrowe Zestawienie Punktowe</h3>
-                        <span class="text-xs text-slate-400">Automatyczna agregacja zliczeń na bazie tabeli zgłoszeń</span>
-                    </div>
-                    <span class="text-xs font-mono text-slate-500">Sortowanie: Od najwyższej aktywności</span>
-                </div>
-                <div class="overflow-x-auto w-full">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="border-b border-slate-800 bg-slate-950/60 text-[11px] font-black tracking-widest text-slate-400 uppercase font-mono">
-                                <th class="p-4 pl-6 w-24">Lokata</th>
-                                <th class="p-4">Pseudonim (Nick)</th>
-                                <th class="p-4">Pełne Imię i Nazwisko</th>
-                                <th class="p-4 text-center pr-6 w-44">Łączna Liczba Służb</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-podsumowanie" class="divide-y divide-slate-800/40 text-sm font-medium text-slate-300">
-                            </tbody>
-                    </table>
-                </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Data:</label>
+                <input type="date" name="data_sluzby" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
             </div>
-        </section>
-
-        <section id="section-terminarze" class="admin-section hidden space-y-6 animate-section">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="bg-slate-900/40 backdrop-blur-md border border-slate-800 p-6 rounded-3xl space-y-4 h-fit">
-                    <div class="flex flex-col">
-                        <h3 class="text-lg font-bold text-white">Kreator Harmonogramu</h3>
-                        <span class="text-xs text-slate-400">Dodaj nową stałą lub jednorazową służbę do planu ogólnego</span>
-                    </div>
-                    <form action="#" method="POST" class="space-y-4 pt-2" onsubmit="event.preventDefault(); alert('Moduł bazy Schedule gotowy strukturalnie do integracji z endpointem POST!');">
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-xs font-bold text-slate-400 font-mono uppercase tracking-wider">Dzień Tygodnia / Data:</label>
-                            <input type="text" placeholder="np. Niedziela (14.06) lub Poniedziałek" required class="w-full bg-slate-950 border border-slate-800 focus:border-brand rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand/20 transition">
-                        </div>
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-xs font-bold text-slate-400 font-mono uppercase tracking-wider">Godzina Rozpoczęcia:</label>
-                            <input type="time" required class="w-full bg-slate-950 border border-slate-800 focus:border-brand rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand/20 transition">
-                        </div>
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-xs font-bold text-slate-400 font-mono uppercase tracking-wider">Grupa / Przypisanie:</label>
-                            <input type="text" placeholder="np. Grupa A / Wszyscy" required class="w-full bg-slate-950 border border-slate-800 focus:border-brand rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand/20 transition">
-                        </div>
-                        <button type="submit" class="w-full py-3 bg-brand hover:bg-brand/90 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl transition shadow-lg active:scale-95">
-                            💾 Opublikuj w Grafiku
-                        </button>
-                    </form>
-                </div>
-
-                <div class="bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-3xl p-6 lg:col-span-2 space-y-4">
-                    <div class="flex flex-col">
-                        <h3 class="text-lg font-bold text-white">Podgląd Obecnego Planu Ołtarza</h3>
-                        <span class="text-xs text-slate-400">Stałe rozpiski nabożeństw widoczne w profilach chłopaków</span>
-                    </div>
-                    <div class="space-y-3 pt-2">
-                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-slate-800 flex justify-between items-center group hover:border-brand/30 transition">
-                            <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center font-bold text-brand font-mono text-xs border border-slate-800">07:00</div>
-                                <div class="flex flex-col">
-                                    <span class="text-sm font-bold text-slate-200">Niedzielna Msza Poranna</span>
-                                    <span class="text-xs text-slate-500 font-medium">Przypisani: Wszyscy chętni / Spóźnialscy</span>
-                                </div>
-                            </div>
-                            <button class="text-xs text-red-400 font-bold hover:underline bg-red-950/20 px-2.5 py-1.5 rounded-lg border border-red-900/30">Usuń</button>
-                        </div>
-                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-slate-800 flex justify-between items-center group hover:border-brand/30 transition">
-                            <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center font-bold text-brand font-mono text-xs border border-slate-800">18:00</div>
-                                <div class="flex flex-col">
-                                    <span class="text-sm font-bold text-slate-200">Służba Wieczorna (Tygodniowa)</span>
-                                    <span class="text-xs text-slate-500 font-medium">Przypisani: Klasy 7-8 oraz Szkoła Średnia</span>
-                                </div>
-                            </div>
-                            <button class="text-xs text-red-400 font-bold hover:underline bg-red-950/20 px-2.5 py-1.5 rounded-lg border border-red-900/30">Usuń</button>
-                        </div>
-                    </div>
-                </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Godzina:</label>
+                <input type="time" name="godzina" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
             </div>
-        </section>
-
-        <section id="section-ogloszenia" class="admin-section hidden space-y-6 animate-section">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="bg-slate-900/40 backdrop-blur-md border border-slate-800 p-6 rounded-3xl space-y-4 h-fit">
-                    <div class="flex flex-col">
-                        <h3 class="text-lg font-bold text-white">Centrum Nadawcze</h3>
-                        <span class="text-xs text-slate-400">Wyślij pilny komunikat na tablicę główną ministrantów</span>
-                    </div>
-                    
-                    <form action="#" method="POST" class="space-y-4 pt-2" onsubmit="event.preventDefault(); alert('Obsługa bazy Announcement przygotowana strukturalnie!');">
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-xs font-bold text-slate-400 font-mono uppercase tracking-wider">Treść Ogłoszenia:</label>
-                            <textarea rows="4" placeholder="Wpisz treść komunikatu od Szefa (np. Zbiórka w sobotę o 10:00...)" required class="w-full bg-slate-950 border border-slate-800 focus:border-brand rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand/20 transition resize-none"></textarea>
-                        </div>
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-xs font-bold text-slate-400 font-mono uppercase tracking-wider">Priorytet Informacyjny:</label>
-                            <select class="w-full bg-slate-950 border border-slate-800 focus:border-brand rounded-xl px-4 py-3 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand/20 transition">
-                                <option value="info">Normalny (Niebieski Info)</option>
-                                <option value="warning">Ważny (Żółte Ostrzeżenie)</option>
-                                <option value="danger">Krytyczny / Obowiązkowy (Czerwony Alert)</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="w-full py-3 bg-gradient-to-r from-brand to-purple-600 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl transition shadow-lg shadow-brand/20 active:scale-95">
-                            📢 Rozgłoś Wiadomość
-                        </button>
-                    </form>
-                </div>
-
-                <div class="bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-3xl p-6 lg:col-span-2 space-y-4">
-                    <div class="flex flex-col">
-                        <h3 class="text-lg font-bold text-white">Aktywne Ogłoszenia Radiowe</h3>
-                        <span class="text-xs text-slate-400">Komunikaty obecnie wyświetlane na kontach użytkowników</span>
-                    </div>
-                    
-                    <div class="space-y-4 pt-2">
-                        <div class="p-5 rounded-2xl bg-slate-950/60 border border-brand/30 flex justify-between items-start gap-4 shadow-sm relative overflow-hidden">
-                            <div class="absolute top-0 left-0 h-full w-1.5 bg-brand"></div>
-                            <div class="flex flex-col gap-1 pl-1">
-                                <span class="text-xs font-mono font-black text-brand uppercase tracking-wider">KOMUNIKAT STANDARDOWY</span>
-                                <p class="text-sm font-semibold text-slate-200 mt-1">Egzaminy na wyższe stopnie ministranckie odbędą się pod koniec czerwca. Przygotujcie regulaminy!</p>
-                                <span class="text-[10px] text-slate-500 font-mono mt-2">Dodano: 2026-06-11 14:20</span>
-                            </div>
-                            <button class="text-slate-500 hover:text-red-400 font-bold transition text-lg leading-none">&times;</button>
-                        </div>
-
-                        <div class="p-5 rounded-2xl bg-slate-950/60 border border-amber-500/30 flex justify-between items-start gap-4 shadow-sm relative overflow-hidden">
-                            <div class="absolute top-0 left-0 h-full w-1.5 bg-amber-500"></div>
-                            <div class="flex flex-col gap-1 pl-1">
-                                <span class="text-xs font-mono font-black text-amber-400 uppercase tracking-wider">PILNE OSTRZEŻENIE</span>
-                                <p class="text-sm font-semibold text-slate-200 mt-1">Proszę o dokładne wpisywanie godzin obecności. Przypominam, że oszustwa GPS będą skutkowały blokadą konta.</p>
-                                <span class="text-[10px] text-slate-500 font-mono mt-2">Dodano: 2026-06-13 09:15</span>
-                            </div>
-                            <button class="text-slate-500 hover:text-red-400 font-bold transition text-lg leading-none">&times;</button>
-                        </div>
-                    </div>
-                </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Rodzaj Mszy:</label>
+                <select name="typ_mszy" id="add_typ_mszy" onchange="toggleInnaNazwa('add_typ_mszy', 'add_inna_container')" class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+                    <option value="niedzielna">Niedzielna</option>
+                    <option value="tygodniowa">Tygodniowa</option>
+                    <option value="inna">Inna (np. Ślub, Pogrzeb, Nabożeństwo)</option>
+                </select>
             </div>
-        </section>
-
-        <section id="section-uzytkownicy" class="admin-section hidden space-y-6 animate-section">
-            <div class="bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
-                <div class="p-6 bg-slate-950/30 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <h3 class="text-lg font-bold text-white">Rejestr Kont i Stopni Liturgicznych</h3>
-                        <span class="text-xs text-slate-400">Modyfikuj uprawnienia, resetuj zabezpieczenia 2FA i nadawaj rangi chłopakom</span>
-                    </div>
-                    <button class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition">
-                        ➕ Utwórz Konto Manually
-                    </button>
-                </div>
-                
-                <div class="overflow-x-auto w-full">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="border-b border-slate-800 bg-slate-950/60 text-[11px] font-black tracking-widest text-slate-400 uppercase font-mono">
-                                <th class="p-4 pl-6">ID</th>
-                                <th class="p-4">Nick</th>
-                                <th class="p-4">Imię i Nazwisko</th>
-                                <th class="p-4">Stopień (Ranga)</th>
-                                <th class="p-4 font-mono">Status 2FA</th>
-                                <th class="p-4 text-center pr-6">Modyfikacja Uprawnień</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-800/40 text-sm font-medium text-slate-300">
-                            <tr class="hover:bg-slate-800/10 transition">
-                                <td class="p-4 pl-6 font-mono text-slate-500 font-bold">#1</td>
-                                <td class="p-4 font-bold text-brand">@koval_09</td>
-                                <td class="p-4 font-semibold text-slate-200">Jan Kowalski</td>
-                                <td class="p-4">
-                                    <span class="px-2.5 py-1 bg-purple-500/10 border border-purple-500/30 text-purple-400 font-mono text-[10px] font-black uppercase tracking-wide rounded-full">
-                                        Ceremoniarz
-                                    </span>
-                                </td>
-                                <td class="p-4 text-emerald-400 font-bold text-xs font-mono">🟢 AKTYWNY</td>
-                                <td class="p-4 text-center pr-6">
-                                    <button class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold rounded-lg transition">
-                                        Zmień Rangę / Reset 2FA
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr class="hover:bg-slate-800/10 transition">
-                                <td class="p-4 pl-6 font-mono text-slate-500 font-bold">#2</td>
-                                <td class="p-4 font-bold text-brand">@mateo_altar</td>
-                                <td class="p-4 font-semibold text-slate-200">Mateusz Nowak</td>
-                                <td class="p-4">
-                                    <span class="px-2.5 py-1 bg-blue-500/10 border border-blue-500/30 text-blue-400 font-mono text-[10px] font-black uppercase tracking-wide rounded-full">
-                                        Ministrant Światła
-                                    </span>
-                                </td>
-                                <td class="p-4 text-amber-500 font-bold text-xs font-mono">🟡 WYMAGA RESETU</td>
-                                <td class="p-4 text-center pr-6">
-                                    <button class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold rounded-lg transition">
-                                        Zmień Rangę / Reset 2FA
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+            <div id="add_inna_container" class="flex flex-col gap-1.5 hidden">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Własna nazwa służby:</label>
+                <input type="text" name="nazwa_inna" placeholder="np. Ślub, Droga Krzyżowa" class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
             </div>
-        </section>
+            <button type="submit" class="bg-brand text-white p-4 rounded-xl font-bold mt-2 shadow-lg hover:bg-brand/90 transition w-full">Zapisz służbę</button>
+        </form>
+    </div>
+</div>
 
-        <section id="section-ustawienia" class="admin-section hidden space-y-6 animate-section">
-            <div class="bg-slate-900/40 backdrop-blur-md border border-slate-800 p-6 rounded-3xl space-y-6">
-                <div class="flex flex-col border-b border-slate-800 pb-4">
-                    <h3 class="text-lg font-bold text-white">Parametry Bezpieczeństwa Systemu</h3>
-                    <span class="text-xs text-slate-400">Konfiguracja zmiennych środowiskowych i strażników walidacji</span>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="flex flex-col gap-2">
-                        <span class="text-sm font-bold text-slate-200">Maksymalny Dystans dla Geolokalizacji (metry)</span>
-                        <span class="text-xs text-slate-400 mb-1">Dopuszczalny margines błędu GPS smartfona przy ołtarzu.</span>
-                        <input type="number" value="50" class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand transition">
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <span class="text-sm font-bold text-slate-200">Czas Ważności Sesji (minuty)</span>
-                        <span class="text-xs text-slate-400 mb-1">Automatyczne wylogowanie z konta przy bezczynności.</span>
-                        <input type="number" value="15" class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand transition">
-                    </div>
-                </div>
-
-                <div class="pt-4 flex flex-wrap gap-3 border-t border-slate-800">
-                    <button onclick="alert('Zapisano pomyślnie ustawienia globalne!');" class="px-5 py-2.5 bg-brand hover:bg-brand/90 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl transition">
-                        Zapisz Konfigurację Rdzenia
-                    </button>
-                    <button class="px-5 py-2.5 bg-red-950/60 hover:bg-red-900/60 text-red-400 border border-red-900/30 font-bold text-xs rounded-xl transition">
-                        🗄️ Wyczyszczenie Pamięci Podręcznej
-                    </button>
-                </div>
+<div id="editAttendanceModal" class="modal fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-cardbg rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-brand/20">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-black text-gray-900 dark:text-white m-0">Popraw wpis służby</h2>
+            <button onclick="closeModal('editAttendanceModal')" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
+        </div>
+        <form action="/admin/edit_attendance" method="POST" class="flex flex-col gap-4">
+            <input type="hidden" name="att_id" id="edit_att_id">
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Data:</label>
+                <input type="date" name="data_sluzby" id="edit_data_sluzby" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
             </div>
-        </section>
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Godzina:</label>
+                <input type="time" name="godzina" id="edit_godzina" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Rodzaj Mszy:</label>
+                <select name="typ_mszy" id="edit_typ_mszy" onchange="toggleInnaNazwa('edit_typ_mszy', 'edit_inna_container')" class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+                    <option value="niedzielna">Niedzielna</option>
+                    <option value="tygodniowa">Tygodniowa</option>
+                    <option value="inna">Inna (Własna nazwa)</option>
+                </select>
+            </div>
+            <div id="edit_inna_container" class="flex flex-col gap-1.5 hidden">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Własna nazwa służby:</label>
+                <input type="text" name="nazwa_inna" id="edit_nazwa_inna" placeholder="np. Ślub, Pogrzeb" class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+            </div>
+            <button type="submit" class="bg-brand text-white p-4 rounded-xl font-bold mt-2 shadow-lg hover:bg-brand/90 transition w-full">Zatwierdź zmiany</button>
+        </form>
+    </div>
+</div>
+
+<div id="editUserModal" class="modal fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-cardbg rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-brand/20">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-black text-gray-900 dark:text-white m-0">Popraw dane / Rangę</h2>
+            <button onclick="closeModal('editUserModal')" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
+        </div>
+        <form action="/admin/edit_user" method="POST" class="flex flex-col gap-4">
+            <input type="hidden" name="user_id" id="edit_user_id">
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Imię:</label>
+                <input type="text" name="imie" id="edit_user_imie" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Nazwisko:</label>
+                <input type="text" name="nazwisko" id="edit_user_nazwisko" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Login (Username):</label>
+                <input type="text" name="username" id="edit_user_username" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Hasło logowania:</label>
+                <input type="text" name="password" id="edit_user_password" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Ranga systemowa:</label>
+                <select name="role" id="edit_user_role" class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+                    <option value="user">User (Ministrant)</option>
+                    <option value="ksiądz">Ksiądz</option>
+                    <option value="admin">Admin (Szef)</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-3 p-1">
+                <input type="checkbox" name="uproszczony" id="edit_user_uproszczony" value="y" class="w-5 h-5 accent-brand cursor-pointer">
+                <label for="edit_user_uproszczony" class="font-bold text-gray-700 dark:text-gray-300 text-sm cursor-pointer select-none">Konto uproszczone (bez 2FA / GPS)</label>
+            </div>
+            <button type="submit" class="bg-brand text-white p-4 rounded-xl font-bold mt-2 shadow-lg hover:bg-brand/90 transition w-full">Zapisz poprawione dane</button>
+        </form>
+    </div>
+</div>
+
+<div id="editOgModal" class="modal fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-cardbg rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-brand/20">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-black text-gray-900 dark:text-white m-0">Popraw treść ogłoszenia</h2>
+            <button onclick="closeModal('editOgModal')" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
+        </div>
+        <form action="/admin/edit_announcement" method="POST" class="flex flex-col gap-4">
+            <input type="hidden" name="og_id" id="edit_og_id">
+            <div class="flex flex-col gap-1.5">
+                <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Treść ogłoszenia:</label>
+                <textarea name="tresc" id="edit_og_tresc" required rows="4" class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full resize-none focus:ring-2 focus:ring-brand"></textarea>
+            </div>
+            <button type="submit" class="bg-brand text-white p-4 rounded-xl font-bold mt-2 shadow-lg hover:bg-brand/90 transition w-full">Zapisz zmiany</button>
+        </form>
+    </div>
+</div>
 
     </main>
 </div>
