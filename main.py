@@ -804,7 +804,7 @@ def dashboard_page():
     if 'user_id' not in session:
         return redirect(url_for('login_page'))
         
-    announcements = Announcement.query.order_by(Announcement.data_wystawienia.desc()).all()
+    announcements = Announcement.query.order_by(Announcement.data_dodania.desc()).all()
     dzisiaj = date.today()
     min_date = max(dzisiaj - timedelta(days=1), date(2026, 4, 12))
     user_attendances = Attendance.query.filter_by(user_id=session['user_id']).order_by(Attendance.data_sluzby.desc()).all()
