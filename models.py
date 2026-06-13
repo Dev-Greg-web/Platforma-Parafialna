@@ -47,3 +47,4 @@ class Schedule(db.Model):
     data = db.Column(db.Date, nullable=False)
     godzina = db.Column(db.String(5), nullable=False)
     opis = db.Column(db.String(205), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
