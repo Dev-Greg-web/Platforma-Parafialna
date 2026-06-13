@@ -20,6 +20,15 @@
             <button onclick="showSection('uzytkownicy')" id="btn-uzytkownicy" class="nav-btn text-gray-300 hover:bg-brand/50 p-4 text-left rounded-xl font-bold transition">Zarządzanie Użytkownikami</button>
             <button onclick="showSection('ogloszenia')" id="btn-ogloszenia" class="nav-btn text-gray-300 hover:bg-brand/50 p-4 text-left rounded-xl font-bold transition">Tablica Ogłoszeń</button>
             <button onclick="showSection('plan')" id="btn-plan" class="nav-btn text-gray-300 hover:bg-brand/50 p-4 text-left rounded-xl font-bold transition">Plan Służb (Dyżury)</button>
+            <button onclick="showSection('weryfikacja')" id="btn-weryfikacja" class="nav-btn text-gray-300 hover:bg-brand/50 p-4 text-left rounded-xl font-bold transition flex items-center justify-between">
+                <span>Weryfikacja Kont</span>
+                {% if pending_users|length > 0 %}
+                    <span class="flex h-3 w-3 relative">
+                        <span class="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-rose-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+                    </span>
+                {% endif %}
+            </button>
             <button onclick="showSection('podsumowanie')" id="btn-podsumowanie" class="nav-btn text-gray-300 hover:bg-brand/50 p-4 text-left rounded-xl font-bold transition">Podsumowanie</button>
             
             <div class="flex flex-col gap-2 mt-8">
@@ -273,6 +282,51 @@
                 </div>
                 {% endfor %}
             </div>
+        </section>
+
+        <section id="section-weryfikacja" class="admin-section hidden">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Oczekujące Rejestracje</h1>
+            
+            {% if pending_users %}
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 w-full">
+                {% for pu in pending_users %}
+                <div class="bg-white dark:bg-cardbg rounded-3xl p-6 shadow-xl border border-gray-100 dark:border-brand/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 w-full min-w-0">
+                    <div class="flex items-center gap-4 min-w-0">
+                        <div class="w-14 h-14 rounded-2xl bg-brand/10 flex items-center justify-center text-2xl shrink-0">👤</div>
+                        <div class="min-w-0 truncate">
+                            <h3 class="text-xl font-black text-gray-800 dark:text-white truncate">{{ pu.imie }} {{ pu.nazwisko }}</h3>
+                            <div class="flex flex-col gap-0.5 mt-1">
+                                <span class="text-sm font-mono text-brand font-bold truncate">@{{ pu.username }}</span>
+                                <span class="text-xs text-gray-400 dark:text-gray-500">Zarejestrowano: {{ pu.created_at.strftime('%d.%m.%Y %H:%M') if pu.created_at else 'Brak daty' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col gap-1.5 text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-darkbg p-3 rounded-xl border border-gray-100 dark:border-white/5 shrink-0">
+                        <div class="flex items-center gap-2">🌐 <strong class="text-gray-700 dark:text-gray-300">IP:</strong> {{ pu.registration_ip or 'Nieznane' }}</div>
+                        <div class="flex items-center gap-2">📍 <strong class="text-gray-700 dark:text-gray-300">GPS:</strong> 
+                            {% if pu.latitude %}{{ pu.latitude[:7] }}, {{ pu.longitude[:7] }}{% else %}Brak{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 w-full sm:w-auto shrink-0">
+                        <form action="{{ url_for('verify_action', user_id=pu.id, akcja='zatwierdz') }}" method="POST" class="flex-1 sm:flex-none">
+                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-5 rounded-xl transition shadow-lg shadow-emerald-900/20 whitespace-nowrap">Zatwierdź</button>
+                        </form>
+                        <form action="{{ url_for('verify_action', user_id=pu.id, akcja='odrzuc') }}" method="POST" class="flex-1 sm:flex-none" onsubmit="return confirm('Czy na pewno chcesz odrzucić rejestrację użytkownika {{ pu.username }}?')">
+                            <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 px-5 rounded-xl transition whitespace-nowrap">Odrzuć</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="bg-white dark:bg-cardbg rounded-3xl p-16 shadow-xl text-center flex flex-col items-center gap-4 border border-gray-100 dark:border-white/5">
+                <div class="text-6xl animate-bounce">✨</div>
+                <h2 class="text-2xl font-bold text-gray-400 dark:text-gray-500">Wszystkie konta są zweryfikowane</h2>
+                <p class="text-gray-500 dark:text-gray-400">Obecnie nie ma nowych wniosków o dostęp do systemu.</p>
+            </div>
+            {% endif %}
         </section>
 
         <section id="section-podsumowanie" class="admin-section hidden">

@@ -545,6 +545,7 @@ def delete_schedule(id):
         return redirect(url_for('ksDash'))
     return redirect(url_for('admin_page'))
 
+# Znajdź i podmień funkcję admin_page:
 @app.route('/admin')
 def admin_page():
     if session.get('user_role') != 'admin':
@@ -553,59 +554,63 @@ def admin_page():
     all_attendance = db.session.query(Attendance, Users).join(Users).order_by(
         Attendance.data_sluzby.desc(), Attendance.godzina.desc()
     ).all()
-    all_users = Users.query.all()
+    
+    # Rozdzielamy użytkowników na zatwierdzonych i oczekujących
+    all_users = Users.query.filter_by(is_approved=True).all()
+    pending_users = Users.query.filter_by(is_approved=False).order_by(Users.created_at.desc()).all()
+    
     all_announcements = Announcement.query.order_by(Announcement.data_wystawienia.desc()).all()
     schedules = db.session.query(Schedule, Users).join(Users, Schedule.user_id == Users.id).all()
     
+    # ... reszta logiki statystyk (zostaje bez zmian) ...
     plan_tygodnia = {'Poniedziałek': {}, 'Wtorek': {}, 'Środa': {}, 'Czwartek': {}, 'Piątek': {}, 'Sobota': {}, 'Niedziela': {}}
     plan_liczniki = {}
-
     for sch, u in schedules:
         dzien = sch.dzien_tygodnia
         godzina = sch.godzina
-        if godzina not in plan_tygodnia[dzien]:
-            plan_tygodnia[dzien][godzina] = []
+        if godzina not in plan_tygodnia[dzien]: plan_tygodnia[dzien][godzina] = []
         plan_tygodnia[dzien][godzina].append({'id': sch.id, 'user': u})
-        
     for dzien in plan_tygodnia:
         plan_tygodnia[dzien] = dict(sorted(plan_tygodnia[dzien].items()))
-        count = sum(len(servers) for servers in plan_tygodnia[dzien].values())
-        plan_liczniki[dzien] = count
-    
-    user_atts_map = {u.id: [] for u in all_users}
-    for att, usr in all_attendance:
-        if usr.id in user_atts_map:
-            user_atts_map[usr.id].append(att)
+        plan_liczniki[dzien] = sum(len(servers) for servers in plan_tygodnia[dzien].values())
 
     user_stats = []
     for u in all_users:
-        his_atts = user_atts_map.get(u.id, [])
+        his_atts = Attendance.query.filter_by(user_id=u.id).all()
         total = len(his_atts)
         morning = sum(1 for a in his_atts if a.typ_mszy == 'poranna')
         evening = sum(1 for a in his_atts if a.typ_mszy == 'wieczorna')
-        other = total - (morning + evening)
-        
         user_stats.append({
-            'username': u.username,
-            'imie': u.imie,
-            'nazwisko': u.nazwisko,
-            'full_name': f"{u.imie} {u.nazwisko}",
-            'uproszczony': u.uproszczony,
-            'total': total, 
-            'morning': morning, 
-            'evening': evening, 
-            'other': other
+            'username': u.username, 'imie': u.imie, 'nazwisko': u.nazwisko,
+            'full_name': f"{u.imie} {u.nazwisko}", 'uproszczony': u.uproszczony,
+            'total': total, 'morning': morning, 'evening': evening, 'other': total - (morning + evening)
         })
     
     return render_template(
         "admin.html", 
         attendances=all_attendance, 
         users=all_users, 
+        pending_users=pending_users, # Przesyłamy oczekujących
         announcements=all_announcements, 
         stats=user_stats, 
         plan=plan_tygodnia, 
         liczniki=plan_liczniki
     )
+
+# Poprawiona trasa weryfikacji (z przekierowaniem do panelu):
+@app.route('/admin/verify_action/<int:user_id>/<string:akcja>', methods=['POST'])
+def verify_action(user_id, akcja):
+    if session.get('user_role') != 'admin':
+        return "Forbidden", 403
+    u = Users.query.get_or_404(user_id)
+    if akcja == 'zatwierdz':
+        u.is_approved = True
+        flash(f"Użytkownik {u.username} zatwierdzony!", "success")
+    else:
+        db.session.delete(u)
+        flash(f"Odrzucono rejestrację {u.username}.", "danger")
+    db.session.commit()
+    return redirect(url_for('admin_page'))
 
 @app.route('/admin/delete_bulk_users', methods=['POST'])
 def delete_bulk_users():
