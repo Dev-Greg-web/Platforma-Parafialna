@@ -827,7 +827,7 @@ def dashboard_page():
         flash('Służba została zgłoszona pomyślnie!', 'success')
         return redirect(url_for('dashboard_page'))
         
-    announcements = Announcement.query.order_by(Announcement.date_posted.desc()).all()
+    announcements = Announcement.query.order_by(Announcement.id.desc()).all()
     attendances = Attendance.query.filter_by(user_id=user_id).order_by(Attendance.data_sluzby.desc()).all()
     
     if user_obj.uproszczony:
