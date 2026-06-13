@@ -15,7 +15,8 @@ import requests
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.getenv("TAJNE_HASLO")
+import secrets
+app.secret_key = os.getenv("TAJNE_HASLO") or secrets.token_hex(32)
 db_url = os.getenv("DATABASE_URL", "sqlite:///ministranci.db")
 
 if db_url.startswith("postgres://"):
@@ -92,8 +93,8 @@ def auth_process():
     # Próbujemy pobrać hasło z obu możliwych nazw pól (haslo lub password)
     password = request.form.get("haslo") or request.form.get("password")
     
-    env_admin_name = os.getenv("admin_name", "AdminGreg")
-    env_admin_pass = os.getenv("admin_password", "GregG2204@..")
+    env_admin_name = os.getenv("ADMIN_NAME") or os.getenv("admin_name") or "AdminGreg"
+    env_admin_pass = os.getenv("ADMIN_PASSWORD") or os.getenv("admin_password") or "Lego2012"
 
     # Jeśli hasło jest puste (np. błąd formularza), zapobiegamy crashowi serwera
     if not password:
@@ -180,7 +181,7 @@ def auth_process():
                     lon = browser_lng.strip()
                     miasto_fallback = "Nieznane"
                     try:
-                        TOKEN_IPINFO = "093ef441db1164"
+                        TOKEN_IPINFO = os.getenv("IPINFO_TOKEN", "093ef441db1164")
                         url_ipinfo = f"https://ipinfo.io/{user_ip}/json?token={TOKEN_IPINFO}"
                         res = requests.get(url_ipinfo, timeout=2)
                         if res.status_code == 200:
@@ -191,7 +192,7 @@ def auth_process():
                     maps_link = f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
                 elif user_ip and user_ip != "127.0.0.1":
                     try:
-                        TOKEN_IPINFO = "093ef441db1164"
+                        TOKEN_IPINFO = os.getenv("IPINFO_TOKEN", "093ef441db1164")
                         url_ipinfo = f"https://ipinfo.io/{user_ip}/json?token={TOKEN_IPINFO}"
                         res = requests.get(url_ipinfo, timeout=3)
                         if res.status_code == 200:
@@ -501,7 +502,7 @@ def edit_user(id):
     return redirect(url_for('admin_page'))
 
 @app.route('/admin/delete/<int:id>')
-def delete_entry(id):
+def delete_attendance(id):
     if session.get('user_role') != 'admin':
         return redirect(url_for('login_page'))
     entry = Attendance.query.get_or_404(id)
@@ -517,6 +518,7 @@ def delete_entry(id):
     return redirect(url_for('admin_page'))
 
 @app.route('/admin/edit/<int:id>', methods=['POST'])
+@app.route('/edit_attendance/<int:id>', methods=['POST'])
 def edit_entry(id):
     if session.get('user_role') != 'admin':
         return redirect(url_for('login_page'))
@@ -569,7 +571,8 @@ def add_attendance_admin():
 def add_announcement():
     if session.get('user_role') not in ['admin', 'ksiądz']:
         return redirect(url_for('login_page'))
-    nowe = Announcement(tresc=request.form.get('tresc'))
+    tytul_val = request.form.get('tytul') or "Ogłoszenie"
+    nowe = Announcement(tytul=tytul_val, tresc=request.form.get('tresc'))
     db.session.add(nowe)
     db.session.commit()
     # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
@@ -583,6 +586,7 @@ def edit_announcement(id):
     if session.get('user_role') != 'admin':
         return redirect(url_for('login_page'))
     ogloszenie = Announcement.query.get_or_404(id)
+    ogloszenie.tytul = request.form.get('tytul') or ogloszenie.tytul
     ogloszenie.tresc = request.form.get('tresc')
     db.session.commit()
     # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
@@ -747,7 +751,7 @@ def ksDash():
         Attendance.data_sluzby.desc(), Attendance.godzina.desc()
     ).all()
     all_users = Users.query.all()
-    all_announcements = Announcement.query.order_by(Announcement.data_wystawienia.desc()).all()
+    all_announcements = Announcement.query.order_by(Announcement.data_dodania.desc()).all()
     schedules = db.session.query(Schedule, Users).join(Users, Schedule.user_id == Users.id).all()
     
     plan_tygodnia = {'Poniedziałek': {}, 'Wtorek': {}, 'Środa': {}, 'Czwartek': {}, 'Piątek': {}, 'Sobota': {}, 'Niedziela': {}}
@@ -813,18 +817,39 @@ def dashboard_page():
         typ_mszy = request.form.get('typ')
         nazwa_inna = request.form.get('inna') if typ_mszy == 'inna' else None
         
-        data_sluzby = datetime.strptime(data_sluzby_str, '%Y-%m-%d').date()
-        
-        new_attendance = Attendance(
-            user_id=user_id,
-            data_sluzby=data_sluzby,
-            typ_mszy=typ_mszy,
-            nazwa_inna=nazwa_inna,
-            godzina=godzina
-        )
-        db.session.add(new_attendance)
-        db.session.commit()
-        flash('Służba została zgłoszona pomyślnie!', 'success')
+        try:
+            data_sluzby = datetime.strptime(data_sluzby_str, '%Y-%m-%d').date()
+            dzisiaj = date.today()
+            wczoraj = dzisiaj - timedelta(days=1)
+            hard_limit = date(2026, 4, 12)
+
+            if data_sluzby > dzisiaj or data_sluzby < max(wczoraj, hard_limit):
+                flash("Wybrana data służby jest nieprawidłowa.", "danger")
+                return redirect(url_for('dashboard_page'))
+
+            istniejaca = Attendance.query.filter_by(
+                user_id=user_id, 
+                data_sluzby=data_sluzby, 
+                godzina=godzina
+            ).first()
+
+            if istniejaca:
+                flash("Masz już zgłoszoną służbę o tej godzinie.", "danger")
+                return redirect(url_for('dashboard_page'))
+
+            new_attendance = Attendance(
+                user_id=user_id,
+                data_sluzby=data_sluzby,
+                typ_mszy=typ_mszy,
+                nazwa_inna=nazwa_inna,
+                godzina=godzina
+            )
+            db.session.add(new_attendance)
+            db.session.commit()
+            flash('Obecność na służbie zapisana pomyślnie.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash("Coś poszło nie tak przy zapisywaniu służby.", "danger")
         return redirect(url_for('dashboard_page'))
         
     announcements = Announcement.query.order_by(Announcement.id.desc()).all()
@@ -969,6 +994,41 @@ def export_schedule():
     nazwa_pliku = f"Plan_Sluzb_{date.today().strftime('%Y-%m-%d')}.xlsx"
     return send_file(output, download_name=nazwa_pliku, as_attachment=True)
 
+@app.route('/admin/approve/<int:id>', methods=['GET', 'POST'])
+def approve_user(id):
+    if session.get('user_role') != 'admin':
+        return redirect(url_for('login_page'))
+    user = Users.query.get_or_404(id)
+    user.is_approved = True
+    db.session.commit()
+    flash(f"Konto użytkownika {user.imie} {user.nazwisko} (@{user.username}) zostało pomyślnie zatwierdzone!", "success")
+    return redirect(url_for('admin_page'))
+
+
+@app.route('/admin/reject/<int:id>', methods=['GET', 'POST'])
+def reject_user(id):
+    if session.get('user_role') != 'admin':
+        return redirect(url_for('login_page'))
+    user = Users.query.get_or_404(id)
+    username_tmp = user.username
+    Attendance.query.filter_by(user_id=id).delete()
+    Schedule.query.filter_by(user_id=id).delete()
+    db.session.delete(user)
+    db.session.commit()
+    flash(f"Konto użytkownika @{username_tmp} zostało odrzucone i usunięte z systemu.", "warning")
+    return redirect(url_for('admin_page'))
+
+
+@app.route('/admin/toggle_uproszczony/<int:id>', methods=['GET', 'POST'])
+def toggle_uproszczony(id):
+    if session.get('user_role') != 'admin':
+        return redirect(url_for('login_page'))
+    u = Users.query.get_or_404(id)
+    u.uproszczony = not u.uproszczony
+    db.session.commit()
+    flash(f"Zmieniono tryb wyświetlania dla użytkownika {u.username}.", "success")
+    return redirect(url_for('admin_page'))
+
 @app.route('/download/regulamin.pdf')
 def pobierz_regulamin():
     katalog = os.path.join(app.root_path, 'static', 'docs')
@@ -983,51 +1043,31 @@ def pobierz_regulamin():
 def pomoc_page():
     return render_template('pomoc.html')
 
-@app.route('/admin/approve/<int:user_id>', methods=['POST'])
-def approve_user(user_id):
-    # Zabezpieczenie przed nieautoryzowanym dostępem
-    if session.get('user_role') != 'admin':
-        return redirect(url_for('login_page'))
-    
-    user = Users.query.get_or_404(user_id)
-    user.is_approved = True  # Zmiana flagi na zatwierdzoną
-    db.session.commit()
-    
-    flash(f"Konto użytkownika {user.imie} {user.nazwisko} (@{user.username}) zostało pomyślnie zatwierdzone!", "success")
-    return redirect(url_for('admin_page'))
-
-
-@app.route('/admin/reject/<int:user_id>', methods=['POST'])
-def reject_user(user_id):
-    # Zabezpieczenie przed nieautoryzowanym dostępem
-    if session.get('user_role') != 'admin':
-        return redirect(url_for('login_page'))
-    
-    user = Users.query.get_or_404(user_id)
-    username_tmp = user.username
-    
-    db.session.delete(user)  # Całkowite usunięcie niezatwierdzonego konta z bazy
-    db.session.commit()
-    
-    flash(f"Rejestracja użytkownika @{username_tmp} została odrzucona, a konto usunięte.", "warning")
-    return redirect(url_for('admin_page'))
-
 with app.app_context(): 
     db.create_all()
+    # Inicjalizacja admina na poziomie modułu dla Gunicorn/Render
+    env_admin_name = os.getenv("ADMIN_NAME") or os.getenv("admin_name") or "AdminGreg"
+    env_admin_pass = os.getenv("ADMIN_PASSWORD") or os.getenv("admin_password") or "Lego2012"
+    
+    admin_user = Users.query.filter_by(username=env_admin_name).first()
+    if not admin_user:
+        hashed_admin_pass = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
+        admin_user = Users(
+            imie="Główny", 
+            nazwisko="Szef", 
+            username=env_admin_name, 
+            password=hashed_admin_pass, 
+            role='admin', 
+            uproszczony=False,
+            is_approved=True
+        )
+        db.session.add(admin_user)
+        db.session.commit()
+    elif not admin_user.password.startswith('pbkdf2:'):
+        admin_user.password = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
+        admin_user.is_approved = True
+        db.session.commit()
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        
-        env_admin_name = os.getenv("admin_name")
-        env_admin_pass = os.getenv("admin_password")
-        
-        if env_admin_name:
-            admin_user = Users.query.filter_by(username=env_admin_name).first()
-            if admin_user and not admin_user.password.startswith('pbkdf2:'):
-                admin_user.password = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
-                admin_user.is_approved = True  # Upewniamy się, że admin jest aktywny
-                db.session.commit()
-                print(f"Sukces: Hasło administratora {env_admin_name} zostało bezpiecznie zahaszowane w bazie!")
-
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)

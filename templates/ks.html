@@ -128,15 +128,25 @@
             </div>
             
             <div class="bg-white dark:bg-cardbg rounded-3xl p-6 shadow-xl border border-gray-100 dark:border-white/5 mb-8">
-                <form action="/admin/add_announcement" method="POST" class="flex flex-col md:flex-row gap-4 w-full items-stretch">
-                    <div class="relative flex-grow">
-                        <input type="text" name="tresc" placeholder="Wpisz nowe ogłoszenie dla ministrantów..." required 
-                               class="w-full p-4 pr-12 rounded-2xl border-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all placeholder-gray-400 dark:placeholder-gray-500 font-medium">
+                <form action="{{ url_for('add_announcement') }}" method="POST" class="flex flex-col gap-4 w-full">
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <div class="flex-1">
+                            <label class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Tytuł ogłoszenia:</label>
+                            <input type="text" name="tytul" placeholder="np. Zbiórka powakacyjna" required 
+                                   class="w-full p-4 rounded-2xl border-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all placeholder-gray-400 dark:placeholder-gray-500 font-medium">
+                        </div>
+                        <div class="flex-[2]">
+                            <label class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Treść ogłoszenia:</label>
+                            <input type="text" name="tresc" placeholder="Wpisz nowe ogłoszenie dla ministrantów..." required 
+                                   class="w-full p-4 rounded-2xl border-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all placeholder-gray-400 dark:placeholder-gray-500 font-medium">
+                        </div>
                     </div>
-                    <button type="submit" class="bg-brand hover:bg-brand/90 text-white px-8 py-4 rounded-2xl font-black shadow-lg shadow-brand/20 hover:-translate-y-0.5 active:translate-y-0 transition-all shrink-0 flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-                        <span>Opublikuj</span>
-                    </button>
+                    <div class="flex justify-end">
+                        <button type="submit" class="bg-brand hover:bg-brand/90 text-white px-8 py-4 rounded-2xl font-black shadow-lg shadow-brand/20 hover:-translate-y-0.5 active:translate-y-0 transition-all shrink-0 flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                            <span>Opublikuj</span>
+                        </button>
+                    </div>
                 </form>
             </div>
 
@@ -152,10 +162,13 @@
                         <tbody>
                             {% for og in announcements %}
                             <tr class="border-b border-gray-100 dark:border-white/5 hover:bg-gray-50/50 dark:hover:bg-white/5 transition-all">
-                                <td class="p-5 text-gray-900 dark:text-white font-medium leading-relaxed">{{ og.tresc }}</td>
+                                <td class="p-5 text-gray-900 dark:text-white font-medium leading-relaxed">
+                                    <strong class="block text-sm text-brand mb-1">{{ og.tytul }}</strong>
+                                    {{ og.tresc }}
+                                </td>
                                 <td class="p-5 font-semibold text-xs text-gray-400 dark:text-gray-400 flex items-center gap-1.5 mt-2 md:mt-0">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                    {{ og.data_wystawienia.strftime('%d.%m %H:%M') }}
+                                    {{ og.data_dodania.strftime('%d.%m %H:%M') }}
                                 </td>
                             </tr>
                             {% endfor %}
