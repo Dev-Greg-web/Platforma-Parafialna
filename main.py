@@ -799,68 +799,40 @@ def ksDash():
         liczniki=plan_liczniki
     )
 
-@app.route('/dashboard_view')
+@app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard_page():
     if 'user_id' not in session:
         return redirect(url_for('login_page'))
-        
-    announcements = Announcement.query.order_by(Announcement.data_dodania.desc()).all()
-    dzisiaj = date.today()
-    min_date = max(dzisiaj - timedelta(days=1), date(2026, 4, 12))
-    user_attendances = Attendance.query.filter_by(user_id=session['user_id']).order_by(Attendance.data_sluzby.desc()).all()
-
-    schedules = db.session.query(Schedule, Users).join(Users, Schedule.user_id == Users.id).all()
     
-    plan_tygodnia = {'Poniedziałek': {}, 'Wtorek': {}, 'Środa': {}, 'Czwartek': {}, 'Piątek': {}, 'Sobota': {}, 'Niedziela': {}}
-    plan_liczniki = {}
-    moje_dyzury = []
+    user_id = session['user_id']
+    user_obj = Users.query.get(user_id)
     
-    for sch, u in schedules:
-        dzien = sch.dzien_tygodnia
-        godzina = sch.godzina
+    if request.method == 'POST':
+        data_sluzby_str = request.form.get('data_sluzby')
+        godzina = request.form.get('godzina')
+        typ_mszy = request.form.get('typ')
+        nazwa_inna = request.form.get('inna') if typ_mszy == 'inna' else None
         
-        if godzina not in plan_tygodnia[dzien]:
-            plan_tygodnia[dzien][godzina] = []
+        data_sluzby = datetime.strptime(data_sluzby_str, '%Y-%m-%d').date()
         
-        plan_tygodnia[dzien][godzina].append({'id': sch.id, 'user': u})
-        
-        if u.id == session['user_id']:
-            moje_dyzury.append({'dzien': sch.dzien_tygodnia, 'godzina': sch.godzina})
-            
-    for dzien in plan_tygodnia:
-        plan_tygodnia[dzien] = dict(sorted(plan_tygodnia[dzien].items()))
-        count = sum(len(servers) for servers in plan_tygodnia[dzien].values())
-        plan_liczniki[dzien] = count
-        
-    dni_tygodnia_kolejnosc = {'Poniedziałek': 1, 'Wtorek': 2, 'Środa': 3, 'Czwartek': 4, 'Piątek': 5, 'Sobota': 6, 'Niedziela': 7}
-    moje_dyzury = sorted(moje_dyzury, key=lambda x: (dni_tygodnia_kolejnosc.get(x['dzien'], 8), x['godzina']))
-
-    jest_uproszczony = session.get('uproszczony', False)
-
-    if jest_uproszczony:
-        return render_template(
-            'dash_uproszczony.html', 
-            user=session.get('username'), 
-            announcements=announcements,
-            min_date=min_date.strftime('%Y-%m-%d'),
-            today=dzisiaj.strftime('%Y-%m-%d'),
-            attendances=user_attendances,
-            plan=plan_tygodnia,
-            liczniki=plan_liczniki,
-            moje_dyzury=moje_dyzury
+        new_attendance = Attendance(
+            user_id=user_id,
+            data_sluzby=data_sluzby,
+            typ_mszy=typ_mszy,
+            nazwa_inna=nazwa_inna,
+            godzina=godzina
         )
-    else:
-        return render_template(
-            'dashboard.html', 
-            user=session.get('username'), 
-            announcements=announcements,
-            today=dzisiaj.strftime('%Y-%m-%d'), 
-            min_date=min_date.strftime('%Y-%m-%d'),
-            attendances=user_attendances,
-            plan=plan_tygodnia,
-            liczniki=plan_liczniki,
-            moje_dyzury=moje_dyzury
-        )
+        db.session.add(new_attendance)
+        db.session.commit()
+        flash('Służba została zgłoszona pomyślnie!', 'success')
+        return redirect(url_for('dashboard_page'))
+        
+    announcements = Announcement.query.order_by(Announcement.date_posted.desc()).all()
+    attendances = Attendance.query.filter_by(user_id=user_id).order_by(Attendance.data_sluzby.desc()).all()
+    
+    if user_obj.uproszczony:
+        return render_template('dash_uproszczony.html', user=user_obj.username, announcements=announcements, attendances=attendances)
+    return render_template('dashboard.html', user=user_obj.username, announcements=announcements, attendances=attendances)  
 
 @app.route('/delete_my_attendance/<int:id>')
 def delete_my_attendance(id):
@@ -886,51 +858,19 @@ def delete_my_attendance(id):
 def edit_my_attendance(id):
     if 'user_id' not in session:
         return redirect(url_for('login_page'))
-    entry = Attendance.query.get_or_404(id)
-    if entry.user_id != session['user_id']:
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
-        flash("Coś poszło nie tak. Nie można edytować wpisu.", "danger")
+    
+    att = Attendance.query.get_or_404(id)
+    if att.user_id != session['user_id']:
+        flash('Brak uprawnień do edycji tej służby.', 'danger')
         return redirect(url_for('dashboard_page'))
         
-    data_str = request.form.get("date")
-    typ_mszy = request.form.get("typ_mszy")
-    nazwa_inna = request.form.get("nazwa_inna")
-    godzina = request.form.get("godzina")
+    att.data_sluzby = datetime.strptime(request.form.get('data_sluzby'), '%Y-%m-%d').date()
+    att.godzina = request.form.get('godzina')
+    att.typ_mszy = request.form.get('typ')
+    att.nazwa_inna = request.form.get('inna') if att.typ_mszy == 'inna' else None
     
-    try:
-        wybrana_data = date.fromisoformat(data_str)
-        dzisiaj = date.today()
-        wczoraj = dzisiaj - timedelta(days=1)
-        hard_limit = date(2026, 4, 12)
-
-        if wybrana_data > dzisiaj or wybrana_data < max(wczoraj, hard_limit):
-            # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
-            flash("Wybrana data edytowanej służby jest nieprawidłowa.", "danger")
-            return redirect(url_for('dashboard_page'))
-
-        istniejaca = Attendance.query.filter(
-            Attendance.user_id == session['user_id'], 
-            Attendance.data_sluzby == wybrana_data, 
-            Attendance.godzina == godzina,
-            Attendance.id != id
-        ).first()
-
-        if istniejaca:
-            # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
-            flash("Masz już inną służbę o tej godzinie.", "danger")
-            return redirect(url_for('dashboard_page'))
-
-        entry.data_sluzby = wybrana_data
-        entry.typ_mszy = typ_mszy
-        entry.nazwa_inna = nazwa_inna if typ_mszy == 'inna' else None
-        entry.godzina = godzina
-        db.session.commit()
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
-        flash("Zmiany w Twojej służbie zostały zapisane.", "success")
-    except Exception as e:
-        db.session.rollback()
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
-        flash("Coś poszło nie tak przy zapisywaniu zmian.", "danger")
+    db.session.commit()
+    flash('Zgłoszenie zostało pomyślnie zaktualizowane.', 'success')
     return redirect(url_for('dashboard_page'))
 
 @app.route('/logout')
@@ -1042,6 +982,35 @@ def pobierz_regulamin():
 @app.route('/pomoc')
 def pomoc_page():
     return render_template('pomoc.html')
+
+@app.route('/admin/approve/<int:user_id>', methods=['POST'])
+def approve_user(user_id):
+    # Zabezpieczenie przed nieautoryzowanym dostępem
+    if session.get('user_role') != 'admin':
+        return redirect(url_for('login_page'))
+    
+    user = Users.query.get_or_404(user_id)
+    user.is_approved = True  # Zmiana flagi na zatwierdzoną
+    db.session.commit()
+    
+    flash(f"Konto użytkownika {user.imie} {user.nazwisko} (@{user.username}) zostało pomyślnie zatwierdzone!", "success")
+    return redirect(url_for('admin_page'))
+
+
+@app.route('/admin/reject/<int:user_id>', methods=['POST'])
+def reject_user(user_id):
+    # Zabezpieczenie przed nieautoryzowanym dostępem
+    if session.get('user_role') != 'admin':
+        return redirect(url_for('login_page'))
+    
+    user = Users.query.get_or_404(user_id)
+    username_tmp = user.username
+    
+    db.session.delete(user)  # Całkowite usunięcie niezatwierdzonego konta z bazy
+    db.session.commit()
+    
+    flash(f"Rejestracja użytkownika @{username_tmp} została odrzucona, a konto usunięte.", "warning")
+    return redirect(url_for('admin_page'))
 
 with app.app_context(): 
     db.create_all()

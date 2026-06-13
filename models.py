@@ -34,12 +34,18 @@ class Attendance(db.Model):
     godzina = db.Column(db.String(5), nullable=False)
     data_wpisu = db.Column(db.DateTime, default=datetime.now)
 
-class Announcement(db.Model):
-    __tablename__ = "announcement"
+class Attendance(db.Model):
+    __tablename__ = "attendance"
     id = db.Column(db.Integer, primary_key=True)
-    tytul = db.Column(db.String(100), nullable=False)
-    tresc = db.Column(db.Text, nullable=False)
-    data_dodania = db.Column(db.DateTime, default=datetime.now)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    data_sluzby = db.Column(db.Date, nullable=False)
+    typ_mszy = db.Column(db.String(20), nullable=False)  # Np. Msza święta, Nabożeństwo, Zbiórka, inna
+    nazwa_inna = db.Column(db.String(100), nullable=True) # Własna nazwa służby
+    godzina = db.Column(db.String(5), nullable=False)
+    data_wpisu = db.Column(db.DateTime, default=datetime.now)
+
+    # RELACJA DLA PANELU ADMINA: Łączy zgłoszenie bezpośrednio z obiektem użytkownika
+    user = db.relationship('Users', backref=db.backref('attendances', lazy=True))
 
 # POPRAWIONY MODEL Grafiku / Stałych Dyżurów
 class Schedule(db.Model):
