@@ -115,6 +115,7 @@
 
 {% block scripts %}
 <script>
+    // Funkcje do przełączania widoków kart formularzy
     function showLogin() {
         document.getElementById('form-login').classList.remove('hidden');
         document.getElementById('form-register').classList.add('hidden');
@@ -129,40 +130,46 @@
         document.getElementById('tab-login').classList.remove('bg-brand');
     }
 
-    // Blokada formularzy przed akceptacją cookies
-    document.addEventListener("DOMContentLoaded", function() {
+    // FUNKCJA BLOKUJĄCA: Sprawdza ciasteczka i blokuje/odblokowuje formularze
+    function sprawdzZgodeNaCookies() {
         const cookiesAccepted = localStorage.getItem('cookiesAccepted') === 'true';
-        if (!cookiesAccepted) {
-            const inputs = document.querySelectorAll('#login-form input, #register-form input, #login-form button, #register-form button');
-            inputs.forEach(el => {
+        // Wybieramy wszystkie inputy i przyciski w obu formularzach
+        const elementyFormularza = document.querySelectorAll('#login-form input, #register-form input, #login-form button, #register-form button');
+        
+        elementyFormularza.forEach(el => {
+            if (!cookiesAccepted) {
                 el.disabled = true;
-                el.classList.add('opacity-50', 'cursor-not-allowed');
-            });
-            // Opcjonalna informacja nad przyciskami
-            flashMessage("Pierwsze zaakceptuj politykę cookies na dole strony!", "warning");
-        }
-    });
-
-    function flashMessage(text, type) {
-        console.log(`[${type}] ${text}`);
+                el.classList.add('opacity-40', 'cursor-not-allowed');
+            } else {
+                el.disabled = false;
+                el.classList.remove('opacity-40', 'cursor-not-allowed');
+            }
+        });
     }
 
-    // Modal GPS
+    // Uruchomienie sprawdzania po załadowaniu strony
+    document.addEventListener("DOMContentLoaded", function() {
+        sprawdzZgodeNaCookies();
+        
+        // Co 500ms sprawdzamy localStorage na wypadek, gdyby użytkownik kliknął akceptację na banerze z base.html
+        setInterval(sprawdzZgodeNaCookies, 500);
+    });
+
+    // UNIWERSALNY MODAL GPS - wyskoczy każdemu bez wyjątku
     function otworzGpsModal(tekst, onZgoda, onOdmowa) {
-        // Tworzymy modal dynamicznie, jeśli nie istnieje w HTML
         let modal = document.getElementById('gps-alert-modal');
         if (!modal) {
             modal = document.createElement('div');
             modal.id = 'gps-alert-modal';
             modal.className = "fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm";
             modal.innerHTML = `
-                <div class="bg-white dark:bg-[#1f2a44] p-6 rounded-3xl max-w-sm w-full border border-brand text-center shadow-2xl">
-                    <span class="text-4xl">📍</span>
-                    <h3 class="text-lg font-black mt-2 text-gray-800 dark:text-white">Autoryzacja Lokalizacji</h3>
+                <div class="bg-white dark:bg-[#1f2a44] p-6 rounded-3xl max-w-sm w-full border border-brand text-center shadow-2xl transition-colors duration-300">
+                    <div class="text-4xl mb-2">📍</div>
+                    <h3 class="text-lg font-black text-gray-800 dark:text-white">Weryfikacja Lokalizacji</h3>
                     <p id="gps-modal-text" class="text-xs text-gray-500 dark:text-gray-300 my-4 leading-relaxed"></p>
                     <div class="flex gap-3 justify-center">
-                        <button id="gps-btn-allow" class="px-4 py-2 bg-success text-white font-bold text-xs rounded-xl shadow-md">Udostępnij</button>
-                        <button id="gps-btn-deny" class="px-4 py-2 bg-gray-500 text-white font-bold text-xs rounded-xl shadow-md">Pomiń GPS</button>
+                        <button id="gps-btn-allow" class="px-5 py-2 bg-brand text-white font-bold text-xs rounded-xl shadow-md hover:bg-brand/90 transition transform active:scale-95">Udostępnij GPS</button>
+                        <button id="gps-btn-deny" class="px-5 py-2 bg-gray-500 text-white font-bold text-xs rounded-xl shadow-md hover:bg-gray-600 transition transform active:scale-95">Pomiń GPS (Tylko IP)</button>
                     </div>
                 </div>
             `;
@@ -182,51 +189,62 @@
         };
     }
 
-    // Główny proces przechwytywania formularza (Logowanie / Rejestracja)
+    // PRZECHWYCENIE SUBMITU: Wywoływane przy próbie wysłania formularza logowania/rejestracji
     function procesujFormularz(event, formId, actionType) {
-        event.preventDefault(); // Zatrzymaj wysyłanie formularza
+        event.preventDefault(); // Zatrzymujemy natychmiastowe wysłanie formularza
         
-        const komunikat = "System wymaga zweryfikowania Twojej lokalizacji w celu zabezpieczenia sesji i potwierdzenia obecności w parafii.";
+        const komunikat = "System wymaga autoryzacji dostępu w celu potwierdzenia obecności oraz zabezpieczenia Twojego konta przed nieautoryzowanym logowaniem.";
         
         otworzGpsModal(komunikat, 
+            // Scenariusz A: Użytkownik klika "Udostępnij GPS"
             function() {
-                // Użytkownik kliknął UDOSTĘPNIJ
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
                         function(pos) {
-                            // Sukces GPS
+                            // Przypisujemy pobrane współrzędne do ukrytych inputów
                             document.getElementById(actionType + '_geo_lat').value = pos.coords.latitude;
                             document.getElementById(actionType + '_geo_lng').value = pos.coords.longitude;
                             wyslijForm(formId, actionType);
                         },
                         function(error) {
-                            // Błąd pobierania GPS mimo zgody (np. wyłączony GPS w telefonie)
+                            // Błąd pobierania GPS (np. zablokowane w systemie operacyjnym) -> backend weźmie samo IP
+                            console.warn("Błąd geolokalizacji, przełączanie na IP:", error);
                             wyslijForm(formId, actionType);
                         },
-                        { enableHighAccuracy: false, timeout: 6000 }
+                        { enableHighAccuracy: true, timeout: 5000 }
                     );
                 } else {
+                    // Brak wsparcia dla geolokalizacji w przeglądarce -> wysyłamy bez współrzędnych (tylko IP)
                     wyslijForm(formId, actionType);
                 }
             },
+            // Scenariusz B: Użytkownik klika "Pomiń GPS (Tylko IP)"
             function() {
-                // Użytkownik kliknął POMIŃ GPS (Serwer obsłuży IP)
                 wyslijForm(formId, actionType);
             }
         );
     }
 
+    // Funkcja pomocnicza budująca input 'action' i wysyłająca formularz do bazy
     function wyslijForm(formId, actionType) {
         const form = document.getElementById(formId);
-        // Jeśli nie ma jeszcze inputu 'action', dodaj go
-        if (!form.querySelector('input[name="action"]')) {
-            const hiddenAction = document.createElement('input');
+        let hiddenAction = form.querySelector('input[name="action"]');
+        if (!hiddenAction) {
+            hiddenAction = document.createElement('input');
             hiddenAction.type = 'hidden';
             hiddenAction.name = 'action';
-            hiddenAction.value = actionType;
             form.appendChild(hiddenAction);
         }
+        hiddenAction.value = actionType;
         form.submit();
+    }
+
+    // Automatyczne przekierowanie po udanym logowaniu (obsługa sesji)
+    const isSuccess = "{{ 'true' if success_login else 'false' }}" === "true";
+    if (isSuccess) {
+        setTimeout(function() {
+            window.location.href = "{{ url_for('dashboard_page') }}";
+        }, 2000); 
     }
 </script>
 {% endblock %}

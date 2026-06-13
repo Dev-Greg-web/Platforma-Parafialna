@@ -87,102 +87,116 @@ def login_page():
 @app.route("/auth_process", methods=['POST'])
 def auth_process():
     action = request.form.get("action")
-    username = request.form.get("username")
-    password = request.form.get("haslo")
     
-    # Pobranie czystego adresu IP użytkownika
-    if request.headers.getlist("X-Forwarded-For"):
-        user_ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
-    else:
-        user_ip = request.remote_addr
+    # Bezpieczne pobieranie adresu IP (obsługa serwerów proxy / n8n / hostingu)
+    ip_uzytkownika = request.headers.get('X-Forwarded-For', request.remote_addr)
+    if ip_uzytkownika and ',' in ip_uzytkownika:
+        ip_uzytkownika = ip_uzytkownika.split(',')[0].strip()
 
-    # Odczyt danych GPS przekazanych przez formularz
-    browser_lat = request.form.get(f"{action}_geo_lat")
-    browser_lng = request.form.get(f"{action}_geo_lng")
+    # ==========================================
+    # LOGIKA PROCESU REJESTRACJI NOWEGO KONTA
+    # ==========================================
+    if action == "register":
+        imie = request.form.get("imie")
+        nazwisko = request.form.get("nazwisko")
+        username = request.form.get("username", "").strip()
+        haslo = request.form.get("haslo")
+        
+        # Odbieranie danych lokalizacji z front-endu
+        lat = request.form.get("register_geo_lat")
+        lng = request.form.get("register_geo_lng")
 
-    final_lat = None
-    final_lng = None
+        # Walidacja obecności wymaganych pól formularza
+        if not imie or not nazwisko or not username or not haslo:
+            flash("❌ Wszystkie pola rejestracji są wymagane!", "danger")
+            return render_template("login.html", active_tab="register")
 
-    # KROK 1: Jeśli mamy współrzędne GPS z przeglądarki, używamy ich w pierwszej kolejności
-    if browser_lat and browser_lng and browser_lat.strip() != "" and browser_lng.strip() != "":
-        final_lat = browser_lat.strip()
-        final_lng = browser_lng.strip()
+        # Walidacja unikalności loginu w bazie danych
+        istnieje = Users.query.filter_by(username=username).first()
+        if istnieje:
+            flash("❌ Ta nazwa użytkownika jest już zajęta!", "danger")
+            return render_template("login.html", active_tab="register")
 
-    # KROK 2: Jeśli nie ma GPS, a IP nie jest adresem pętli lokalnej, odpytujemy ipinfo.io
-    if (not final_lat or not final_lng) and user_ip and user_ip != "127.0.0.1":
-        try:
-            TOKEN_IPINFO = "093ef441db1164"
-            url_ipinfo = f"https://ipinfo.io/{user_ip}/json?token={TOKEN_IPINFO}"
-            res = requests.get(url_ipinfo, timeout=3)
-            if res.status_code == 200:
-                data_ipinfo = res.json()
-                loc = data_ipinfo.get("loc")
-                if loc:
-                    ip_lat, ip_lng = loc.split(",")
-                    final_lat = f"{ip_lat.strip()} (IP)"
-                    final_lng = f"{ip_lng.strip()} (IP)"
-        except Exception as e:
-            print(f"Błąd pobierania awaryjnej geolokalizacji z IP: {e}")
+        # Tworzenie rekordu użytkownika (IP pobierane zawsze, GPS jeśli został przekazany)
+        nowy_user = Users(
+            imie=imie,
+            nazwisko=nazwisko,
+            username=username,
+            password=generate_password_hash(haslo),
+            role="user",
+            is_approved=False,
+            registration_ip=ip_uzytkownika,
+            latitude=lat if (lat and lat.strip() != "") else None,
+            longitude=lng if (lng and lng.strip() != "") else None
+        )
+        
+        db.session.add(nowy_user)
+        db.session.commit()
+        
+        flash("✨ Konto utworzone pomyślnie! Oczekuj na zatwierdzenie przez Szefa Służby Liturgicznej.", "success")
+        return render_template("login.html", active_tab="login")
 
-    # --- OBSŁUGA LOGOWANIA ---
-    if action == "login":
-        if username == os.getenv("admin_name", "AdminGreg"):
-            # ... Tutaj zostawiasz kod logowania admina, który już masz bez zmian ...
-            pass
-        else:
-            user = Users.query.filter_by(username=username).first()
-            if user and user.password == password:
-                if hasattr(user, 'is_approved') and not user.is_approved and user.role != 'admin':
-                    flash("🔒 Twoje konto oczekuje na weryfikację przez administratora.", "warning")
-                    return redirect(url_for('login_page'))
-                
-                # Zapisujemy aktualne współrzędne przy logowaniu do bazy danych
-                user.registration_ip = user_ip
-                if final_lat and final_lng:
-                    user.latitude = final_lat
-                    user.longitude = final_lng
-                
-                db.session.commit()
+    # ==========================================
+    # LOGIKA PROCESU LOGOWANIA DO SYSTEMU
+    # ==========================================
+    elif action == "login":
+        username = request.form.get("username", "").strip()
+        haslo = request.form.get("haslo")
+        
+        # Odbieranie danych lokalizacji z formularza logowania
+        lat = request.form.get("login_geo_lat")
+        lng = request.form.get("login_geo_lng")
 
-                session.clear()
-                session['user_id'] = user.id
-                session['username'] = user.username
-                session['user_role'] = user.role  
-                session['uproszczony'] = user.uproszczony
-                
-                flash(f"Witaj {user.imie}! Zalogowano pomyślnie.", "success")
-                if user.role == 'ksiądz':
-                    return redirect(url_for('ksDash'))
-                return redirect(url_for('dashboard_page'))
-            else:
-                flash("Niepoprawny login lub hasło użytkownika.", "danger")
-                return redirect(url_for('login_page'))
-
-    # --- OBSŁUGA REJESTRACJI ---
-    elif action == "register":
+        # Wyszukiwanie użytkownika w bazie danych
         user = Users.query.filter_by(username=username).first()
-        if user or username == os.getenv("admin_name", "AdminGreg"):
-            flash("Ta nazwa jest zajęta!", "danger")
-            return redirect(url_for('login_page'))
-        else:
-            new_user = Users(
-                imie=request.form.get("imie"), 
-                nazwisko=request.form.get("nazwisko"), 
-                username=username, 
-                password=password,
-                role='user',
-                uproszczony=False,
-                is_approved=False,
-                registration_ip=user_ip,
-                latitude=final_lat,
-                longitude=final_lng
-            )
-            db.session.add(new_user)
-            db.session.commit()
-            flash("Konto stworzone! Poczekaj na zatwierdzenie przez Szefa.", "info")
-            return redirect(url_for('login_page'))
 
-    return redirect(url_for('login_page'))
+        # Weryfikacja poprawności danych logowania
+        if not user or not check_password_hash(user.password, haslo):
+            flash("❌ Nieprawidłowy login lub hasło!", "danger")
+            return render_template("login.html", active_tab="login")
+
+        # Weryfikacja czy konto zostało aktywowane przez administratora
+        if not user.is_approved:
+            flash("🔒 Twoje konto jeszcze nie zostało zweryfikowane przez Administratora.", "warning")
+            return render_template("login.html", active_tab="login")
+
+        # Aktualizacja danych sieciowych w bazie (IP zapisujemy zawsze, GPS jeśli istnieje)
+        user.registration_ip = ip_uzytkownika
+        if lat and lat.strip() != "" and lng and lng.strip() != "":
+            user.latitude = lat
+            user.longitude = lng
+        
+        db.session.commit()
+
+        # IMPLEMENTACJA ZABEZPIECZENIA 2FA DLA ROLI ADMINISTRATORA (SZEFA)
+        if user.role == "admin":
+            session["2fa_needed"] = True
+            session["2fa_user_id"] = user.id
+            
+            # Generowanie bezpiecznego, 12-cyfrowego kodu weryfikacyjnego
+            kod_2fa = "".join([str(secrets.randbelow(10)) for _ in range(12)])
+            user.two_factor_code = kod_2fa
+            user.two_factor_expiry = datetime.now() + timedelta(minutes=5)
+            db.session.commit()
+            
+            # Logowanie wygenerowanego kodu w terminalu serwera Flask
+            print(f"\n[🔒 SYSTEM 2FA] Wygenerowano kod dla admina {user.username}: {kod_2fa}\n")
+            
+            flash("🛡️ Wymagana dodatkowa weryfikacja. Wpisz kod przesłany do systemu.", "warning")
+            return redirect(url_for("verify_2fa_page"))
+
+        # Autoryzacja sesji dla standardowego użytkownika (Ministranta)
+        session["user_id"] = user.id
+        session["username"] = user.username
+        session["role"] = user.role
+        session.permanent = True  # Ustawienie sesji na czas zdefiniowany w configu (15 minut)
+
+        # Renderowanie widoku logowania z flagą sukcesu (odpala JavaScript redirect)
+        return render_template("login.html", success_login=True, user=user.imie)
+
+    # Obsługa nieznanej akcji w żądaniu POST
+    flash("❌ Niepoprawna akcja autoryzacji.", "danger")
+    return redirect(url_for("login_page"))
 
 @app.route('/verify-2fa', methods=['GET', 'POST'])
 def two_factor_page():

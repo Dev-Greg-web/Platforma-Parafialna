@@ -103,11 +103,15 @@
         function acceptCookies() {
             localStorage.setItem('cookiesAccepted', 'true');
             const banner = document.getElementById('cookie-banner');
-            banner.classList.add('translate-y-full'); 
-            setTimeout(() => { 
-                banner.style.display = 'none'; 
-                window.location.reload(); // <--- Dodaj to, żeby odblokować formularze po kliknięciu
-            }, 500);
+            if (banner) {
+                banner.classList.add('translate-y-full'); 
+                setTimeout(() => { 
+                    banner.style.display = 'none'; 
+                    window.location.reload(); 
+                }, 500);
+            } else {
+                window.location.reload();
+            }
         }
 
         document.addEventListener("DOMContentLoaded", checkCookies);
