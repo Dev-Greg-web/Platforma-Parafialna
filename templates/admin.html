@@ -13,7 +13,7 @@
 {% block content %}
 <div class="w-full min-h-screen flex flex-col md:flex-row">
     
-    <aside class="w-full md:w-80 bg-[#16213e] border-b-2 md:border-b-0 md:border-r-2 border-brand p-6 md:p-8 flex flex-col shrink-0 overflow-y-auto">
+    <aside class="w-full md:w-80 bg-[#16213e] border-b-2 md:border-b-0 md:border-r-2 border-brand p-6 md:p-8 flex flex-col shrink-0 overflow-y-auto z-10">
         <div class="text-white text-2xl md:text-3xl font-extrabold mb-10 text-center">Szef Menu</div>
         <nav class="flex flex-col gap-3 flex-grow">
             <button onclick="showSection('sluzby')" id="btn-sluzby" class="nav-btn bg-brand text-white p-4 text-left rounded-xl font-bold transition">Zarządzanie Służbami</button>
@@ -36,12 +36,12 @@
             </div>
 
             <footer class="mt-auto pt-6 text-center text-sm text-gray-400">
-                &copy All rights reserved, Grześ Gładysz 2026
+                © All rights reserved, Grześ Gładysz 2026
             </footer>
         </nav>
     </aside>
 
-    <main class="flex-1 p-4 md:p-10 bg-gray-100 dark:bg-darkbg overflow-y-auto pb-32 min-w-0">
+    <main class="flex-1 p-4 md:p-10 bg-gray-100 dark:bg-darkbg overflow-y-auto pb-32 min-w-0 z-0">
         
         <section id="section-sluzby" class="admin-section block">
             <div class="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-8">
@@ -281,7 +281,7 @@
                                                     <strong class="text-gray-800 dark:text-white truncate">{{ m.user.username }}</strong>
                                                     <span class="text-xs text-gray-500 font-normal truncate">({{ m.user.imie }} {{ m.user.nazwisko }})</span>
                                                 </div>
-                                                <a href="{{ url_for('delete_schedule', id=m.id) }}" class="text-gray-400 group-hover:text-danger text-2xl font-bold transition px-2 shrink-0 ml-2" onclick="return confirm('Usunąć ten dyżur?')">&times;</a>
+                                                <a href="{{ url_for('delete_schedule', id=m.id) }}" class="text-gray-400 group-hover:text-danger text-2xl font-bold transition px-2 shrink-0 ml-2" onclick="return confirm('Usunąć ten dyżur?')">×</a>
                                             </li>
                                         {% endfor %}
                                     </ul>
@@ -378,9 +378,9 @@
     <div class="bg-white dark:bg-cardbg rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-brand/20 transform scale-95 transition-all duration-300">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-black text-gray-900 dark:text-white m-0">Dodaj nową służbę</h2>
-            <button onclick="closeModal('addAttendanceModal')" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
+            <button onclick="closeModal('addAttendanceModal')" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">×</button>
         </div>
-        <form action="/admin/add_attendance" method="POST" class="flex flex-col gap-4">
+        <form action="/admin/add_attendance_admin" method="POST" class="flex flex-col gap-4">
             <div class="flex flex-col gap-1.5">
                 <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Wybierz użytkownika:</label>
                 <select name="user_id" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
@@ -389,7 +389,7 @@
             </div>
             <div class="flex flex-col gap-1.5">
                 <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Data:</label>
-                <input type="date" name="data_sluzby" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+                <input type="date" name="date" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
             </div>
             <div class="flex flex-col gap-1.5">
                 <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Godzina:</label>
@@ -416,13 +416,13 @@
     <div class="bg-white dark:bg-cardbg rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-brand/20">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-black text-gray-900 dark:text-white m-0">Popraw wpis służby</h2>
-            <button onclick="closeModal('editAttendanceModal')" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
+            <button onclick="closeModal('editAttendanceModal')" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">×</button>
         </div>
-        <form action="/admin/edit_attendance" method="POST" class="flex flex-col gap-4">
+        <form action="/admin/edit" method="POST" class="flex flex-col gap-4">
             <input type="hidden" name="att_id" id="edit_att_id">
             <div class="flex flex-col gap-1.5">
                 <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Data:</label>
-                <input type="date" name="data_sluzby" id="edit_data_sluzby" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
+                <input type="date" name="date" id="edit_data_sluzby" required class="p-3.5 rounded-xl border border-gray-300 dark:border-brand bg-gray-50 dark:bg-darkbg text-black dark:text-white outline-none w-full">
             </div>
             <div class="flex flex-col gap-1.5">
                 <label class="font-bold text-gray-700 dark:text-gray-300 text-sm">Godzina:</label>
@@ -449,7 +449,7 @@
     <div class="bg-white dark:bg-cardbg rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-brand/20">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-black text-gray-900 dark:text-white m-0">Popraw dane / Rangę</h2>
-            <button onclick="closeModal('editUserModal')" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
+            <button onclick="closeModal('editUserModal')" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">×</button>
         </div>
         <form action="/admin/edit_user" method="POST" class="flex flex-col gap-4">
             <input type="hidden" name="user_id" id="edit_user_id">
@@ -490,7 +490,7 @@
     <div class="bg-white dark:bg-cardbg rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-brand/20">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-black text-gray-900 dark:text-white m-0">Popraw treść ogłoszenia</h2>
-            <button onclick="closeModal('editOgModal')" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">&times;</button>
+            <button onclick="closeModal('editOgModal')" class="text-gray-400 hover:text-gray-600 text-3xl font-bold">×</button>
         </div>
         <form action="/admin/edit_announcement" method="POST" class="flex flex-col gap-4">
             <input type="hidden" name="og_id" id="edit_og_id">

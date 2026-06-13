@@ -88,10 +88,18 @@ def login_page():
 def auth_process():
     action = request.form.get("action")
     username = request.form.get("username")
-    password = request.form.get("haslo")
+    
+    # Próbujemy pobrać hasło z obu możliwych nazw pól (haslo lub password)
+    password = request.form.get("haslo") or request.form.get("password")
     
     env_admin_name = os.getenv("admin_name", "AdminGreg")
     env_admin_pass = os.getenv("admin_password", "GregG2204@..")
+
+    # Jeśli hasło jest puste (np. błąd formularza), zapobiegamy crashowi serwera
+    if not password:
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Proszę wpisać hasło, aby kontynuować.", "warning")
+        return redirect(url_for('login_page'))
 
     # 1. Pobieramy IP klienta (uwzględniając ewentualne proxy serwera)
     if request.headers.getlist("X-Forwarded-For"):
@@ -151,7 +159,8 @@ def auth_process():
                     session['pending_admin_id'] = admin_in_db.id
                     return redirect(url_for('two_factor_page'))
                 except Exception as e:
-                    flash("Błąd przygotowania kodu 2FA.", "danger")
+                    # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+                    flash("Coś poszło nie tak przy generowaniu kodu 2FA.", "danger")
                     return redirect(url_for('login_page'))
             else:
                 teraz = datetime.now()
@@ -212,7 +221,8 @@ def auth_process():
                 thr = Thread(target=send_telegram_alert, args=[alert_text])
                 thr.start()
 
-                flash("Błędne hasło administratora.", "danger")
+                # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+                flash("Podane hasło administratora jest nieprawidłowe.", "danger")
                 return redirect(url_for('login_page'))
         
         # 2. LOGOWANIE ZWYKŁEGO UŻYTKOWNIKA / KSIĘDZA
@@ -221,7 +231,8 @@ def auth_process():
             if user and user.password == password:
                 # --- WERYFIKACJA STATUSU ZATWIERDZENIA KONTA ---
                 if hasattr(user, 'is_approved') and not user.is_approved and user.role != 'admin':
-                    flash("🔒 Twoje konto oczekuje na weryfikację przez administratora. Poczekaj na zatwierdzenie!", "warning")
+                    # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+                    flash("Twoje konto oczekuje na weryfikację przez administratora.", "warning")
                     return redirect(url_for('login_page'))
                 
                 # Aktualizacja danych sieciowych i lokalizacyjnych przy logowaniu
@@ -244,19 +255,22 @@ def auth_process():
                 session['user_role'] = user.role  
                 session['uproszczony'] = user.uproszczony
                 
-                flash(f"Witaj {user.imie}! Zalogowano pomyślnie.", "success")
+                # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+                flash(f"Witaj pomyślnie, {user.imie}!", "success")
                 
                 if user.role == 'ksiądz':
                     return redirect(url_for('ksDash'))
                 return redirect(url_for('dashboard_page'))
             else:
-                flash("Niepoprawny login lub hasło użytkownika.", "danger")
+                # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+                flash("Niepoprawna nazwa użytkownika lub hasło.", "danger")
                 return redirect(url_for('login_page'))
                 
     elif action == "register":
         user = Users.query.filter_by(username=username).first()
         if user or username == env_admin_name:
-            flash("Ta nazwa jest zajęta!", "danger")
+            # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+            flash("Ta nazwa użytkownika jest już zajęta.", "danger")
             return redirect(url_for('login_page'))
         else:
             # Pobieranie danych współrzędnych z formularza rejestracji
@@ -285,7 +299,8 @@ def auth_process():
             )
             db.session.add(new_user)
             db.session.commit()
-            flash("Konto stworzone! Poczekaj na zatwierdzenie przez Szefa Służby Liturgicznej przed zalogowaniem.", "info")
+            # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+            flash("Konto stworzone. Poczekaj na weryfikację przez administratora.", "success")
             return redirect(url_for('login_page'))
 
     return redirect(url_for('login_page'))
@@ -310,10 +325,12 @@ def two_factor_page():
             session['user_role'] = 'admin'
             session['uproszczony'] = False
             
-            flash("Autoryzacja 2FA pomyślna. Witaj Szefie!", "success")
+            # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+            flash("Autoryzacja 2FA pomyślna. Witaj, Szefie!", "success")
             return redirect(url_for('admin_page'))
         else:
-            flash("Niepoprawny lub wygasły kod 2FA!", "danger")
+            # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+            flash("Wpisany kod 2FA jest niepoprawny lub wygasł.", "danger")
             
     return render_template('verify_2fa.html')
 
@@ -321,7 +338,8 @@ def two_factor_page():
 @app.route('/admin/weryfikacja')
 def panel_weryfikacji():
     if session.get('user_role') != 'admin':
-        flash("Brak uprawnień!", "danger")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Brak uprawnień do przeglądania tej sekcji.", "danger")
         return redirect(url_for('login_page'))
         
     oczekujacy = Users.query.filter_by(is_approved=False).order_by(Users.id.desc()).all()
@@ -337,13 +355,15 @@ def przetworz_weryfikacje(user_id, akcja):
     if akcja == 'zatwierdz':
         uzytkownik.is_approved = True
         db.session.commit()
-        flash(f"✅ Konto użytkownika {uzytkownik.imie} {uzytkownik.nazwisko} zostało zatwierdzone!", "success")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash(f"Konto użytkownika {uzytkownik.username} zostało zatwierdzone.", "success")
     elif akcja == 'odrzuc':
         Attendance.query.filter_by(user_id=user_id).delete()
         Schedule.query.filter_by(user_id=user_id).delete()
         db.session.delete(uzytkownik)
         db.session.commit()
-        flash(f"❌ Rejestracja użytkownika {uzytkownik.imie} {uzytkownik.nazwisko} została odrzucona.", "danger")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash(f"Rejestracja użytkownika {uzytkownik.username} została odrzucona.", "warning")
         
     return redirect(url_for('panel_weryfikacji'))
 
@@ -368,13 +388,17 @@ def reset_admin_password():
                 )
                 thr = Thread(target=send_telegram_alert, args=[reset_text])
                 thr.start()
-                flash("Nowe hasło zostało wysłane na Twój Telegram!", "success")
+                # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+                flash("Nowe hasło administratora wysłane na Telegram.", "success")
             except Exception as e:
-                flash("Błąd podczas wysyłania powiadomienia resetującego.", "danger")
+                # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+                flash("Coś poszło nie tak przy wysyłaniu powiadomienia.", "danger")
         else:
-            flash("Admin nie został jeszcze zainicjalizowany w bazie danych.", "danger")
+            # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+            flash("Admin nie został jeszcze w pełni zainicjalizowany.", "danger")
     else:
-        flash("Ta opcja szybkiego resetu jest dostępna wyłącznie dla Konta Głównego Admina.", "danger")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Ta opcja jest dostępna tylko dla Głównego Administratora.", "danger")
         
     return redirect(url_for('login_page'))
 
@@ -395,7 +419,8 @@ def add_attendance():
         hard_limit = date(2026, 4, 12)
 
         if wybrana_data > dzisiaj or wybrana_data < max(wczoraj, hard_limit):
-            flash("Nieprawidłowa data!", "danger")
+            # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+            flash("Wybrana data służby jest nieprawidłowa.", "danger")
             return redirect(url_for('dashboard_page'))
 
         istniejaca = Attendance.query.filter_by(
@@ -405,7 +430,8 @@ def add_attendance():
         ).first()
 
         if istniejaca:
-            flash("Nie możesz służyć w dwóch miejscach naraz! Masz już zgłoszoną służbę w ten dzień o tej samej godzinie.", "danger")
+            # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+            flash("Masz już zgłoszoną służbę o tej godzinie.", "danger")
             return redirect(url_for('dashboard_page'))
 
         nowa = Attendance(
@@ -417,10 +443,12 @@ def add_attendance():
         )
         db.session.add(nowa)
         db.session.commit()
-        flash("Obecność zapisana!", "success")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Obecność na służbie zapisana pomyślnie.", "success")
     except Exception as e:
         db.session.rollback()
-        flash("Wystąpił błąd podczas dodawania wpisu.", "danger")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Coś poszło nie tak przy zapisywaniu służby.", "danger")
 
     return redirect(url_for('dashboard_page'))
 
@@ -433,7 +461,8 @@ def delete_user(id):
     Schedule.query.filter_by(user_id=id).delete()
     db.session.delete(user_to_del)
     db.session.commit()
-    flash(f"Użytkownik {user_to_del.username} usunięty.", "success")
+    # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+    flash(f"Użytkownik {user_to_del.username} został trwale usunięty.", "success")
     return redirect(url_for('admin_page'))
 
 @app.route('/admin/edit_user/<int:id>', methods=['POST'])
@@ -461,10 +490,12 @@ def edit_user(id):
     
     try:
         db.session.commit()
-        flash("Dane użytkownika zaktualizowane!", "success")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Dane użytkownika zostały zaktualizowane pomyślnie.", "success")
     except:
         db.session.rollback()
-        flash("Błąd podczas edycji użytkownika.", "danger")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Coś poszło nie tak przy edycji danych.", "danger")
     return redirect(url_for('admin_page'))
 
 @app.route('/admin/delete/<int:id>')
@@ -475,10 +506,12 @@ def delete_entry(id):
     try:
         db.session.delete(entry)
         db.session.commit()
-        flash("Wpis usunięty pomyślnie.", "success")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Wpis o służbie został usunięty.", "success")
     except:
         db.session.rollback()
-        flash("Nie udało się usunąć wpisu.", "danger")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Coś poszło nie tak przy usuwaniu wpisu.", "danger")
     return redirect(url_for('admin_page'))
 
 @app.route('/admin/edit/<int:id>', methods=['POST'])
@@ -492,10 +525,12 @@ def edit_entry(id):
         entry.typ_mszy = request.form.get('typ_mszy')
         entry.nazwa_inna = request.form.get('nazwa_inna') if entry.typ_mszy == 'inna' else None
         db.session.commit()
-        flash("Dane zostały zaktualizowane.", "success")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Wpis o służbie został zaktualizowany.", "success")
     except:
         db.session.rollback()
-        flash("Błąd podczas zapisywania zmian.", "danger")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Coś poszło nie tak przy aktualizacji wpisu.", "danger")
     return redirect(url_for('admin_page'))
 
 @app.route('/admin/add_attendance_admin', methods=['POST'])
@@ -519,10 +554,12 @@ def add_attendance_admin():
         )
         db.session.add(nowa_sluzba)
         db.session.commit()
-        flash("Służba została dodana przez Szefa!", "success")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Służba dodana pomyślnie przez Administratora.", "success")
     except Exception as e:
         db.session.rollback()
-        flash("Wystąpił błąd podczas dodawania służby.", "danger")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Coś poszło nie tak przy dodawaniu służby.", "danger")
 
     return redirect(url_for('admin_page'))
 
@@ -533,7 +570,8 @@ def add_announcement():
     nowe = Announcement(tresc=request.form.get('tresc'))
     db.session.add(nowe)
     db.session.commit()
-    flash("Ogłoszenie dodane!", "success")
+    # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+    flash("Nowe ogłoszenie dodane pomyślnie.", "success")
     if session.get('user_role') == 'ksiądz':
         return redirect(url_for('ksDash'))
     return redirect(url_for('admin_page'))
@@ -545,6 +583,8 @@ def edit_announcement(id):
     ogloszenie = Announcement.query.get_or_404(id)
     ogloszenie.tresc = request.form.get('tresc')
     db.session.commit()
+    # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+    flash("Ogłoszenie zaktualizowane.", "success")
     return redirect(url_for('admin_page'))
 
 @app.route('/admin/delete_announcement/<int:id>')
@@ -554,6 +594,8 @@ def delete_announcement(id):
     ogloszenie = Announcement.query.get_or_404(id)
     db.session.delete(ogloszenie)
     db.session.commit()
+    # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+    flash("Ogłoszenie usunięte.", "warning")
     return redirect(url_for('admin_page'))
 
 @app.route('/admin/add_schedule', methods=['POST'])
@@ -567,7 +609,8 @@ def add_schedule():
     )
     db.session.add(nowy_dyzur)
     db.session.commit()
-    flash("Dodano dyżur do planu!", "success")
+    # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+    flash("Stały dyżur dodany do planu.", "success")
     if session.get('user_role') == 'ksiądz':
         return redirect(url_for('ksDash'))
     return redirect(url_for('admin_page'))
@@ -580,7 +623,8 @@ def delete_schedule(id):
     if dyzur:
         db.session.delete(dyzur)
         db.session.commit()
-        flash("Usunięto dyżur z planu.", "success")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Stały dyżur usunięty z planu.", "warning")
     if session.get('user_role') == 'ksiądz':
         return redirect(url_for('ksDash'))
     return redirect(url_for('admin_page'))
@@ -665,9 +709,11 @@ def delete_bulk_users():
                 Schedule.query.filter_by(user_id=uid).delete()
                 db.session.delete(user_to_del)
         db.session.commit()
-        flash("Usunięto zaznaczonych użytkowników i ich służby.", "success")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Wybrani użytkownicy zostali trwale usunięci.", "success")
     else:
-        flash("Najpierw zaznacz kogoś do usunięcia!", "danger")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Proszę zaznaczyć użytkowników do usunięcia.", "warning")
     return redirect(url_for('admin_page'))
 
 @app.route('/admin/delete_bulk_attendances', methods=['POST'])
@@ -681,15 +727,18 @@ def delete_bulk_attendances():
             if entry:
                 db.session.delete(entry)
         db.session.commit()
-        flash("Wybrane służby zostały usunięte.", "success")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Wybrane wpisy o służbach zostały usunięte.", "success")
     else:
-        flash("Najpierw zaznacz służby do usunięcia!", "danger")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Proszę zaznaczyć służby do usunięcia.", "warning")
     return redirect(url_for('admin_page'))
 
 @app.route('/ksDash')
 def ksDash():
     if session.get('user_role') not in ['admin', 'ksiądz']: 
-        flash("Nie masz uprawnień do wejścia na ten panel!", "danger")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Brak uprawnień do panelu duszpasterskiego.", "danger")
         return redirect(url_for('dashboard_page'))
     
     all_attendance = db.session.query(Attendance, Users).join(Users).order_by(
@@ -817,15 +866,18 @@ def delete_my_attendance(id):
         return redirect(url_for('login_page'))
     entry = Attendance.query.get_or_404(id)
     if entry.user_id != session['user_id']:
-        flash("Nie możesz usunąć służby kogoś innego!", "danger")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Coś poszło nie tak. Nie można usunąć wpisu.", "danger")
         return redirect(url_for('dashboard_page'))
     try:
         db.session.delete(entry)
         db.session.commit()
-        flash("Twój wpis został usunięty.", "success")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Wpis o Twojej służbie został usunięty.", "success")
     except:
         db.session.rollback()
-        flash("Nie udało się usunąć wpisu.", "danger")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Coś poszło nie tak przy usuwaniu służby.", "danger")
     return redirect(url_for('dashboard_page'))
 
 @app.route('/edit_my_attendance/<int:id>', methods=['POST'])
@@ -834,7 +886,8 @@ def edit_my_attendance(id):
         return redirect(url_for('login_page'))
     entry = Attendance.query.get_or_404(id)
     if entry.user_id != session['user_id']:
-        flash("Nie możesz edytować służby kogoś innego!", "danger")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Coś poszło nie tak. Nie można edytować wpisu.", "danger")
         return redirect(url_for('dashboard_page'))
         
     data_str = request.form.get("date")
@@ -849,7 +902,8 @@ def edit_my_attendance(id):
         hard_limit = date(2026, 4, 12)
 
         if wybrana_data > dzisiaj or wybrana_data < max(wczoraj, hard_limit):
-            flash("Nieprawidłowa data!", "danger")
+            # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+            flash("Wybrana data edytowanej służby jest nieprawidłowa.", "danger")
             return redirect(url_for('dashboard_page'))
 
         istniejaca = Attendance.query.filter(
@@ -860,7 +914,8 @@ def edit_my_attendance(id):
         ).first()
 
         if istniejaca:
-            flash("Masz już zgłoszoną inną służbę o tej godzinie!", "danger")
+            # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+            flash("Masz już inną służbę o tej godzinie.", "danger")
             return redirect(url_for('dashboard_page'))
 
         entry.data_sluzby = wybrana_data
@@ -868,10 +923,12 @@ def edit_my_attendance(id):
         entry.nazwa_inna = nazwa_inna if typ_mszy == 'inna' else None
         entry.godzina = godzina
         db.session.commit()
-        flash("Twoja służba została zaktualizowana!", "success")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Zmiany w Twojej służbie zostały zapisane.", "success")
     except Exception as e:
         db.session.rollback()
-        flash("Wystąpił błąd podczas edycji wpisu.", "danger")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Coś poszło nie tak przy zapisywaniu zmian.", "danger")
     return redirect(url_for('dashboard_page'))
 
 @app.route('/logout')
@@ -894,7 +951,8 @@ def sitemap_from_root():
 @app.route('/export_raport')
 def export_raport():
     if session.get('user_role') not in ['admin', 'ksiądz']: 
-        flash("Brak uprawnień do pobierania raportów.", "danger")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Brak uprawnień do eksportu raportów.", "danger")
         return redirect(url_for('dashboard_page'))
 
     all_attendance = db.session.query(Attendance, Users).join(Users).all()
@@ -936,7 +994,8 @@ def export_raport():
 @app.route('/export_schedule')
 def export_schedule():
     if 'user_id' not in session: 
-        flash("Musisz być zalogowany, aby pobrać plan.", "danger")
+        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+        flash("Proszę się zalogować, aby pobrać plan.", "danger")
         return redirect(url_for('login_page'))
 
     schedules = db.session.query(Schedule, Users).join(Users, Schedule.user_id == Users.id).all()
