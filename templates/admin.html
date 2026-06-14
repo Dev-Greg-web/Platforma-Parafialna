@@ -3,9 +3,7 @@
 
 {% block extra_styles %}
 <style>
-    /* --- ZAAWANSOWANE STYLE I ANIMACJE DLA CYBERPUNKOWEGO PANELU SZEFA --- */
-    
-    /* Personalizacja paska przewijania dla nowoczesnego wyglądu premium */
+    /* Personalizacja paska przewijania */
     ::-webkit-scrollbar {
         width: 10px;
         height: 10px;
@@ -23,7 +21,7 @@
         background: linear-gradient(180deg, rgba(94, 59, 238, 0.5) 0%, rgba(94, 59, 238, 0.9) 100%);
     }
 
-    /* Animacja płynnego pojawiania się sekcji (Fade-In-Up) */
+    /* Animacja płynnego pojawiania się sekcji */
     @keyframes sectionFadeIn {
         0% {
             opacity: 0;
@@ -39,7 +37,6 @@
         animation: sectionFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    /* Klasa generująca głęboki neonowy cień brandowy */
     .custom-brand-glow {
         box-shadow: 0 0 30px rgba(94, 59, 238, 0.15);
     }
@@ -48,7 +45,6 @@
         box-shadow: 0 0 25px rgba(34, 197, 94, 0.2);
     }
 
-    /* Szklany efekt dla kart danych */
     .glass-card {
         background: rgba(30, 41, 59, 0.4);
         backdrop-filter: blur(16px);
@@ -86,7 +82,7 @@
             <div id="live-clock-sidebar" class="text-lg font-mono font-black text-white tracking-wider">00:00:00 | CEST</div>
         </div>
 
-        <nav class="flex flex-col gap-2 flex-grow">
+        <nav class="flex flex-col gap-2 relative z-20">
             <button onclick="showSection('dashboard')" id="btn-dashboard" 
                 class="nav-btn flex items-center gap-3 w-full p-4 rounded-2xl font-extrabold text-sm text-left transition-all duration-300">
                 <span class="text-base">📊</span> Panel Analityczny
@@ -145,8 +141,9 @@
         </div>
     </aside>
 
-    <main class="flex-grow p-4 md:p-8 lg:p-10 overflow-y-auto w-full">
+    <main class="flex-grow p-4 md:p-8 lg:p-10 overflow-y-auto w-full min-w-0">
         
+        <!-- SEKCJA DASHBOARD -->
         <section id="section-dashboard" class="admin-section hidden animate-section">
             <div class="mb-8">
                 <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">Panel Analityczny</h1>
@@ -194,7 +191,7 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div class="glass-card rounded-3xl p-6 lg:col-span-2 border border-white/5">
                     <h3 class="text-lg font-extrabold text-white mb-6 flex items-center gap-2">
-                        <span>📊</span> Wykres Aktywności (Suma zgłoszeń na użytkownika)
+                        <span>📊</span> Wykres Aktywności
                     </h3>
                     <div class="space-y-4">
                         {% for u in users[:5] %}
@@ -205,9 +202,7 @@
                         <div>
                             <div class="flex justify-between text-xs font-bold mb-1.5">
                                 <span class="text-gray-300">{{ u.imie }} {{ u.nazwisko }} (@{{ u.username }})</span>
-                                <span class="text-brand font-mono">
-                                    {{ ns.count }} punktów wejść
-                                </span>
+                                <span class="text-brand font-mono">{{ ns.count }} punktów wejść</span>
                             </div>
                             <div class="w-full bg-white/5 h-3 rounded-full overflow-hidden border border-white/5">
                                 {% if attendances|length > 0 %}
@@ -216,8 +211,7 @@
                                 {% else %}
                                     {% set width_style = 'style="width: 0%;"' %}
                                 {% endif %}
-                                <div class="bg-gradient-to-r from-brand to-purple-500 h-full rounded-full transition-all duration-500" {{ width_style | safe }}>
-                                </div>
+                                <div class="bg-gradient-to-r from-brand to-purple-500 h-full rounded-full transition-all duration-500" {{ width_style | safe }}></div>
                             </div>
                         </div>
                         {% endfor %}
@@ -241,6 +235,7 @@
             </div>
         </section>
 
+        <!-- SEKCJA SŁUŻBY -->
         <section id="section-sluzby" class="admin-section hidden animate-section">
             <div class="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-8">
                 <div>
@@ -283,7 +278,7 @@
                                 <td class="p-4 md:p-5 font-bold font-mono text-brand">{{ att.godzina }}</td>
                                 <td class="p-4 md:p-5">
                                     {% if att.typ_mszy == 'inna' %}
-                                        <span class="bg-purple-500/10 text-purple-400 border border-purple-500/20 px-3 py-1 rounded-lg text-xs font-bold">Inna: {{ att.nazwa_inna|e }}</span>
+                                        <span class="bg-purple-500/10 text-purple-400 border border-purple-500/20 px-3 py-1 rounded-lg text-xs font-bold">Inna: {{ att.nazwa_inna }}</span>
                                     {% else %}
                                         <span class="bg-brand/10 text-brand-400 border border-brand/20 px-3 py-1 rounded-lg text-xs font-bold uppercase">{{ att.typ_mszy }}</span>
                                     {% endif %}
@@ -291,19 +286,14 @@
                                 <td class="p-4 md:p-5">
                                     <div class="flex items-center justify-center gap-2">
                                         <button type="button" 
-                                                data-id="{{ att.id }}"
-                                                data-data-sluzby="{{ att.data_sluzby }}"
-                                                data-godzina="{{ att.godzina }}"
-                                                data-typ-mszy="{{ att.typ_mszy }}"
-                                                data-nazwa-inna="{{ att.nazwa_inna or '' }}"
-                                                onclick="openAdminEditModal(this.dataset.id, this.dataset.dataSluzby, this.dataset.godzina, this.dataset.typMszy, this.dataset.nazwaInna)"
+                                                onclick="openAdminEditModal('{{ att.id }}', '{{ att.data_sluzby }}', '{{ att.godzina }}', '{{ att.typ_mszy }}', '{{ att.nazwa_inna }}' || '')"
                                                 class="bg-brand/20 hover:bg-brand text-white text-xs font-bold px-3 py-2 rounded-xl transition">
                                             ✏️ Edytuj
                                         </button>
                                         <a href="{{ url_for('delete_attendance', id=att.id) }}" 
-                                        class="bg-danger/10 hover:bg-danger/20 text-danger p-2 rounded-xl transition duration-300 text-xs font-bold"
-                                        onclick="return confirm('Czy na pewno bezpowrotnie skasować ten rekord obecności?')">
-                                        🗑️ Usuń
+                                           class="bg-danger/10 hover:bg-danger/20 text-danger p-2 rounded-xl transition duration-300 text-xs font-bold"
+                                           onclick="return confirm('Czy na pewno bezpowrotnie skasować ten rekord obecności?')">
+                                            🗑️ Usuń
                                         </a>
                                     </div>
                                 </td>
@@ -315,6 +305,7 @@
             </div>
         </section>
 
+        <!-- SEKCJA RANKING -->
         <section id="section-ranking" class="admin-section hidden animate-section">
             <div class="mb-8">
                 <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">Cyfrowy Ranking</h1>
@@ -329,17 +320,17 @@
                                 <th class="p-5">Miejsce</th>
                                 <th class="p-5">Użytkownik</th>
                                 <th class="p-5">Nazwa Profilu</th>
-                                <th class="p-5 text-center">Suma Punktów (Służb)</th>
-                                <th class="p-5 text-center">Poziom Medalowy</th>
+                                <th class="p-5 text-center">Suma Służb</th>
+                                <th class="p-5 text-center">Poziom Aktywności</th>
                             </tr>
                         </thead>
-                        <tbody id="tbody-podsumowanie" class="divide-y divide-white/5 text-sm">
-                            </tbody>
+                        <tbody id="tbody-podsumowanie" class="divide-y divide-white/5 text-sm"></tbody>
                     </table>
                 </div>
             </div>
         </section>
 
+        <!-- SEKCJA PLAN I GRAFIKI -->
         <section id="section-plan" class="admin-section hidden animate-section">
             <div class="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-8">
                 <div>
@@ -353,7 +344,6 @@
                 </div>
             </div>
 
-            <!-- Formularz dodawania dyżuru -->
             <div class="glass-card rounded-3xl p-6 border border-white/5 mb-8">
                 <h3 class="text-lg font-black text-white mb-5 flex items-center gap-2">
                     <span class="p-1.5 bg-brand/10 text-brand rounded-lg">➕</span> Dodaj Przydział Stałego Dyżuru
@@ -361,28 +351,28 @@
                 <form action="{{ url_for('add_schedule') }}" method="POST" class="flex flex-col lg:flex-row gap-4 items-stretch lg:items-end">
                     <div class="flex-grow flex flex-col gap-1.5 min-w-0">
                         <label class="text-xs font-bold uppercase text-gray-400">Wybierz Ministranta</label>
-                        <select name="user_id" required class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-brand transition">
-                            <option value="" disabled selected>-- Wybierz z listy --</option>
+                        <select name="user_id" required class="w-full bg-[#1e293b] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-brand transition">
+                            <option value="" disabled selected class="bg-[#1e293b] text-gray-400">-- Wybierz z listy --</option>
                             {% for u in users %}
-                                <option value="{{ u.id }}">{{ u.imie }} {{ u.nazwisko }} (@{{ u.username }})</option>
+                                <option value="{{ u.id }}" class="bg-[#1e293b] text-white">{{ u.imie }} {{ u.nazwisko }} (@{{ u.username }})</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="flex flex-col gap-1.5 w-full lg:w-56 shrink-0">
                         <label class="text-xs font-bold uppercase text-gray-400">Dzień Tygodnia</label>
-                        <select name="dzien" id="adminPlanDzien" onchange="updateAdminGodziny()" required class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-brand transition">
-                            <option value="Poniedziałek">Poniedziałek</option>
-                            <option value="Wtorek">Wtorek</option>
-                            <option value="Środa">Środa</option>
-                            <option value="Czwartek">Czwartek</option>
-                            <option value="Piątek">Piątek</option>
-                            <option value="Sobota">Sobota</option>
-                            <option value="Niedziela">Niedziela</option>
+                        <select name="dzien" id="adminPlanDzien" onchange="updateAdminGodziny()" required class="w-full bg-[#1e293b] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-brand transition">
+                            <option value="Poniedziałek" class="bg-[#1e293b] text-white">Poniedziałek</option>
+                            <option value="Wtorek" class="bg-[#1e293b] text-white">Wtorek</option>
+                            <option value="Środa" class="bg-[#1e293b] text-white">Środa</option>
+                            <option value="Czwartek" class="bg-[#1e293b] text-white">Czwartek</option>
+                            <option value="Piątek" class="bg-[#1e293b] text-white">Piątek</option>
+                            <option value="Sobota" class="bg-[#1e293b] text-white">Sobota</option>
+                            <option value="Niedziela" class="bg-[#1e293b] text-white">Niedziela</option>
                         </select>
                     </div>
                     <div class="flex flex-col gap-1.5 w-full lg:w-48 shrink-0">
                         <label class="text-xs font-bold uppercase text-gray-400">Godzina Służby</label>
-                        <select name="godzina" id="adminPlanGodzina" required class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-brand transition">
+                        <select name="godzina" id="adminPlanGodzina" required class="w-full bg-[#1e293b] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-brand transition">
                         </select>
                     </div>
                     <button type="submit" class="w-full lg:w-auto bg-gradient-to-r from-brand to-purple-500 hover:from-brand/90 hover:to-purple-400 text-white font-black py-3 px-8 rounded-xl text-sm transition shadow-lg shadow-brand/20 whitespace-nowrap">
@@ -391,11 +381,9 @@
                 </form>
             </div>
 
-            <!-- Siatka tygodniowa z kartami dni -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {% for dzien, godziny_grupy in plan.items() %}
                 <div class="glass-card rounded-3xl p-5 border border-white/5 flex flex-col min-w-0 hover:border-brand/30 transition-all duration-300">
-                    
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-black text-white truncate">{{ dzien }}</h2>
                         <span class="bg-brand/20 text-brand px-3 py-1 rounded-xl text-xs font-bold shrink-0 ml-2">{{ liczniki[dzien] }} osób</span>
@@ -436,9 +424,9 @@
             </div>
         </section>
 
+        <!-- SEKCJA OGŁOSZENIA -->
         <section id="section-ogloszenia" class="admin-section hidden animate-section">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
                 <div class="glass-card rounded-3xl p-6 border border-white/5 h-fit">
                     <h2 class="text-xl font-black text-white mb-2">Nowe Ogłoszenie</h2>
                     <p class="text-gray-400 text-xs mb-6">Wpisz komunikat, który pojawi się natychmiast na tablicach wszystkich ministrantów.</p>
@@ -492,6 +480,7 @@
             </div>
         </section>
 
+        <!-- SEKCJA REJESTR KONT -->
         <section id="section-uzytkownicy" class="admin-section hidden animate-section">
             <div class="mb-8">
                 <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">Rejestr Kont Użytkowników</h1>
@@ -538,9 +527,9 @@
                                     {% if u.latitude and u.longitude %}
                                         <span class="text-success font-bold flex items-center gap-1">🛰️ GPS Aktywny</span>
                                         <a href="https://www.google.com/maps/search/?api=1&query={{ u.latitude|trim }},{{ u.longitude|trim }}" 
-                                        target="_blank" 
-                                        class="text-brand hover:underline font-bold text-[11px] mt-1 inline-flex items-center gap-1"
-                                        title="Otwórz lokalizację w Google Maps">
+                                           target="_blank" 
+                                           class="text-brand hover:underline font-bold text-[11px] mt-1 inline-flex items-center gap-1"
+                                           title="Otwórz lokalizację w Google Maps">
                                             🗺️ Pokaż na mapie
                                         </a>
                                     {% else %}
@@ -597,6 +586,7 @@
             </div>
         </section>
 
+        <!-- SEKCJA USTAWIENIA -->
         <section id="section-ustawienia" class="admin-section hidden animate-section">
             <div class="mb-8">
                 <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">Ustawienia Rdzenia</h1>
@@ -647,6 +637,7 @@
             </div>
         </section>
 
+        <!-- SEKCJA WERYFIKACJA -->
         <section id="section-weryfikacja" class="admin-section hidden space-y-6 animate-fade-in-up">
             <div class="bg-cardbg/20 backdrop-blur-xl border border-white/5 p-6 rounded-3xl shadow-2xl">
                 <h2 class="text-xl font-black text-white mb-6 uppercase tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
@@ -695,6 +686,7 @@
     </main>
 </div>
 
+<!-- MODAL EDYCJI SŁUŻBY -->
 <div id="adminEditModal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden items-center justify-center z-50 p-4">
     <div class="glass-card rounded-3xl p-6 md:p-8 max-w-md w-full border border-white/10 shadow-2xl animate-section">
         <div class="flex justify-between items-center mb-6">
@@ -704,20 +696,20 @@
         <form id="adminEditForm" method="POST" class="flex flex-col gap-4">
             <div class="flex flex-col gap-1.5">
                 <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Data Służby:</label>
-                <input type="date" name="data_sluzby" id="adminEditDate" required class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand">
+                <input type="date" name="data_sluzby" id="adminEditDate" required class="w-full bg-[#1e293b] border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand">
             </div>
             <div class="flex flex-col gap-1.5">
                 <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Godzina:</label>
-                <input type="text" name="godzina" id="adminEditTime" required placeholder="np. 06:30" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand font-mono">
+                <input type="text" name="godzina" id="adminEditTime" required placeholder="np. 06:30" class="w-full bg-[#1e293b] border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand font-mono">
             </div>
             <div class="flex flex-col gap-1.5">
                 <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Typ Nabożeństwa/Mszy:</label>
-                <select name="typ_mszy" id="adminEditType" onchange="toggleInna('adminEditType', 'adminGroupInna', 'adminEditInna')" class="w-full bg-cardbg border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand">
-                    <option value="Roraty">Roraty</option>
-                    <option value="Niedzielna">Niedzielna</option>
-                    <option value="Tygodniowa">Tygodniowa</option>
-                    <option value="Nabożeństwo">Nabożeństwo</option>
-                    <option value="inna">Inna (Wpisz własną)</option>
+                <select name="typ_mszy" id="adminEditType" onchange="toggleInna('adminEditType', 'adminGroupInna', 'adminEditInna')" class="w-full bg-[#1e293b] border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand">
+                    <option value="Roraty" class="bg-[#1e293b] text-white">Roraty</option>
+                    <option value="Niedzielna" class="bg-[#1e293b] text-white">Niedzielna</option>
+                    <option value="Tygodniowa" class="bg-[#1e293b] text-white">Tygodniowa</option>
+                    <option value="Nabożeństwo" class="bg-[#1e293b] text-white">Nabożeństwo</option>
+                    <option value="inna" class="bg-[#1e293b] text-white">Inna (Wpisz własną)</option>
                 </select>
             </div>
             <div class="flex-col gap-1.5 hidden" id="adminGroupInna">
@@ -731,6 +723,7 @@
     </div>
 </div>
 
+<!-- MODAL RĘCZNEGO DODAWANIA SŁUŻBY -->
 <div id="addAttendanceModal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden items-center justify-center z-50 p-4">
     <div class="glass-card rounded-3xl p-6 md:p-8 max-w-md w-full border border-white/10 shadow-2xl animate-section">
         <div class="flex justify-between items-center mb-6">
@@ -740,28 +733,28 @@
         <form action="{{ url_for('add_attendance_admin') }}" method="POST" class="flex flex-col gap-4">
             <div class="flex flex-col gap-1.5">
                 <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Wybierz Ministranta:</label>
-                <select name="user_id" required class="w-full bg-cardbg border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand">
+                <select name="user_id" required class="w-full bg-[#1e293b] border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand">
                     {% for u in users %}
-                        <option value="{{ u.id }}">{{ u.imie }} {{ u.nazwisko }} (@{{ u.username }})</option>
+                        <option value="{{ u.id }}" class="bg-[#1e293b] text-white">{{ u.imie }} {{ u.nazwisko }} (@{{ u.username }})</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="flex flex-col gap-1.5">
                 <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Data Służby:</label>
-                <input type="date" name="data_sluzby" required class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand">
+                <input type="date" name="data_sluzby" required class="w-full bg-[#1e293b] border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand">
             </div>
             <div class="flex flex-col gap-1.5">
                 <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Godzina:</label>
-                <input type="text" name="godzina" required placeholder="np. 18:00" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand font-mono">
+                <input type="text" name="godzina" required placeholder="np. 18:00" class="w-full bg-[#1e293b] border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand font-mono">
             </div>
             <div class="flex flex-col gap-1.5">
                 <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Typ Nabożeństwa:</label>
-                <select name="typ_mszy" id="addType" onchange="toggleInna('addType', 'addGroupInna', 'addInna')" class="w-full bg-cardbg border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand">
-                    <option value="Niedzielna">Niedzielna</option>
-                    <option value="Tygodniowa">Tygodniowa</option>
-                    <option value="Roraty">Roraty</option>
-                    <option value="Nabożeństwo">Nabożeństwo</option>
-                    <option value="inna">Inna (Wpisz własną)</option>
+                <select name="typ_mszy" id="addType" onchange="toggleInna('addType', 'addGroupInna', 'addInna')" class="w-full bg-[#1e293b] border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand">
+                    <option value="Niedzielna" class="bg-[#1e293b] text-white">Niedzielna</option>
+                    <option value="Tygodniowa" class="bg-[#1e293b] text-white">Tygodniowa</option>
+                    <option value="Roraty" class="bg-[#1e293b] text-white">Roraty</option>
+                    <option value="Nabożeństwo" class="bg-[#1e293b] text-white">Nabożeństwo</option>
+                    <option value="inna" class="bg-[#1e293b] text-white">Inna (Wpisz własną)</option>
                 </select>
             </div>
             <div class="flex-col gap-1.5 hidden" id="addGroupInna">
@@ -775,42 +768,82 @@
     </div>
 </div>
 
-<div id="addScheduleModal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden items-center justify-center z-50 p-4">
-    <div class="glass-card rounded-3xl p-6 md:p-8 max-w-md w-full border border-white/10 shadow-2xl animate-section">
-        <div class="bg-cardbg/20 backdrop-blur-xl border border-white/5 p-6 rounded-3xl shadow-2xl mt-6 animate-section">
-            <h3 class="text-white text-lg font-black tracking-wider uppercase mb-4 flex items-center gap-2">
-                📅 Aktualny Plan Stałych Dyżurów
-            </h3>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="border-b border-white/10 text-gray-400 text-xs font-bold uppercase">
-                            <th class="py-3 px-4">Ministrant ID</th>
-                            <th class="py-3 px-4">Dzień Tygodnia</th>
-                            <th class="py-3 px-4">Godzina</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-gray-300 text-sm divide-y divide-white/5">
-                        {% for dyzur in dyzury %}
-                        <tr class="hover:bg-white/5 transition duration-200">
-                            <td class="py-3 px-4 font-mono text-brand">#{{ dyzur.user_id }}</td>
-                            <td class="py-3 px-4 font-medium">{{ dyzur.dzien_tygodnia }}</td>
-                            <td class="py-3 px-4 font-bold text-white">{{ dyzur.godzina }}</td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="3" class="py-6 text-center text-gray-500 text-xs uppercase font-semibold">
-                                Brak zaplanowanych dyżurów w systemie.
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+<!-- MODAL EDYCYJNY UŻYTKOWNIKA -->
+<div id="editUserModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="bg-[#1e293b] border border-white/10 rounded-3xl w-full max-w-md p-6 shadow-2xl">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-black text-white">✏️ Modyfikacja Konta</h3>
+            <button type="button" onclick="closeEditUserModal()" class="text-gray-400 hover:text-white text-2xl font-bold">&times;</button>
         </div>
+        <form id="editUserForm" method="POST" action="">
+            <div class="space-y-4 text-left">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Imię</label>
+                        <input type="text" id="edit_u_imie" name="imie" required class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Nazwisko</label>
+                        <input type="text" id="edit_u_nazwisko" name="nazwisko" required class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Nazwa użytkownika (Login)</label>
+                    <input type="text" id="edit_u_username" name="username" required class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Rola w systemie</label>
+                        <select id="edit_u_role" name="role" class="w-full bg-[#1e293b] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand focus:outline-none">
+                            <option value="user" class="bg-[#1e293b] text-white">user</option>
+                            <option value="ksiądz" class="bg-[#1e293b] text-white">ksiądz</option>
+                            <option value="admin" class="bg-[#1e293b] text-white">admin</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Status Zatwierdzenia</label>
+                        <select id="edit_u_is_approved" name="is_approved" class="w-full bg-[#1e293b] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand focus:outline-none">
+                            <option value="true" class="bg-[#1e293b] text-white">Zatwierdzony</option>
+                            <option value="false" class="bg-[#1e293b] text-white">Oczekujący</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Typ Interfejsu</label>
+                    <select id="edit_u_uproszczony" name="uproszczony" class="w-full bg-[#1e293b] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand focus:outline-none">
+                        <option value="false" class="bg-[#1e293b] text-white">Standardowy (Pełny)</option>
+                        <option value="true" class="bg-[#1e293b] text-white">Uproszczony (Dla młodszych)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Ostatnie IP Rejestracji / Logowania</label>
+                    <input type="text" id="edit_u_ip" readonly class="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-gray-400 text-xs font-mono focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Współrzędne Geograficzne (GPS)</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="edit_u_gps" readonly class="flex-1 bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-brand text-xs font-mono focus:outline-none select-all">
+                        <a id="edit_u_gps_btn" href="#" target="_blank" class="bg-brand/20 hover:bg-brand/40 border border-brand/30 text-white font-bold px-4 rounded-xl text-xs flex items-center justify-center transition whitespace-nowrap">
+                            Otwórz Mapę 🗺️
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-6">
+                <button type="button" onclick="closeEditUserModal()" class="flex-1 bg-white/5 hover:bg-white/10 text-gray-300 font-bold py-3 rounded-xl text-sm transition">Anuluj</button>
+                <button type="submit" class="flex-1 bg-brand hover:bg-brand/80 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-brand/20">Zapisz zmiany</button>
+            </div>
+        </form>
     </div>
 </div>
 
+<!-- MODAL EDYCJI OGŁOSZENIA -->
 <div id="editOgModal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden items-center justify-center z-50 p-4">
     <div class="glass-card rounded-3xl p-6 md:p-8 max-w-md w-full border border-white/10 shadow-2xl animate-section">
         <div class="flex justify-between items-center mb-6">
@@ -829,47 +862,63 @@
         </form>
     </div>
 </div>
-
 {% endblock %}
 
 {% block scripts %}
 <script>
-    /**
-     * Główny menedżer przełączania zakładek w panelu administratora.
-     * Zapisuje stan w localStorage, gwarantując odświeżenie karty po przeładowaniu.
-     */
+    // System godzin tygodniowych
+    const godzinyPlanAdmin = {
+        'Poniedziałek': ['06:30', '18:00'],
+        'Wtorek': ['06:30', '18:00'],
+        'Środa': ['06:30', '18:00'],
+        'Czwartek': ['06:30', '18:00'],
+        'Piątek': ['06:30', '18:00'],
+        'Sobota': ['07:30', '08:00', '17:30', '18:00'],
+        'Niedziela': ['07:00', '09:00', '09:30', '10:30', '11:00', '12:00', '14:00', '19:00']
+    };
+
+    function updateAdminGodziny() {
+        const dzienSelect = document.getElementById('adminPlanDzien');
+        const godzinaSelect = document.getElementById('adminPlanGodzina');
+        if (!dzienSelect || !godzinaSelect) return;
+        
+        const dzien = dzienSelect.value;
+        godzinaSelect.innerHTML = '';
+        
+        const godziny = godzinyPlanAdmin[dzien] || [];
+        godziny.forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g;
+            opt.textContent = g;
+            opt.className = "bg-[#1e293b] text-white";
+            godzinaSelect.appendChild(opt);
+        });
+    }
+
     function showSection(sectionName) {
-        // Ukryj wszystkie sekcje robocze
         document.querySelectorAll('.admin-section').forEach(section => {
             section.classList.add('hidden');
         });
 
-        // Usuń aktywne klasy stylizacyjne ze wszystkich przycisków nawigacyjnych
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.classList.remove('bg-brand', 'text-white', 'shadow-brand-glow', 'scale-[1.02]');
             btn.classList.add('text-gray-400', 'hover:bg-white/5', 'hover:text-white');
         });
 
-        // Wyświetl żądaną sekcję docelową
         const targetSection = document.getElementById('section-' + sectionName);
         if (targetSection) {
             targetSection.classList.remove('hidden');
         }
 
-        // Aktywuj wizualnie odpowiedni przycisk menu bocznego
         const targetBtn = document.getElementById('btn-' + sectionName);
         if (targetBtn) {
             targetBtn.classList.remove('text-gray-400', 'hover:bg-white/5', 'hover:text-white');
             targetBtn.classList.add('bg-brand', 'text-white', 'shadow-brand-glow', 'scale-[1.02]');
         }
 
-        // Trwałe zapisanie aktywnego wyboru w pamięci podręcznej przeglądarki
         localStorage.setItem('activeAdminTab', sectionName);
     }
 
-    /**
-     * Funkcja otwierająca okna modalne systemu
-     */
     function openModal(modalId) {
         const targetModal = document.getElementById(modalId);
         if (targetModal) {
@@ -877,9 +926,6 @@
         }
     }
 
-    /**
-     * Funkcja zamykająca okna modalne systemu
-     */
     function closeModal(modalId) {
         const targetModal = document.getElementById(modalId);
         if (targetModal) {
@@ -887,9 +933,6 @@
         }
     }
 
-    /**
-     * Funkcja wywołująca i mapująca dane do modala edycji służby
-     */
     function openAdminEditModal(id, date, time, type, inna) {
         document.getElementById('adminEditForm').action = "/admin/edit/" + id;
         document.getElementById('adminEditDate').value = date;
@@ -897,33 +940,23 @@
         document.getElementById('adminEditType').value = type;
         document.getElementById('adminEditInna').value = inna;
         
-        // Wywołanie kontroli widoczności pola własnego tekstowego "Inna"
         toggleInna('adminEditType', 'adminGroupInna', 'adminEditInna');
         openModal('adminEditModal');
     }
 
-    /**
-     * Funkcja wywołująca i mapująca dane do modala edycji komunikatu / ogłoszenia
-     */
     function openEditOgModal(id, tresc) {
         document.getElementById('edit_og_id').value = id;
         document.getElementById('edit_og_tresc').value = tresc;
         openModal('editOgModal');
     }
 
-    /**
-     * Filtrowanie wierszy w tabeli ewidencji służb po nazwie użytkownika
-     */
     function filterUser(username, btnElement) {
-        // Przywrócenie domyślnych styli dla wszystkich przycisków filtrujących
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.className = "filter-btn bg-white/5 text-gray-300 border border-white/5 px-4 py-2 rounded-xl font-bold text-xs transition-all duration-300 hover:bg-white/10";
         });
         
-        // Nadanie stylu wyróżniającego dla aktualnie wybranego kryterium filtru
         btnElement.className = "filter-btn bg-brand text-white border border-brand px-4 py-2 rounded-xl font-bold text-xs transition-all duration-300 shadow-brand-glow";
         
-        // Kontrola widoczności wierszy tabeli na podstawie dopasowania data-atrybutu
         const rows = document.querySelectorAll('.attendance-row');
         rows.forEach(row => {
             if (username === 'all' || row.dataset.username === username) {
@@ -934,9 +967,6 @@
         });
     }
 
-    /**
-     * Ukrywa lub pokazuje pole tekstowe dla typu mszy "inna" w zależności od wybranej wartości select
-     */
     function toggleInna(selectId, groupId, inputId) {
         const select = document.getElementById(selectId);
         const group = document.getElementById(groupId);
@@ -958,10 +988,6 @@
         }
     }
 
-    /**
-     * Przetwarza wiersze tabeli obecności i buduje w czasie rzeczywistym cyfrowy ranking liderów.
-     * Oblicza wystąpienia z bazy i przypisuje odznaki medalowe.
-     */
     function aktualizujPodsumowanie() {
         const counts = {};
         const names = {};
@@ -970,7 +996,6 @@
         rows.forEach(row => {
             const uName = row.dataset.username;
             if (uName) {
-                // Wyciąganie imienia i nazwiska wyświetlanego w kolumnie użytkownika
                 const boldElement = row.cells[1].querySelector('span');
                 let pelneImie = row.cells[1].innerText.replace(boldElement ? boldElement.innerText : '', '').trim();
                 
@@ -979,7 +1004,6 @@
             }
         });
 
-        // Przekształcenie obiektu w posortowaną tablicę struktur rankingu
         const sortedRanking = Object.keys(counts).map(username => ({
             username: username,
             name: names[username],
@@ -990,7 +1014,6 @@
         if (!tbody) return;
         tbody.innerHTML = "";
 
-        // Generowanie kodu HTML wierszy tabeli rankingu z uwzględnieniem stopniowania nagród
         sortedRanking.forEach((item, index) => {
             let pozycja = index + 1;
             let medalBadge = "";
@@ -1028,7 +1051,6 @@
         });
     }
 
-    // Fragment funkcji openEditUserModal(btn) w sekcji skryptów (admin.html)
     function openEditUserModal(btn) {
         const id = btn.dataset.id;
         const imie = btn.dataset.imie;
@@ -1068,13 +1090,12 @@
 
     function closeEditUserModal() {
         const m = document.getElementById('editUserModal');
-        m.classList.remove('flex');
-        m.classList.add('hidden');
+        if (m) {
+            m.classList.remove('flex');
+            m.classList.add('hidden');
+        }
     }
 
-    /**
-     * Inicjalizator Zegarowy czasu rzeczywistego w panelu bocznym
-     */
     function startLiveClock() {
         const clockDOM = document.getElementById('live-clock-sidebar');
         setInterval(() => {
@@ -1085,19 +1106,17 @@
         }, 1000);
     }
 
-    // INICJALIZACJA SYSTEMOWA PO ZAŁADOWANIU DRZEWA DOM
     document.addEventListener("DOMContentLoaded", () => {
-        // Uruchomienie czasu systemowego
         startLiveClock();
         
-        // Odczytanie ostatnio aktywnej zakładki lub włączenie domyślnego Dashboardu analitycznego
+        // Automatyczne załadowanie początkowych godzin przy otwarciu strony
+        updateAdminGodziny();
+        
         const savedTab = localStorage.getItem('activeAdminTab') || 'dashboard';
         showSection(savedTab);
         
-        // Pierwotne wyliczenie punktów i medali rankingu na podstawie przekazanych rekordów Jinja
         aktualizujPodsumowanie();
         
-        // Zabezpieczenie na wypadek kliknięcia poza obszar modala
         window.onclick = function(event) {
             if (event.target.classList.contains('fixed') && event.target.id.includes('Modal')) {
                 event.target.style.display = 'none';
@@ -1105,89 +1124,4 @@
         };
     });
 </script>
-
-<div id="editUserModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-    <div class="bg-[#1e293b] border border-white/10 rounded-3xl w-full max-w-md p-6 shadow-2xl">
-        <div class="flex justify-between items-center mb-6">
-            <h3 class="text-xl font-black text-white">✏️ Modyfikacja Konta</h3>
-            <button type="button" onclick="closeEditUserModal()" class="text-gray-400 hover:text-white text-2xl font-bold">&times;</button>
-        </div>
-        <form id="editUserForm" method="POST" action="">
-            <div class="space-y-4 text-left">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Imię</label>
-                        <input type="text" id="edit_u_imie" name="imie" required class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Nazwisko</label>
-                        <input type="text" id="edit_u_nazwisko" name="nazwisko" required class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand focus:outline-none">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Nazwa użytkownika (Login)</label>
-                    <input type="text" id="edit_u_username" name="username" required class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand focus:outline-none">
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Rola w systemie</label>
-                        <select id="edit_u_role" name="role" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand focus:outline-none">
-                            <option value="user">user</option>
-                            <option value="ksiądz">ksiądz</option>
-                            <option value="admin">admin</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Status Zatwierdzenia</label>
-                        <select id="edit_u_is_approved" name="is_approved" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand focus:outline-none">
-                            <option value="true">Zatwierdzony</option>
-                            <option value="false">Oczekujący</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Typ Interfejsu</label>
-                    <select id="edit_u_uproszczony" name="uproszczony" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand focus:outline-none">
-                        <option value="false">Standardowy (Pełny)</option>
-                        <option value="true">Uproszczony (Dla młodszych)</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Ostatnie IP Rejestracji / Logowania</label>
-                    <input type="text" id="edit_u_ip" readonly class="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-gray-400 text-xs font-mono focus:outline-none">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Współrzędne Geograficzne (GPS)</label>
-                    <div class="flex gap-2">
-                        <input type="text" id="edit_u_gps" readonly class="flex-1 bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-brand text-xs font-mono focus:outline-none select-all">
-                        <a id="edit_u_gps_btn" href="#" target="_blank" class="bg-brand/20 hover:bg-brand/40 border border-brand/30 text-white font-bold px-4 rounded-xl text-xs flex items-center justify-center transition whitespace-nowrap">
-                            Otwórz Mapę 🗺️
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex gap-3 mt-6">
-                <button type="button" onclick="closeEditUserModal()" class="flex-1 bg-white/5 hover:bg-white/10 text-gray-300 font-bold py-3 rounded-xl text-sm transition">Anuluj</button>
-                <button type="submit" class="flex-1 bg-brand hover:bg-brand/80 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-brand/20">Zapisz zmiany</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<script>
-function closeEditUserModal() {
-    const m = document.getElementById('editUserModal');
-    if (m) {
-        m.classList.add('hidden');
-        m.classList.remove('flex');
-    }
-}
-</script>
-
 {% endblock %}
