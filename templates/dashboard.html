@@ -25,6 +25,18 @@
                 class="nav-btn flex items-center gap-3 w-full p-4 rounded-2xl font-extrabold text-sm text-left transition-all duration-300 transform text-gray-400 hover:bg-white/5">
                 <span>⏳</span> Moja Historia
             </button>
+            <button onclick="switchTab('plan_sluzb')" id="tab-btn-plan_sluzb" 
+                class="nav-btn flex items-center gap-3 w-full p-4 rounded-2xl font-extrabold text-sm text-left transition-all duration-300 transform text-gray-400 hover:bg-white/5 hover:text-white">
+                <span>🗓️</span> Plan Stałych Służb
+            </button>
+
+            {% if session.get('user_role') == 'admin' %}
+                <div class="mt-auto pt-4 border-t border-white/5">
+                    <a href="{{ url_for('admin_page') }}" class="flex items-center gap-3 w-full p-4 rounded-2xl font-extrabold text-sm text-left text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 transition-all duration-300">
+                        <span>⚙️</span> Wróć do panelu admina
+                    </a>
+                </div>
+            {% endif %}
         </nav>
         
         <div class="mt-auto pt-6 border-t border-white/5 flex flex-col gap-2">
@@ -35,8 +47,9 @@
         </div>
     </aside>
 
-    <main class="flex-grow flex flex-col gap-6">
+    <main class="flex-grow flex flex-col gap-6 min-w-0">
         
+        <!-- ZAKŁADKA 1: TABLICA OGŁOSZEŃ -->
         <div id="section-ogloszenia" class="tab-section bg-cardbg/20 backdrop-blur-xl border border-white/5 p-6 md:p-8 rounded-3xl shadow-2xl flex flex-col">
             <h2 class="text-2xl md:text-3xl font-black text-white mb-6 flex items-center gap-3">
                 <span class="text-brand">📢</span> Tablica Ogłoszeń
@@ -49,7 +62,7 @@
                     <div class="absolute top-0 left-0 w-1 h-full bg-brand"></div>
                     <div class="flex items-center justify-between mb-3">
                         <span class="text-xs font-black text-brand uppercase tracking-widest bg-brand/10 px-2.5 py-1 rounded-md">Ogłoszenie</span>
-                        <span class="text-xs text-gray-500 font-semibold">{{ ann.date_posted.strftime('%d.%m.%Y %H:%M') if ann.date_posted else '' }}</span>
+                        <span class="text-xs text-gray-500 font-semibold">{{ ann.data_dodania.strftime('%d.%m.%Y %H:%M') if ann.data_dodania else '' }}</span>
                     </div>
                     <h3 class="text-xl font-extrabold text-white mb-2 group-hover:text-brand transition-colors duration-200">{{ ann.tytul }}</h3>
                     <p class="text-gray-300 text-sm leading-relaxed whitespace-pre-line">{{ ann.tresc }}</p>
@@ -64,53 +77,56 @@
             {% endif %}
         </div>
 
+        <!-- ZAKŁADKA 2: FORMULARZ DODAWANIA OBECNOŚCI -->
         <div id="section-sluzby" class="tab-section hidden bg-cardbg/20 backdrop-blur-xl border border-white/5 p-6 md:p-8 rounded-3xl shadow-2xl flex flex-col">
             <h2 class="text-2xl md:text-3xl font-black text-white mb-6 flex items-center gap-3">
-                <span class="text-brand">➕</span> Zgłoś Nową Służbę
+                <span class="text-brand">➕</span> Zgłoś Służbę
             </h2>
             
-            <form action="{{ url_for('dashboard_page') }}" method="POST" class="space-y-5">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div class="flex flex-col gap-2">
-                        <label class="text-sm font-bold text-gray-300">Data służby:</label>
+            <form action="{{ url_for('dashboard_page') }}" method="POST" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Data służby:</label>
                         <input type="date" name="data_sluzby" required 
-                            class="p-3.5 bg-slate-900/60 border border-white/10 text-white rounded-xl outline-none focus:border-brand focus:ring-4 focus:ring-brand/20 transition duration-300 font-medium">
+                            class="p-3.5 bg-slate-900/60 border border-white/10 text-white rounded-xl outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition font-medium text-sm">
                     </div>
                     
-                    <div class="flex flex-col gap-2">
-                        <label class="text-sm font-bold text-gray-300">Godzina (np. 18:00):</label>
-                        <input type="text" name="godzina" required placeholder="Wpisz godzinę"
-                            class="p-3.5 bg-slate-900/60 border border-white/10 text-white rounded-xl placeholder-gray-600 outline-none focus:border-brand focus:ring-4 focus:ring-brand/20 transition duration-300 font-medium">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Godzina (np. 18:00):</label>
+                        <input type="text" name="godzina" required placeholder="18:00"
+                            class="p-3.5 bg-slate-900/60 border border-white/10 text-white rounded-xl placeholder-gray-600 outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition font-medium text-sm font-mono">
                     </div>
                 </div>
 
-                <div class="flex flex-col gap-2">
-                    <label class="text-sm font-bold text-gray-300">Rodzaj służby:</label>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Rodzaj nabożeństwa / mszy:</label>
                     <div class="relative">
-                        <select name="typ" id="selectType" onchange="toggleInna('selectType', 'groupInna', 'inputInna')" required
-                            class="w-full p-3.5 bg-slate-900/60 border border-white/10 text-white rounded-xl outline-none focus:border-brand focus:ring-4 focus:ring-brand/20 transition duration-300 font-medium cursor-pointer appearance-none">
-                            <option value="Msza święta">Msza święta</option>
-                            <option value="Nabożeństwo">Nabożeństwo</option>
-                            <option value="Zbiórka">Zbiórka</option>
+                        <select name="typ" id="selectType" onchange="toggleInnaField()" required
+                            class="w-full p-3.5 bg-slate-900/60 border border-white/10 text-white rounded-xl outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition font-medium text-sm cursor-pointer appearance-none">
+                            <option value="poranna">Poranna Msza</option>
+                            <option value="wieczorna">Wieczorna Msza</option>
                             <option value="inna">Inna (wpisz własną)</option>
                         </select>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">▼</div>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
+                            ▼
+                        </div>
                     </div>
                 </div>
 
-                <div id="groupInna" class="hidden flex-col gap-2">
-                    <label class="text-sm font-bold text-brand">Określ rodzaj służby:</label>
-                    <input type="text" name="inna" id="inputInna" placeholder="Np. Droga Krzyżowa, Ślub"
-                        class="p-3.5 bg-slate-900/60 border border-brand/40 text-white rounded-xl placeholder-gray-600 outline-none focus:border-brand focus:ring-4 focus:ring-brand/20 transition duration-300 font-medium">
+                <div id="groupInna" class="hidden flex-col gap-1.5 animate-fade-in">
+                    <label class="text-xs font-bold text-brand uppercase tracking-wider">Określ rodzaj służby:</label>
+                    <input type="text" name="inna" id="inputInna" placeholder="np. Roraty, Pogrzeb, Ślub"
+                        class="p-3.5 bg-slate-900/60 border border-brand/30 text-white rounded-xl placeholder-gray-600 outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition font-medium text-sm">
                 </div>
 
                 <button type="submit" 
-                    class="w-full mt-4 p-4 bg-brand hover:bg-brand/90 text-white font-black text-base rounded-xl shadow-lg shadow-brand/20 hover:shadow-brand/30 transition transform active:scale-[0.99] flex items-center justify-center gap-2">
-                    🚀 Wyślij Zgłoszenie
+                    class="w-full mt-2 p-4 bg-brand hover:bg-brand/90 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-brand/20 transition transform active:scale-[0.99] flex items-center justify-center gap-2">
+                    🚀 Zapisz moją obecność
                 </button>
             </form>
         </div>
 
+        <!-- ZAKŁADKA 3: HISTORIA OSOBISTYCH SŁUŻB -->
         <div id="section-historia" class="tab-section hidden bg-cardbg/20 backdrop-blur-xl border border-white/5 p-6 md:p-8 rounded-3xl shadow-2xl flex flex-col">
             <h2 class="text-2xl md:text-3xl font-black text-white mb-6 flex items-center gap-3">
                 <span class="text-brand">⏳</span> Moja Historia Służb
@@ -169,116 +185,264 @@
             {% endif %}
         </div>
 
+        <!-- ZAKŁADKA 4: STAŁY PLAN SŁUŻB -->
+        <div id="section-plan_sluzb" class="tab-section hidden space-y-6">
+            
+            <!-- SEKCJA: MOJE PRZYPISANE DYŻURY -->
+            <div class="mb-8">
+                <h3 class="text-lg font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+                    🛡️ Moje przypisane dyżury
+                </h3>
+                {% if moje_dyzury %}
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        {% for dyzur in moje_dyzury %}
+                            <div class="bg-emerald-500/20 border border-emerald-500/40 p-4 rounded-2xl flex items-center gap-3 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold shrink-0">
+                                    🔔
+                                </div>
+                                <div>
+                                    <div class="font-extrabold text-sm text-white">{{ dyzur.dzien_tygodnia }}</div>
+                                    <div class="text-xs text-emerald-300 font-mono font-bold mt-0.5">{{ dyzur.godzina }}</div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="p-5 bg-white/5 border border-white/5 rounded-2xl text-xs text-gray-500 italic">
+                        Nie masz przypisanych stałych dyżurów liturgicznych w tym tygodniu.
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- SEKCJA: PEŁNY PLAN TYGODNIA -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pt-6 border-t border-white/5">
+                <div>
+                    <h3 class="text-lg font-black text-white uppercase tracking-wider">
+                        📅 Pełny plan na ten tydzień
+                    </h3>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <a href="{{ url_for('export_schedule') }}" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-2xl font-bold text-xs transition duration-200 flex items-center gap-2 shrink-0">
+                        📥 Pobierz Plan Służb (Excel)
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {% set dni_tygodnia = ['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota', 'Niedziela'] %}
+                
+                {% for dzien in dni_tygodnia %}
+                    <div class="day-card bg-cardbg/10 backdrop-blur-xl border border-white/5 rounded-2xl p-4 flex flex-col hover:border-brand/30 transition-all duration-300 min-w-0" data-dzien="{{ dzien }}">
+                        <div class="day-header flex items-center justify-between border-b border-white/5 pb-2 mb-3 shrink-0">
+                            <span class="font-black text-sm uppercase tracking-wide text-gray-200 truncate">
+                                {{ dzien }}
+                            </span>
+                            <span class="bg-brand/20 text-brand px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 ml-2">
+                                {{ liczniki[dzien] }} osób
+                            </span>
+                        </div>
+                        
+                        <div class="space-y-4 flex-grow min-w-0">
+                            {% if plan[dzien] %}
+                                {% for godzina, user_list in plan[dzien].items() %}
+                                    <div class="p-3.5 bg-white/5 rounded-xl border border-white/5 flex flex-col min-w-0">
+                                        <div class="text-xs font-bold text-brand font-mono mb-2 flex items-center gap-1 shrink-0">
+                                            🕐 Godzina {{ godzina }}
+                                        </div>
+                                        <ul class="space-y-2.5 pl-1 min-w-0">
+                                            {% for u in user_list %}
+                                                <li class="text-xs text-gray-300 font-medium flex items-start gap-1.5 min-w-0">
+                                                    <span class="text-brand shrink-0 mt-0.5 select-none">•</span>
+                                                    <div class="flex flex-col min-w-0 w-full">
+                                                        <!-- Przeciwdziałanie rozrywaniu kontenera poprzez wymuszone ucinanie tekstu -->
+                                                        <span class="font-bold text-white truncate break-all block" title="{{ u.username }}">
+                                                            {{ u.username }}
+                                                        </span>
+                                                        <span class="text-[10px] text-gray-400 truncate block mt-0.5" title="{{ u.imie }} {{ u.nazwisko }}">
+                                                            ({{ u.imie }} {{ u.nazwisko }})
+                                                        </span>
+                                                    </div>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-8 text-xs text-gray-500 italic">
+                                    Brak stałych dyżurów
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+        </div>
+
     </main>
 </div>
 
-<div id="editMyModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="bg-[#1e293b] border border-white/10 rounded-3xl w-full max-w-lg p-6 md:p-8 shadow-2xl relative">
-        <button onclick="document.getElementById('editMyModal').style.display = 'none'" 
-            class="absolute top-4 right-4 text-gray-400 hover:text-white transition text-xl font-bold p-2 bg-white/5 rounded-full w-9 h-9 flex items-center justify-center">
-            &times;
-        </button>
-        
-        <h3 class="text-xl font-black text-white mb-6 flex items-center gap-2">
-            <span>✏️</span> Edycja Służby
-        </h3>
-        
-        <form id="editMyForm" method="POST" class="space-y-4">
-            <div class="flex flex-col gap-1.5">
-                <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Nowa data:</label>
-                <input type="date" id="editMyDate" name="data_sluzby" required
-                    class="p-3 bg-slate-900/60 border border-white/10 text-white rounded-xl outline-none focus:border-brand focus:ring-2 focus:ring-brand/30 transition">
-            </div>
-            
-            <div class="flex flex-col gap-1.5">
-                <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Nowa godzina:</label>
-                <input type="text" id="editMyTime" name="godzina" required
-                    class="p-3 bg-slate-900/60 border border-white/10 text-white rounded-xl outline-none focus:border-brand focus:ring-2 focus:ring-brand/30 transition">
-            </div>
-            
-            <div class="flex flex-col gap-1.5">
-                <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Nowy rodzaj:</label>
-                <div class="relative">
-                    <select id="editMyType" name="typ" onchange="toggleInna('editMyType', 'groupInnaMy', 'editMyInna')" required
-                        class="w-full p-3 bg-slate-900/60 border border-white/10 text-white rounded-xl outline-none focus:border-brand focus:ring-2 focus:ring-brand/30 transition cursor-pointer appearance-none">
-                        <option value="Msza święta">Msza święta</option>
-                        <option value="Nabożeństwo">Nabożeństwo</option>
-                        <option value="Zbiórka">Zbiórka</option>
-                        <option value="inna">Inna (wpisz własną)</option>
+<!-- MODAL: EDYCJA MOJEJ OBECNOŚCI -->
+<div id="editMyAttendanceModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="bg-[#1e293b] border border-white/10 rounded-3xl w-full max-w-md p-6 shadow-2xl">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-black text-white">✏️ Modyfikacja Zgłoszenia</h3>
+            <button type="button" onclick="closeMyEditModal()" class="text-gray-400 hover:text-white text-2xl font-bold">&times;</button>
+        </div>
+        <form id="editMyAttendanceForm" method="POST" action="">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Data Służby</label>
+                    <input type="date" id="myEditDate" name="data_sluzby" required class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-brand">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Godzina</label>
+                    <input type="text" id="myEditTime" name="godzina" required class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-brand font-mono">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Rodzaj Służby</label>
+                    <select id="myEditType" name="typ" onchange="toggleInnaFieldEdit()" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-brand">
+                        <option value="poranna">poranna</option>
+                        <option value="wieczorna">wieczorna</option>
+                        <option value="inna">inna</option>
                     </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">▼</div>
+                </div>
+                <div id="myEditGroupInna" class="hidden flex-col gap-1.5">
+                    <label class="block text-xs font-bold uppercase text-brand mb-1.5">Własny opis służby</label>
+                    <input type="text" id="myEditInna" name="inna" class="w-full bg-black/20 border border-brand/30 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-brand">
                 </div>
             </div>
-            
-            <div id="groupInnaMy" class="hidden flex-col gap-1.5">
-                <label class="text-xs font-bold text-brand uppercase tracking-wider">Określ rodzaj:</label>
-                <input type="text" id="editMyInna" name="inna"
-                    class="p-3 bg-slate-900/60 border border-brand/40 text-white rounded-xl outline-none focus:border-brand focus:ring-2 focus:ring-brand/30 transition">
+            <div class="flex gap-3 mt-6">
+                <button type="button" onclick="closeMyEditModal()" class="flex-1 bg-white/5 hover:bg-white/10 text-gray-300 font-bold py-3 rounded-xl text-sm transition">Anuluj</button>
+                <button type="submit" class="flex-1 bg-brand hover:bg-brand/80 text-white font-bold py-3 rounded-xl text-sm transition">Zapisz</button>
             </div>
-            
-            <button type="submit" 
-                class="w-full mt-4 p-3.5 bg-brand hover:bg-brand/90 text-white font-bold rounded-xl transition shadow-lg shadow-brand/20">
-                💾 Zapisz Zmiany
-            </button>
         </form>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
 <script>
-    function switchTab(tabId) {
-        document.querySelectorAll('.tab-section').forEach(section => {
-            section.classList.add('hidden');
+    function switchTab(tabName) {
+        const tabs = ['ogloszenia', 'sluzby', 'historia', 'plan_sluzb']; 
+
+        tabs.forEach(t => {
+            const content = document.getElementById('section-' + t);
+            const btn = document.getElementById('tab-btn-' + t);
+            
+            if (content) {
+                if (t === tabName) {
+                    content.classList.remove('hidden');
+                } else {
+                    content.classList.add('hidden');
+                }
+            }
+            
+            if (btn) {
+                if (t === tabName) {
+                    btn.className = "nav-btn flex items-center gap-3 w-full p-4 rounded-2xl font-extrabold text-sm text-left transition-all duration-300 transform bg-brand text-white shadow-brand-glow";
+                } else {
+                    btn.className = "nav-btn flex items-center gap-3 w-full p-4 rounded-2xl font-extrabold text-sm text-left transition-all duration-300 transform text-gray-400 hover:bg-white/5 hover:text-white";
+                }
+            }
         });
-        document.getElementById('section-' + tabId).classList.remove('hidden');
-        
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.classList.remove('bg-brand', 'text-white', 'shadow-brand-glow');
-            btn.classList.add('text-gray-400', 'hover:bg-white/5');
-        });
-        document.getElementById('tab-btn-' + tabId).classList.add('bg-brand', 'text-white', 'shadow-brand-glow');
-        document.getElementById('tab-btn-' + tabId).classList.remove('text-gray-400', 'hover:bg-white/5');
+
+        localStorage.setItem('activeDashboardTab', tabName);
     }
 
-    function toggleInna(selectId, groupId, inputId) {
-        var select = document.getElementById(selectId);
-        var groupInna = document.getElementById(groupId);
-        var inputInna = document.getElementById(inputId);
-
-        if (select && select.value === "inna") {
-            if (groupInna) {
-                groupInna.classList.remove("hidden");
-                groupInna.classList.add("flex");
-            }
-            if (inputInna) inputInna.required = true;
-        } else {
-            if (groupInna) {
-                groupInna.classList.add("hidden");
-                groupInna.classList.remove("flex");
-            }
-            if (inputInna) {
-                inputInna.required = false;
-                inputInna.value = "";
+    function toggleInnaField() {
+        const select = document.getElementById('selectType');
+        const group = document.getElementById('groupInna');
+        const input = document.getElementById('inputInna');
+        if (select && group && input) {
+            if (select.value === 'inna') {
+                group.classList.remove('hidden');
+                group.classList.add('flex');
+                input.required = true;
+            } else {
+                group.classList.add('hidden');
+                group.classList.remove('flex');
+                input.required = false;
+                input.value = '';
             }
         }
     }
 
     function openMyEditModal(id, date, time, type, inna) {
-        document.getElementById('editMyForm').action = "/edit_my_attendance/" + id;
-        document.getElementById('editMyDate').value = date;
-        document.getElementById('editMyTime').value = time;
-        document.getElementById('editMyType').value = type;
-        document.getElementById('editMyInna').value = inna;
-        toggleInna('editMyType', 'groupInnaMy', 'editMyInna');
-        document.getElementById('editMyModal').style.display = "flex";
-    }
-
-    window.onclick = function(event) {
-        var modal = document.getElementById('editMyModal');
-        if (event.target == modal) {
-            modal.style.display = "none";
+        const form = document.getElementById('editMyAttendanceForm');
+        if (form) {
+            form.action = "/edit_my_attendance/" + id;
+        }
+        
+        const dateInput = document.getElementById('myEditDate');
+        const timeInput = document.getElementById('myEditTime');
+        const typeSelect = document.getElementById('myEditType');
+        const innaInput = document.getElementById('myEditInna');
+        
+        if (dateInput) dateInput.value = date;
+        if (timeInput) timeInput.value = time;
+        if (typeSelect) {
+            typeSelect.value = type;
+            toggleInnaFieldEdit();
+        }
+        if (innaInput) innaInput.value = inna;
+        
+        const modal = document.getElementById('editMyAttendanceModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
         }
     }
+
+    function closeMyEditModal() {
+        const modal = document.getElementById('editMyAttendanceModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }
+
+    function toggleInnaFieldEdit() {
+        const select = document.getElementById('myEditType');
+        const group = document.getElementById('myEditGroupInna');
+        const input = document.getElementById('myEditInna');
+        if (select && group && input) {
+            if (select.value === 'inna') {
+                group.classList.remove('hidden');
+                group.classList.add('flex');
+                input.required = true;
+            } else {
+                group.classList.add('hidden');
+                group.classList.remove('flex');
+                input.required = false;
+                input.value = '';
+            }
+        }
+    }
+
+    function highlightToday() {
+        const dniTygodniaPL = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
+        const dzisIndex = new Date().getDay();
+        const dzisNazwa = dniTygodniaPL[dzisIndex];
+
+        document.querySelectorAll('.day-card').forEach(card => {
+            if (card.dataset.dzien === dzisNazwa) {
+                card.classList.remove('border-white/5');
+                card.classList.add('border-brand/80', 'shadow-brand-glow/20', 'ring-1', 'ring-brand/30');
+                
+                const header = card.querySelector('.day-header');
+                if (header) {
+                    const badge = document.createElement('span');
+                    badge.className = "bg-success/20 text-success text-[10px] px-2 py-0.5 rounded-md font-black animate-pulse tracking-wider shrink-0 ml-2";
+                    badge.textContent = "DZISIAJ";
+                    header.appendChild(badge);
+                }
+            }
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const savedTab = localStorage.getItem('activeDashboardTab') || 'ogloszenia';
+        switchTab(savedTab);
+        highlightToday();
+    });
 </script>
 {% endblock %}

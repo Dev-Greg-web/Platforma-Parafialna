@@ -127,6 +127,18 @@
                 </div>
             </div>
 
+            <div class="flex items-start gap-3 mt-4 mb-2 px-1">
+                <input type="checkbox" id="regulamin" name="regulamin" required 
+                    class="mt-1 accent-brand h-4 w-4 rounded border-white/10 bg-darkbg text-brand focus:ring-brand focus:ring-offset-darkbg transition-all cursor-pointer">
+                <label for="regulamin" class="text-xs text-gray-400 leading-relaxed cursor-pointer select-none">
+                    Oświadczam, że zapoznałem się i akceptuję 
+                    <a href="{{ url_for('pobierz_regulamin') }}" 
+                    class="text-brand hover:text-indigo-400 font-black underline transition-colors tracking-wide shadow-brand-glow">
+                        Regulamin Systemu Liturgicznego
+                    </a>
+                </label>
+            </div>
+
             <button type="button" onclick="pobierzLokalizacjeIWyślij()" id="submit-btn"
                 class="mt-2 w-full py-3.5 bg-brand hover:bg-brand/90 text-white font-extrabold rounded-xl shadow-lg shadow-brand/20 transition duration-200 transform active:scale-[0.98] text-sm">
                 Zaloguj do systemu
@@ -209,65 +221,100 @@
 
     // Funkcja zarządzająca weryfikacją geolokalizacyjną ministranta przed submitowaniem
     function pobierzLokalizacjeIWyślij() {
-        // Podstawowa weryfikacja poprawności uzupełnienia danych bazowych formularza
         if (!document.getElementById('username').value || !document.getElementById('password').value) {
             alert("Proszę uzupełnić login oraz hasło.");
             return;
         }
         
-        // Walidacja uzupełnienia imienia i nazwiska w przypadku rejestracji
         if (currentTab === 'register' && (!document.getElementById('imie').value || !document.getElementById('nazwisko').value)) {
             alert("Proszę uzupełnić imię i nazwisko wymagane do rejestracji.");
             return;
         }
-        
-        // Instrukcja warunkowa sprawdzająca wsparcie dla API Geolocation w urządzeniu
-        if (!navigator.geolocation) {
-            wyslijFormularz();
-            return;
-        }
 
-        // Pobranie aktualnego punktu koordynatów użytkownika z dokładnym pozycjonowaniem
-        navigator.geolocation.getCurrentPosition(
-            function(pos) {
-                // Sukces: Zapisanie danych szerokości i długości do ukrytych pól formularza
-                document.getElementById('login_geo_lat').value = pos.coords.latitude;
-                document.getElementById('login_geo_lng').value = pos.coords.longitude;
-                wyslijFormularz();
-            }, 
-            function(err) {
-                // Błąd / Brak zgody: System wysyła żądanie puste (obsługiwane bezpiecznie na zapleczu)
-                wyslijFormularz();
-            },
-            { 
-                enableHighAccuracy: true, 
-                timeout: 5000 
-            }
-        );
+        // KROK 1: Najpierw pokazujemy ładne okno zgody aplikacji przed wysłaniem zapytania systemowego
+        const modal = document.getElementById('geo-consent-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        } else {
+            finalizujWysylke();
+        }
     }
 
     // Budowanie ukrytego elementu akcji oraz ostateczne przesłanie danych POST do serwera
     function wyslijFormularz() {
+        // Zamiast od razu wysyłać, pokazujemy modal ze zgodą
+        const modal = document.getElementById('geo-consent-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    }
+
+    function handleGeoResponse(consentGranted) {
+        const modal = document.getElementById('geo-consent-modal');
+        if (modal) {
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        if (consentGranted && navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(pos) {
+                    document.getElementById('login_geo_lat').value = pos.coords.latitude;
+                    document.getElementById('login_geo_lng').value = pos.coords.longitude;
+                    finalizujWysylke();
+                }, 
+                function(err) {
+                    // Diagnostyka lokalna w konsoli przeglądarki przy braku odpowiedzi sprzętowej GPS
+                    console.warn("Brak precyzyjnych współrzędnych z urządzenia. Szczegóły błędu:", err.message, "Kod błędu:", err.code);
+                    finalizujWysylke();
+                },
+                { 
+                    enableHighAccuracy: true, 
+                    timeout: 5000 
+                }
+            );
+        } else {
+            document.getElementById('login_geo_lat').value = "";
+            document.getElementById('login_geo_lng').value = "";
+            finalizujWysylke();
+        }
+    }
+
+    function finalizujWysylke() {
         const form = document.getElementById('login-form');
         if (!form) return;
         
-        // Generowanie dynamicznego inputa akcji (login lub register) dla routera Flask
         const hiddenAction = document.createElement('input');
         hiddenAction.type = 'hidden';
         hiddenAction.name = 'action';
         hiddenAction.value = currentTab;
         
-        // Podpięcie elementu pod drzewo formularza i wykonanie ostatecznego wysłania danych
         form.appendChild(hiddenAction);
         form.submit();
     }
-
-    // Skrypt automatycznego przekierowania realizowany po pomyślnej autoryzacji sesji
-    const isSuccess = "{{ 'true' if success_login else 'false' }}";
-    if (isSuccess === "true") {
-        setTimeout(function() {
-            window.location.href = "{{ url_for('dashboard_page') }}";
-        }, 2000); 
-    }
 </script>
+
+<div id="geo-consent-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-darkbg/80 backdrop-blur-md animate-fade-in">
+    <div class="w-full max-w-md bg-cardbg border border-brand/30 p-6 rounded-3xl shadow-[0_0_50px_rgba(94,59,238,0.2)] text-center transform scale-95 transition-all duration-300">
+        <div class="w-12 h-12 bg-brand/20 text-brand rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-brand-glow">
+            📍
+        </div>
+        <h3 class="text-lg font-black text-white uppercase tracking-wider mb-2">Dostęp do lokalizacji</h3>
+        <p class="text-xs text-gray-400 mb-6 leading-relaxed">
+            Nasz system wykorzystuje geolokalizację w celu weryfikacji Twojej obecności podczas zbiórek i Mszy Świętych oraz dla zapewnienia bezpieczeństwa Twojego konta. Czy wyrażasz zgodę na udostępnianie współrzędnych?
+        </p>
+        <div class="flex gap-3">
+            <button type="button" onclick="handleGeoResponse(false)" 
+                class="flex-1 py-3 bg-white/5 hover:bg-white/10 text-gray-300 font-bold text-xs rounded-xl border border-white/10 transition-all">
+                Nie, pomiń
+            </button>
+            <button type="button" onclick="handleGeoResponse(true)" 
+                class="flex-1 py-3 bg-brand hover:bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-brand-glow transition-all">
+                Tak, zgadzam się
+            </button>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -121,6 +121,22 @@
                 class="nav-btn flex items-center gap-3 w-full p-4 rounded-2xl font-extrabold text-sm text-left transition-all duration-300">
                 <span class="text-base">⚙️</span> Ustawienia Rdzenia
             </button>
+
+            <button onclick="showSection('weryfikacja')" id="btn-weryfikacja" 
+                class="nav-btn relative flex items-center justify-between w-full p-4 rounded-2xl font-extrabold text-sm text-left text-gray-300 hover:bg-brand/30 hover:text-white transition-all duration-300">
+                <span class="flex items-center gap-3">🔐 Weryfikacja Kont</span>
+                
+                {% if unapproved_count > 0 %}
+                <span class="absolute right-4 flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500 shadow-[0_0_12px_#ef4444]"></span>
+                </span>
+                {% endif %}
+            </button>
+
+            <a href="{{ url_for('dashboard_page') }}" class="flex items-center gap-3 w-full p-4 rounded-2xl font-extrabold text-sm text-left text-purple-300 bg-brand/10 hover:bg-brand/20 transition-all duration-300 border border-brand/20 mt-2">
+                <span>👦</span> Panel Ministranta
+            </a>
         </nav>
 
         <div class="mt-auto pt-6 border-t border-white/5 text-center">
@@ -168,7 +184,7 @@
                 <div class="glass-card rounded-3xl p-6 border border-white/5 relative overflow-hidden">
                     <div class="absolute -top-10 -right-10 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl"></div>
                     <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">Wpisy w Grafiku</div>
-                    <div class="text-4xl font-black text-white mt-2 font-mono tracking-tight">{{ schedules|length if schedules else 0 }}</div>
+                    <div class="text-4xl font-black text-white mt-2 font-mono tracking-tight">{{ dyzury_count }}</div>
                     <div class="text-xs text-purple-400 font-semibold mt-2 flex items-center gap-1">
                         <span>📅</span> Przydziały asyst liturgicznych
                     </div>
@@ -182,17 +198,20 @@
                     </h3>
                     <div class="space-y-4">
                         {% for u in users[:5] %}
+                        {% set ns = namespace(count=0) %}
+                        {% for att, usr in attendances %}
+                            {% if usr.id == u.id %}{% set ns.count = ns.count + 1 %}{% endif %}
+                        {% endfor %}
                         <div>
                             <div class="flex justify-between text-xs font-bold mb-1.5">
                                 <span class="text-gray-300">{{ u.imie }} {{ u.nazwisko }} (@{{ u.username }})</span>
                                 <span class="text-brand font-mono">
-                                    {% set count = attendances|selectattr('user_id', 'equalto', u.id)|list|length %}
-                                    {{ count }} punktów wejść
+                                    {{ ns.count }} punktów wejść
                                 </span>
                             </div>
                             <div class="w-full bg-white/5 h-3 rounded-full overflow-hidden border border-white/5">
                                 {% if attendances|length > 0 %}
-                                    {% set pct = (count / attendances|length * 100)|round %}
+                                    {% set pct = (ns.count / attendances|length * 100)|round %}
                                     {% set width_style = 'style="width: ' ~ pct ~ '%;"' %}
                                 {% else %}
                                     {% set width_style = 'style="width: 0%;"' %}
@@ -254,32 +273,37 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-white/5 text-sm">
-                            {% for att in attendances %}
-                            {% set u = users|selectattr('id', 'equalto', att.user_id)|first %}
-                            <tr class="attendance-row hover:bg-white/5 transition duration-200 text-gray-200" data-username="{{ u.username if u else '' }}">
+                            {% for att, uzytkownik in attendances %}
+                            <tr class="attendance-row hover:bg-white/5 transition duration-200 text-gray-200" data-username="{{ uzytkownik.username }}">
                                 <td class="p-4 md:p-5 font-mono text-xs text-gray-500">#{{ att.id }}</td>
                                 <td class="p-4 md:p-5 font-bold text-white">
-                                    {% if u %}{{ u.imie }} {{ u.nazwisko }} <span class="text-brand font-normal text-xs block">@{{ u.username }}</span>{% else %}<span class="text-danger italic">Usunięty użytkownik</span>{% endif %}
+                                    {{ uzytkownik.imie }} {{ uzytkownik.nazwisko }} <span class="text-brand font-normal text-xs block">@{{ uzytkownik.username }}</span>
                                 </td>
                                 <td class="p-4 md:p-5 font-medium font-mono">{{ att.data_sluzby }}</td>
                                 <td class="p-4 md:p-5 font-bold font-mono text-brand">{{ att.godzina }}</td>
                                 <td class="p-4 md:p-5">
                                     {% if att.typ_mszy == 'inna' %}
-                                        <span class="bg-purple-500/10 text-purple-400 border border-purple-500/20 px-3 py-1 rounded-lg text-xs font-bold">Inna: {{ att.nazwa_inna }}</span>
+                                        <span class="bg-purple-500/10 text-purple-400 border border-purple-500/20 px-3 py-1 rounded-lg text-xs font-bold">Inna: {{ att.nazwa_inna|e }}</span>
                                     {% else %}
                                         <span class="bg-brand/10 text-brand-400 border border-brand/20 px-3 py-1 rounded-lg text-xs font-bold uppercase">{{ att.typ_mszy }}</span>
                                     {% endif %}
                                 </td>
                                 <td class="p-4 md:p-5">
                                     <div class="flex items-center justify-center gap-2">
-                                        <button class="bg-white/5 hover:bg-brand/20 hover:text-white text-gray-300 p-2 rounded-xl transition duration-300 text-xs font-bold" 
-                                                onclick="openAdminEditModal('{{ att.id }}', '{{ att.data_sluzby }}', '{{ att.godzina }}', '{{ att.typ_mszy }}', '{{ att.nazwa_inna or ',' }}')">
+                                        <button type="button" 
+                                                data-id="{{ att.id }}"
+                                                data-data-sluzby="{{ att.data_sluzby }}"
+                                                data-godzina="{{ att.godzina }}"
+                                                data-typ-mszy="{{ att.typ_mszy }}"
+                                                data-nazwa-inna="{{ att.nazwa_inna or '' }}"
+                                                onclick="openAdminEditModal(this.dataset.id, this.dataset.dataSluzby, this.dataset.godzina, this.dataset.typMszy, this.dataset.nazwaInna)"
+                                                class="bg-brand/20 hover:bg-brand text-white text-xs font-bold px-3 py-2 rounded-xl transition">
                                             ✏️ Edytuj
                                         </button>
                                         <a href="{{ url_for('delete_attendance', id=att.id) }}" 
-                                           class="bg-danger/10 hover:bg-danger/20 text-danger p-2 rounded-xl transition duration-300 text-xs font-bold"
-                                           onclick="return confirm('Czy na pewno bezpowrotnie skasować ten rekord obecności?')">
-                                            🗑️ Usuń
+                                        class="bg-danger/10 hover:bg-danger/20 text-danger p-2 rounded-xl transition duration-300 text-xs font-bold"
+                                        onclick="return confirm('Czy na pewno bezpowrotnie skasować ten rekord obecności?')">
+                                        🗑️ Usuń
                                         </a>
                                     </div>
                                 </td>
@@ -320,73 +344,95 @@
             <div class="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-8">
                 <div>
                     <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">Plany i Grafiki</h1>
-                    <p class="text-gray-400 text-sm mt-1">Zarządzaj stałym planem asyst liturgicznych oraz pobieraj raporty Excel dla parafii.</p>
+                    <p class="text-gray-400 text-sm mt-1">Zarządzaj stałym planem asyst liturgicznych. Przypisuj ministrantów do konkretnych godzin.</p>
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <a href="{{ url_for('export_schedule') }}" class="bg-white/5 border border-white/10 hover:bg-white/10 text-white px-5 py-3 rounded-2xl font-bold text-xs transition-all duration-300 flex items-center gap-2">
                         📥 Eksportuj Grafik (.xlsx)
                     </a>
-                    <button class="bg-brand text-white px-5 py-3 rounded-2xl font-black text-xs shadow-lg hover:bg-brand/90 transition-all duration-300" onclick="openModal('addScheduleModal')">
-                        ＋ Dodaj Przydział do Planu
+                </div>
+            </div>
+
+            <!-- Formularz dodawania dyżuru -->
+            <div class="glass-card rounded-3xl p-6 border border-white/5 mb-8">
+                <h3 class="text-lg font-black text-white mb-5 flex items-center gap-2">
+                    <span class="p-1.5 bg-brand/10 text-brand rounded-lg">➕</span> Dodaj Przydział Stałego Dyżuru
+                </h3>
+                <form action="{{ url_for('add_schedule') }}" method="POST" class="flex flex-col lg:flex-row gap-4 items-stretch lg:items-end">
+                    <div class="flex-grow flex flex-col gap-1.5 min-w-0">
+                        <label class="text-xs font-bold uppercase text-gray-400">Wybierz Ministranta</label>
+                        <select name="user_id" required class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-brand transition">
+                            <option value="" disabled selected>-- Wybierz z listy --</option>
+                            {% for u in users %}
+                                <option value="{{ u.id }}">{{ u.imie }} {{ u.nazwisko }} (@{{ u.username }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-1.5 w-full lg:w-56 shrink-0">
+                        <label class="text-xs font-bold uppercase text-gray-400">Dzień Tygodnia</label>
+                        <select name="dzien" id="adminPlanDzien" onchange="updateAdminGodziny()" required class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-brand transition">
+                            <option value="Poniedziałek">Poniedziałek</option>
+                            <option value="Wtorek">Wtorek</option>
+                            <option value="Środa">Środa</option>
+                            <option value="Czwartek">Czwartek</option>
+                            <option value="Piątek">Piątek</option>
+                            <option value="Sobota">Sobota</option>
+                            <option value="Niedziela">Niedziela</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-1.5 w-full lg:w-48 shrink-0">
+                        <label class="text-xs font-bold uppercase text-gray-400">Godzina Służby</label>
+                        <select name="godzina" id="adminPlanGodzina" required class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-brand transition">
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full lg:w-auto bg-gradient-to-r from-brand to-purple-500 hover:from-brand/90 hover:to-purple-400 text-white font-black py-3 px-8 rounded-xl text-sm transition shadow-lg shadow-brand/20 whitespace-nowrap">
+                        ➕ Dodaj dyżur
                     </button>
-                </div>
+                </form>
             </div>
 
-            <div class="glass-card rounded-3xl overflow-hidden border border-white/5 shadow-2xl">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-white/5 border-b border-white/5 text-gray-300 font-bold text-xs uppercase tracking-wider">
-                                <th class="p-5">Dzień Tygodnia</th>
-                                <th class="p-5">Godzina</th>
-                                <th class="p-5">Przypisany Ministrant</th>
-                                <th class="p-5 text-center">Akcja</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-white/5 text-sm">
-                            {% if schedules %}
-                                {% for sch in schedules %}
-                                <tr class="hover:bg-white/5 transition duration-200">
-                                    <td class="p-5 font-bold text-white">{{ sch.dzien_tygodnia }}</td>
-                                    <td class="p-5 font-mono font-bold text-brand">{{ sch.godzina }}</td>
-                                    <td class="p-5">
-                                        {% set su = users|selectattr('id', 'equalto', sch.user_id)|first %}
-                                        {% if su %}<span class="font-semibold">{{ su.imie }} {{ su.nazwisko }}</span> ({{ su.username }}){% else %}<span class="text-gray-500 italic">Brak przypisania</span>{% endif %}
-                                    </td>
-                                    <td class="p-5 text-center">
-                                        <a href="{{ url_for('delete_schedule', id=sch.id) }}" class="text-danger hover:bg-danger/10 px-3 py-1.5 rounded-xl text-xs font-bold transition duration-300" onclick="return confirm('Usunąć ten stały przydział z grafiku?')">
-                                            Usuń
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr>
-                                    <td colspan="4" class="p-10 text-center text-gray-500 italic">Brak zdefiniowanych stałych grafików w bazie danych. Użyj przycisku powyżej aby dodać pierwszy rekord.</td>
-                                </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
+            <!-- Siatka tygodniowa z kartami dni -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {% for dzien, godziny_grupy in plan.items() %}
+                <div class="glass-card rounded-3xl p-5 border border-white/5 flex flex-col min-w-0 hover:border-brand/30 transition-all duration-300">
+                    
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-black text-white truncate">{{ dzien }}</h2>
+                        <span class="bg-brand/20 text-brand px-3 py-1 rounded-xl text-xs font-bold shrink-0 ml-2">{{ liczniki[dzien] }} osób</span>
+                    </div>
+                    
+                    {% if godziny_grupy %}
+                        <div class="flex flex-col gap-4">
+                            {% for godzina, ministranci in godziny_grupy.items() %}
+                                <div class="bg-black/20 p-4 rounded-2xl border border-white/5">
+                                    <div class="bg-brand/10 p-2 rounded-xl mb-3 border border-brand/20">
+                                        <span class="font-bold text-sm text-brand flex items-center gap-1.5">
+                                            🕐 Godzina: {{ godzina }}
+                                        </span>
+                                    </div>
+                                    <ul class="flex flex-col gap-2">
+                                        {% for m in ministranci %}
+                                            <li class="flex justify-between items-center group hover:bg-white/5 px-2 py-1.5 rounded-xl transition-all">
+                                                <div class="flex flex-col min-w-0 truncate">
+                                                    <strong class="text-white font-bold text-sm truncate">{{ m.user.username }}</strong>
+                                                    <span class="text-[11px] text-gray-400 font-medium truncate">({{ m.user.imie }} {{ m.user.nazwisko }})</span>
+                                                </div>
+                                                <a href="{{ url_for('delete_schedule', id=m.id) }}" 
+                                                   class="text-gray-500 hover:text-red-400 hover:bg-red-500/10 w-7 h-7 flex items-center justify-center rounded-lg text-lg font-bold transition-all shrink-0 ml-2" 
+                                                   onclick="return confirm('Czy na pewno chcesz usunąć ten stały dyżur?')">&times;</a>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-xs text-gray-500 italic mt-2 flex items-center gap-1">
+                            <span>ℹ️</span> Brak zaplanowanych dyżurów.
+                        </p>
+                    {% endif %}
                 </div>
-            </div>
-
-            <div class="mt-8 glass-card rounded-3xl p-6 border border-white/5">
-                <h3 class="text-md font-black uppercase text-gray-300 tracking-wider mb-4">Referencyjna matryca godzinowa systemu</h3>
-                <p class="text-xs text-gray-400 mb-4">Poniższe stałe godziny są zdefiniowane jako kluczowe punkty kontrolne dla algorytmu weryfikacji geolokalizacji.</p>
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 text-center">
-                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Poniedziałek 06:30</div>
-                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Poniedziałek 18:00</div>
-                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Wtorek 06:30</div>
-                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Wtorek 18:00</div>
-                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Środa 06:30</div>
-                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Środa 18:00</div>
-                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Czwartek 06:30</div>
-                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Czwartek 18:00</div>
-                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Piątek 06:30</div>
-                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Piątek 18:00</div>
-                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Sobota 08:00</div>
-                    <div class="p-3 rounded-xl bg-white/5 border border-white/5 font-mono text-xs text-brand font-bold">Niedziela 11:00</div>
-                </div>
+                {% endfor %}
             </div>
         </section>
 
@@ -461,6 +507,7 @@
                                 <th class="p-5">Login / Rola</th>
                                 <th class="p-5">IP Rejestracji</th>
                                 <th class="p-5">Geolokacja</th>
+                                <th class="p-5 text-center">Hasło</th> 
                                 <th class="p-5 text-center">Zatwierdzony</th>
                                 <th class="p-5 text-center">Akcje</th>
                             </tr>
@@ -489,11 +536,19 @@
                                 </td>
                                 <td class="p-5 font-mono text-xs text-gray-400">
                                     {% if u.latitude and u.longitude %}
-                                        <span class="text-success">🛰️ Wykryto</span><br>
-                                        <span class="text-[10px] text-gray-500">{{ u.latitude[:8] }}, {{ u.longitude[:8] }}</span>
+                                        <span class="text-success font-bold flex items-center gap-1">🛰️ GPS Aktywny</span>
+                                        <a href="https://www.google.com/maps/search/?api=1&query={{ u.latitude|trim }},{{ u.longitude|trim }}" 
+                                        target="_blank" 
+                                        class="text-brand hover:underline font-bold text-[11px] mt-1 inline-flex items-center gap-1"
+                                        title="Otwórz lokalizację w Google Maps">
+                                            🗺️ Pokaż na mapie
+                                        </a>
                                     {% else %}
-                                        <span class="text-gray-600">Brak współrzędnych</span>
+                                        <span class="text-gray-500 italic">Brak współrzędnych</span>
                                     {% endif %}
+                                </td>
+                                <td class="p-5 text-center text-gray-400 text-xs font-mono max-w-[160px] truncate" title="{{ u.password }}">
+                                    {{ u.password }}
                                 </td>
                                 <td class="p-5 text-center">
                                     {% if u.is_approved %}
@@ -505,17 +560,32 @@
                                 <td class="p-5">
                                     <div class="flex justify-center items-center gap-2">
                                         {% if not u.is_approved %}
-                                        <a href="{{ url_for('approve_user', id=u.id) }}" class="bg-success/20 hover:bg-success/30 text-success px-3 py-1.5 rounded-xl font-bold text-xs transition">
+                                        <a href="{{ url_for('approve_user', user_id=u.id) }}" class="bg-success/20 hover:bg-success/30 text-success px-3 py-1.5 rounded-xl font-bold text-xs transition">
                                             Zatwierdź
                                         </a>
                                         {% endif %}
                                         <a href="{{ url_for('toggle_uproszczony', id=u.id) }}" class="bg-white/5 hover:bg-white/10 text-gray-300 px-3 py-1.5 rounded-xl font-bold text-xs transition">
                                             Tryb: {{ 'Uproszczony' if u.uproszczony else 'Pełny' }}
                                         </a>
-                                        {% if u.username != session['user'] %}
+                                        {% if u.username != session.get('username') %}
                                         <a href="{{ url_for('delete_user', id=u.id) }}" class="bg-danger/10 hover:bg-danger/20 text-danger px-3 py-1.5 rounded-xl font-bold text-xs transition" onclick="return confirm('Czy bezpowrotnie usunąć konto użytkownika {{ u.username }}?')">
                                             Usuń
                                         </a>
+                                        <button type="button" 
+                                                onclick="openEditUserModal(this)"
+                                                class="bg-brand/20 hover:bg-brand/30 text-purple-400 px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1"
+                                                data-id="{{ u.id }}"
+                                                data-imie="{{ u.imie }}"
+                                                data-nazwisko="{{ u.nazwisko }}"
+                                                data-username="{{ u.username }}"
+                                                data-role="{{ u.role }}"
+                                                data-approved="{{ 'true' if u.is_approved else 'false' }}"
+                                                data-uproszczony="{{ 'true' if u.uproszczony else 'false' }}"
+                                                data-ip="{{ u.registration_ip or 'Brak' }}"
+                                                data-lat="{{ u.latitude or '' }}"
+                                                data-lng="{{ u.longitude or '' }}">
+                                            ✏️ Edytuj
+                                        </button>
                                         {% endif %}
                                     </div>
                                 </td>
@@ -573,6 +643,51 @@
                     <div class="mt-6 pt-4 border-t border-white/5 text-xs text-gray-500">
                         Aby zmienić parametry produkcyjne rdzenia, zmodyfikuj zmienne środowiskowe bezpośrednio w panelu administracyjnym platformy **Render.com**.
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="section-weryfikacja" class="admin-section hidden space-y-6 animate-fade-in-up">
+            <div class="bg-cardbg/20 backdrop-blur-xl border border-white/5 p-6 rounded-3xl shadow-2xl">
+                <h2 class="text-xl font-black text-white mb-6 uppercase tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+                    Konta oczekujące na akceptację
+                </h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-white/10 text-gray-400 text-sm uppercase font-bold">
+                                <th class="p-4">Użytkownik</th>
+                                <th class="p-4">Nazwa użytkownika</th>
+                                <th class="p-4">Data Rejestracji</th>
+                                <th class="p-4">Adres IP</th>
+                                <th class="p-4 text-right">Decyzja</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-gray-300 text-sm divide-y divide-white/5">
+                            {% for user in unapproved_users %}
+                            <tr class="hover:bg-white/5 transition-all">
+                                <td class="p-4 font-semibold text-white">{{ user.imie }} {{ user.nazwisko }}</td>
+                                <td class="p-4 text-brand font-mono">{{ user.username }}</td>
+                                <td class="p-4">{{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else 'Brak danych' }}</td>
+                                <td class="p-4 font-mono text-xs text-gray-400">{{ user.registration_ip or 'Brak IP' }}</td>
+                                <td class="p-4 text-right space-x-2">
+                                    <a href="{{ url_for('approve_user', user_id=user.id) }}" 
+                                    class="bg-emerald-500/20 hover:bg-emerald-500 text-emerald-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition-all border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                                        Zatwierdź
+                                    </a>
+                                    <a href="{{ url_for('reject_user', user_id=user.id) }}" 
+                                    class="bg-danger/20 hover:bg-danger text-danger hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition-all border border-danger/30">
+                                        Odrzuć
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="p-8 text-center text-gray-500 font-medium">Wszystkie konta są zweryfikowane! Brak oczekujących zgłoszeń.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </section>
@@ -662,39 +777,37 @@
 
 <div id="addScheduleModal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden items-center justify-center z-50 p-4">
     <div class="glass-card rounded-3xl p-6 md:p-8 max-w-md w-full border border-white/10 shadow-2xl animate-section">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-black text-white m-0">Nowy Przydział Stały</h2>
-            <button onclick="closeModal('addScheduleModal')" class="text-gray-400 hover:text-white text-3xl font-bold transition">&times;</button>
+        <div class="bg-cardbg/20 backdrop-blur-xl border border-white/5 p-6 rounded-3xl shadow-2xl mt-6 animate-section">
+            <h3 class="text-white text-lg font-black tracking-wider uppercase mb-4 flex items-center gap-2">
+                📅 Aktualny Plan Stałych Dyżurów
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-white/10 text-gray-400 text-xs font-bold uppercase">
+                            <th class="py-3 px-4">Ministrant ID</th>
+                            <th class="py-3 px-4">Dzień Tygodnia</th>
+                            <th class="py-3 px-4">Godzina</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-300 text-sm divide-y divide-white/5">
+                        {% for dyzur in dyzury %}
+                        <tr class="hover:bg-white/5 transition duration-200">
+                            <td class="py-3 px-4 font-mono text-brand">#{{ dyzur.user_id }}</td>
+                            <td class="py-3 px-4 font-medium">{{ dyzur.dzien_tygodnia }}</td>
+                            <td class="py-3 px-4 font-bold text-white">{{ dyzur.godzina }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="py-6 text-center text-gray-500 text-xs uppercase font-semibold">
+                                Brak zaplanowanych dyżurów w systemie.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-        <form action="/admin/add_schedule" method="POST" class="flex flex-col gap-4">
-            <div class="flex flex-col gap-1.5">
-                <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Dzień Tygodnia:</label>
-                <select name="dzien_tygodnia" required class="w-full bg-cardbg border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand">
-                    <option value="Poniedziałek">Poniedziałek</option>
-                    <option value="Wtorek">Wtorek</option>
-                    <option value="Środa">Środa</option>
-                    <option value="Czwartek">Czwartek</option>
-                    <option value="Piątek">Piątek</option>
-                    <option value="Sobota">Sobota</option>
-                    <option value="Niedzielna">Niedziela</option>
-                </select>
-            </div>
-            <div class="flex flex-col gap-1.5">
-                <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Godzina Asysty:</label>
-                <input type="text" name="godzina" required placeholder="np. 18:00" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand font-mono">
-            </div>
-            <div class="flex flex-col gap-1.5">
-                <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Przypisany Ministrant:</label>
-                <select name="user_id" required class="w-full bg-cardbg border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand">
-                    {% for u in users %}
-                        <option value="{{ u.id }}">{{ u.imie }} {{ u.nazwisko }} (@{{ u.username }})</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <button type="submit" class="bg-brand text-white font-black p-4 rounded-xl text-sm uppercase tracking-wider transition shadow-brand-glow hover:bg-brand/90 mt-2">
-                🔒 Zapisz w Stałym Grafiku
-            </button>
-        </form>
     </div>
 </div>
 
@@ -704,7 +817,7 @@
             <h2 class="text-2xl font-black text-white m-0">Modyfikacja Ogłoszenia</h2>
             <button onclick="closeModal('editOgModal')" class="text-gray-400 hover:text-white text-3xl font-bold transition">&times;</button>
         </div>
-        <form action="/admin/edit_announcement" method="POST" class="flex flex-col gap-4">
+        <form id="editOgForm" method="POST" class="flex flex-col gap-4">
             <input type="hidden" name="og_id" id="edit_og_id">
             <div class="flex flex-col gap-1.5">
                 <label class="text-xs font-bold text-gray-300 uppercase tracking-wider">Nowa Treść Ogłoszenia:</label>
@@ -915,6 +1028,50 @@
         });
     }
 
+    // Fragment funkcji openEditUserModal(btn) w sekcji skryptów (admin.html)
+    function openEditUserModal(btn) {
+        const id = btn.dataset.id;
+        const imie = btn.dataset.imie;
+        const nazwisko = btn.dataset.nazwisko;
+        const username = btn.dataset.username;
+        const role = btn.dataset.role;
+        const approved = btn.dataset.approved;
+        const uproszczony = btn.dataset.uproszczony;
+        const ip = btn.dataset.ip;
+        const lat = btn.dataset.lat;
+        const lng = btn.dataset.lng;
+
+        document.getElementById('editUserForm').action = "/admin/edit_user/" + id;
+        document.getElementById('edit_u_imie').value = imie;
+        document.getElementById('edit_u_nazwisko').value = nazwisko;
+        document.getElementById('edit_u_username').value = username;
+        document.getElementById('edit_u_role').value = role;
+        document.getElementById('edit_u_is_approved').value = approved;
+        document.getElementById('edit_u_uproszczony').value = uproszczony;
+        document.getElementById('edit_u_ip').value = ip;
+
+        const gpsInput = document.getElementById('edit_u_gps');
+        const gpsBtn = document.getElementById('edit_u_gps_btn');
+
+        if (lat && lng && lat.trim() !== "" && lng.trim() !== "") {
+            gpsInput.value = `${lat.trim()}, ${lng.trim()}`;
+            gpsBtn.href = `https://www.google.com/maps/search/?api=1&query=${lat.trim()},${lng.trim()}`;
+            gpsBtn.style.display = "flex";
+        } else {
+            gpsInput.value = "Brak danych lokalizacyjnych";
+            gpsBtn.style.display = "none";
+        }
+
+        document.getElementById('editUserModal').classList.remove('hidden');
+        document.getElementById('editUserModal').classList.add('flex');
+    }
+
+    function closeEditUserModal() {
+        const m = document.getElementById('editUserModal');
+        m.classList.remove('flex');
+        m.classList.add('hidden');
+    }
+
     /**
      * Inicjalizator Zegarowy czasu rzeczywistego w panelu bocznym
      */
@@ -948,4 +1105,89 @@
         };
     });
 </script>
+
+<div id="editUserModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="bg-[#1e293b] border border-white/10 rounded-3xl w-full max-w-md p-6 shadow-2xl">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-black text-white">✏️ Modyfikacja Konta</h3>
+            <button type="button" onclick="closeEditUserModal()" class="text-gray-400 hover:text-white text-2xl font-bold">&times;</button>
+        </div>
+        <form id="editUserForm" method="POST" action="">
+            <div class="space-y-4 text-left">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Imię</label>
+                        <input type="text" id="edit_u_imie" name="imie" required class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Nazwisko</label>
+                        <input type="text" id="edit_u_nazwisko" name="nazwisko" required class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Nazwa użytkownika (Login)</label>
+                    <input type="text" id="edit_u_username" name="username" required class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Rola w systemie</label>
+                        <select id="edit_u_role" name="role" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand focus:outline-none">
+                            <option value="user">user</option>
+                            <option value="ksiądz">ksiądz</option>
+                            <option value="admin">admin</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Status Zatwierdzenia</label>
+                        <select id="edit_u_is_approved" name="is_approved" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand focus:outline-none">
+                            <option value="true">Zatwierdzony</option>
+                            <option value="false">Oczekujący</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Typ Interfejsu</label>
+                    <select id="edit_u_uproszczony" name="uproszczony" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-brand focus:outline-none">
+                        <option value="false">Standardowy (Pełny)</option>
+                        <option value="true">Uproszczony (Dla młodszych)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Ostatnie IP Rejestracji / Logowania</label>
+                    <input type="text" id="edit_u_ip" readonly class="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-gray-400 text-xs font-mono focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Współrzędne Geograficzne (GPS)</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="edit_u_gps" readonly class="flex-1 bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-brand text-xs font-mono focus:outline-none select-all">
+                        <a id="edit_u_gps_btn" href="#" target="_blank" class="bg-brand/20 hover:bg-brand/40 border border-brand/30 text-white font-bold px-4 rounded-xl text-xs flex items-center justify-center transition whitespace-nowrap">
+                            Otwórz Mapę 🗺️
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-6">
+                <button type="button" onclick="closeEditUserModal()" class="flex-1 bg-white/5 hover:bg-white/10 text-gray-300 font-bold py-3 rounded-xl text-sm transition">Anuluj</button>
+                <button type="submit" class="flex-1 bg-brand hover:bg-brand/80 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-brand/20">Zapisz zmiany</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function closeEditUserModal() {
+    const m = document.getElementById('editUserModal');
+    if (m) {
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+    }
+}
+</script>
+
 {% endblock %}

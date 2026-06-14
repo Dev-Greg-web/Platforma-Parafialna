@@ -3,7 +3,7 @@ from models import Users, Attendance, Announcement, Schedule, db
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, date
 import os
-import secrets  # Do generowania bezpiecznych kodów 2FA i haseł
+import secrets
 from dotenv import load_dotenv
 import pandas as pd
 import io
@@ -12,10 +12,12 @@ import urllib.request
 import json
 from threading import Thread
 import requests
+from sqlalchemy.orm import joinedload
+from collections import defaultdict
+
 load_dotenv()
 
 app = Flask(__name__)
-import secrets
 app.secret_key = os.getenv("TAJNE_HASLO") or secrets.token_hex(32)
 db_url = os.getenv("DATABASE_URL", "sqlite:///ministranci.db")
 
@@ -62,7 +64,46 @@ def format_datetime_pl(dt):
     godz_min = dt.strftime("%H:%M")
     return f"{dni[dt.weekday()]} {dt.day}.{dt.month} o {godz_min}"
 
+def resolve_ip_and_coords(ip_addr):
+    """Pobiera lokalizację IPinfo i zwraca słownik ze szczegółami oraz szacowanym GPS."""
+    result = {
+        "display": ip_addr,
+        "lat": None,
+        "lng": None
+    }
+    
+    # Obsługa testów lokalnych na pętli zwrotnej (localhost)
+    if not ip_addr or ip_addr == "127.0.0.1":
+        # Wprowadzamy testowe współrzędne (Warszawa), aby zweryfikować zapis bazy i mapy na localhost
+        result["display"] = "127.0.0.1 (Lokalny komputer testowy)"
+        result["lat"] = "52.2297"
+        result["lng"] = "21.0118"
+        return result
+        
+    try:
+        token = os.getenv("IPINFO_TOKEN") or "093ef441db1164"
+        url = f"https://ipinfo.io/{ip_addr}/json?token={token}"
+        res = requests.get(url, timeout=2)
+        if res.status_code == 200:
+            data = res.json()
+            city = data.get("city", "Nieznane")
+            country = data.get("country", "PL")
+            loc = data.get("loc", "") # format "szerokość,długość"
+            
+            if loc:
+                result["display"] = f"{ip_addr} ({city}, {country}) | Szacowany GPS: {loc}"
+                parts = loc.split(",")
+                if len(parts) == 2:
+                    result["lat"] = parts[0].strip()
+                    result["lng"] = parts[1].strip()
+            else:
+                result["display"] = f"{ip_addr} ({city}, {country})"
+    except Exception as e:
+        print(f"Błąd pobierania fallback IPinfo: {e}")
+    return result
+
 app.jinja_env.filters['datetime_pl'] = format_datetime_pl
+
 
 def send_telegram_alert(tresc):
     token = os.getenv("TELEGRAM_TOKEN")
@@ -75,7 +116,6 @@ def send_telegram_alert(tresc):
     payload = {"chat_id": chat_id, "text": tresc}
     try:
         response = requests.post(url, json=payload, timeout=5)
-        print(f"--- [Telegram] Status wysyłki: {response.status_code} ---")
     except Exception as e:
         print(f"Błąd powiadomienia Telegram: {e}")
 
@@ -89,27 +129,25 @@ def login_page():
 def auth_process():
     action = request.form.get("action")
     username = request.form.get("username")
-    
-    # Próbujemy pobrać hasło z obu możliwych nazw pól (haslo lub password)
     password = request.form.get("haslo") or request.form.get("password")
     
     env_admin_name = os.getenv("ADMIN_NAME") or os.getenv("admin_name") or "AdminGreg"
     env_admin_pass = os.getenv("ADMIN_PASSWORD") or os.getenv("admin_password") or "Lego2012"
 
-    # Jeśli hasło jest puste (np. błąd formularza), zapobiegamy crashowi serwera
     if not password:
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash("Proszę wpisać hasło, aby kontynuować.", "warning")
         return redirect(url_for('login_page'))
 
-    # 1. Pobieramy IP klienta (uwzględniając ewentualne proxy serwera)
     if request.headers.getlist("X-Forwarded-For"):
         user_ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
     else:
         user_ip = request.remote_addr
 
+    # Pobranie danych IP oraz szacowanych współrzędnych z IPinfo
+    ip_data = resolve_ip_and_coords(user_ip)
+    resolved_ip_str = ip_data["display"]
+
     if action == "login":
-        # 1. LOGOWANIE ADMINISTRATORA (Z 2FA + Weryfikacja Haszu)
         if username == env_admin_name:
             admin_in_db = Users.query.filter_by(username=username).first()
             if not admin_in_db:
@@ -121,7 +159,7 @@ def auth_process():
                     password=hashed_admin_pass, 
                     role='admin', 
                     uproszczony=False,
-                    is_approved=True  # Główny admin automatycznie zatwierdzony
+                    is_approved=True
                 )
                 db.session.add(admin_in_db)
                 db.session.commit()
@@ -130,19 +168,21 @@ def auth_process():
                 if password == env_admin_pass:
                     admin_in_db.password = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
                 
-                # Przypisanie IP oraz GPS dla admina (Udostępnione lub puste, IP zawsze zostaje)
-                admin_in_db.registration_ip = user_ip
-                browser_lat = request.form.get("login_geo_lat")
-                browser_lng = request.form.get("login_geo_lng")
+                admin_in_db.registration_ip = resolved_ip_str
+                
+                browser_lat = request.form.get("geo_lat")
+                browser_lng = request.form.get("geo_lng")
+                
                 if browser_lat and browser_lng and browser_lat.strip() != "" and browser_lng.strip() != "":
                     admin_in_db.latitude = str(browser_lat.strip())
                     admin_in_db.longitude = str(browser_lng.strip())
                 else:
-                    admin_in_db.latitude = None
-                    admin_in_db.longitude = None
+                    # Fallback do szacowanych współrzędnych IPinfo przy braku sygnału z przeglądarki
+                    admin_in_db.latitude = ip_data["lat"]
+                    admin_in_db.longitude = ip_data["lng"]
                 
                 bloki = ["".join([str(secrets.randbelow(10)) for _ in range(3)]) for _ in range(4)]
-                kod_2fa = "-".join(bloki) # Da to format: xxx-xxx-xxx-xxx
+                kod_2fa = "-".join(bloki)
                 
                 admin_in_db.two_factor_code = kod_2fa
                 admin_in_db.two_factor_expiry = datetime.now() + timedelta(minutes=5)
@@ -162,7 +202,6 @@ def auth_process():
                     session['pending_admin_id'] = admin_in_db.id
                     return redirect(url_for('two_factor_page'))
                 except Exception as e:
-                    # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
                     flash("Coś poszło nie tak przy generowaniu kodu 2FA.", "danger")
                     return redirect(url_for('login_page'))
             else:
@@ -171,47 +210,25 @@ def auth_process():
                 godzina_str = teraz.strftime("%H:%M:%S")
                 user_agent = request.headers.get('User-Agent', 'Nieznana przeglądarka')
                 
-                browser_lat = request.form.get("login_geo_lat")
-                browser_lng = request.form.get("login_geo_lng")
+                browser_lat = request.form.get("geo_lat")
+                browser_lng = request.form.get("geo_lng")
                 lokalizacja_info = "Brak danych (Localhost / Błąd API)"
                 maps_link = ""
                 
                 if browser_lat and browser_lng and browser_lat.strip() != "" and browser_lng.strip() != "":
                     lat = browser_lat.strip()
                     lon = browser_lng.strip()
-                    miasto_fallback = "Nieznane"
-                    try:
-                        TOKEN_IPINFO = os.getenv("IPINFO_TOKEN", "093ef441db1164")
-                        url_ipinfo = f"https://ipinfo.io/{user_ip}/json?token={TOKEN_IPINFO}"
-                        res = requests.get(url_ipinfo, timeout=2)
-                        if res.status_code == 200:
-                            miasto_fallback = res.json().get("city", "Nieznane")
-                    except:
-                        pass
-                    lokalizacja_info = f"Dokładny GPS z Urządzenia! (Okolice: {miasto_fallback}) | GPS: {lat}, {lon}"
+                    lokalizacja_info = f"Dokładny GPS z Urządzenia! | GPS: {lat}, {lon}"
                     maps_link = f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
-                elif user_ip and user_ip != "127.0.0.1":
-                    try:
-                        TOKEN_IPINFO = os.getenv("IPINFO_TOKEN", "093ef441db1164")
-                        url_ipinfo = f"https://ipinfo.io/{user_ip}/json?token={TOKEN_IPINFO}"
-                        res = requests.get(url_ipinfo, timeout=3)
-                        if res.status_code == 200:
-                            data_ipinfo = res.json()
-                            miasto = data_ipinfo.get("city", "Nieznane miasto")
-                            region = data_ipinfo.get("region", "Nieznany region")
-                            kraj = data_ipinfo.get("country", "Nieznany kraj")
-                            loc = data_ipinfo.get("loc")
-                            if loc:
-                                lat, lon = loc.split(",")
-                                lokalizacja_info = f"{miasto}, {region} ({kraj}) | Szacowany GPS (IP): {lat}, {lon}"
-                                maps_link = f"https://www.google.com/maps/search/?api=1&query={lat.strip()},{lon.strip()}"
-                    except Exception as e:
-                        print(f"Błąd pobierania geolokalizacji ipinfo: {e}")
+                elif ip_data["lat"] and ip_data["lng"]:
+                    lokalizacja_info = resolved_ip_str
+                    maps_link = f"https://www.google.com/maps/search/?api=1&query={ip_data['lat']},{ip_data['lng']}"
+                else:
+                    lokalizacja_info = resolved_ip_str
 
                 alert_text = (
                     f"⚠️ ALERT BEZPIECZEŃSTWA: Nieudane logowanie!\n\n"
-                    f"UWAGA SZEFIE!\n"
-                    f"Wykryto NIEUDANĄ próbę zalogowania na konto głównego administratora ({username}).\n\n"
+                    f"Wykryto NIEUDANĄ próbę zalogowania na konto administratora ({username}).\n\n"
                     f"📅 Data: {data_str}\n"
                     f"⏰ Godzina: {godzina_str}\n"
                     f"🌐 Adres IP: {user_ip}\n"
@@ -224,59 +241,54 @@ def auth_process():
                 thr = Thread(target=send_telegram_alert, args=[alert_text])
                 thr.start()
 
-                # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
                 flash("Podane hasło administratora jest nieprawidłowe.", "danger")
                 return redirect(url_for('login_page'))
-        
-        # 2. LOGOWANIE ZWYKŁEGO UŻYTKOWNIKA / KSIĘDZA
         else:
             user = Users.query.filter_by(username=username).first()
             if user and user.password == password:
-                # --- WERYFIKACJA STATUSU ZATWIERDZENIA KONTA ---
                 if hasattr(user, 'is_approved') and not user.is_approved and user.role != 'admin':
-                    # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
                     flash("Twoje konto oczekuje na weryfikację przez administratora.", "warning")
                     return redirect(url_for('login_page'))
                 
-                # Aktualizacja danych sieciowych i lokalizacyjnych przy logowaniu
-                user.registration_ip = user_ip
-                browser_lat = request.form.get("login_geo_lat")
-                browser_lng = request.form.get("login_geo_lng")
+                user.registration_ip = resolved_ip_str
+                
+                browser_lat = request.form.get("geo_lat")
+                browser_lng = request.form.get("geo_lng")
                 
                 if browser_lat and browser_lng and browser_lat.strip() != "" and browser_lng.strip() != "":
                     user.latitude = str(browser_lat.strip())
                     user.longitude = str(browser_lng.strip())
                 else:
-                    user.latitude = None
-                    user.longitude = None
+                    # Fallback dla zwykłego użytkownika przy braku dokładnego GPS
+                    user.latitude = ip_data["lat"]
+                    user.longitude = ip_data["lng"]
                 
                 db.session.commit()
-                
                 session.clear()
                 session['user_id'] = user.id
                 session['username'] = user.username
                 session['user_role'] = user.role  
                 session['uproszczony'] = user.uproszczony
                 
-                # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
                 flash(f"Witaj pomyślnie, {user.imie}!", "success")
                 
                 if user.role == 'ksiądz':
                     return redirect(url_for('ksDash'))
                 return redirect(url_for('dashboard_page'))
             else:
-                # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
                 flash("Niepoprawna nazwa użytkownika lub hasło.", "danger")
                 return redirect(url_for('login_page'))
                 
     elif action == "register":
+        if not request.form.get('regulamin'):
+            flash('Musisz zaakceptować regulamin, aby się zarejestrować!', 'danger')
+            return redirect(url_for('login_page'))
+
         user = Users.query.filter_by(username=username).first()
         if user or username == env_admin_name:
-            # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
             flash("Ta nazwa użytkownika jest już zajęta.", "danger")
             return redirect(url_for('login_page'))
         else:
-            # Pobieranie danych współrzędnych z formularza rejestracji
             browser_lat = request.form.get("geo_lat")
             browser_lng = request.form.get("geo_lng")
             
@@ -284,10 +296,9 @@ def auth_process():
                 final_lat = str(browser_lat.strip())
                 final_lng = str(browser_lng.strip())
             else:
-                final_lat = None
-                final_lng = None
+                final_lat = ip_data["lat"]
+                final_lng = ip_data["lng"]
 
-            # Rejestracja przypisuje domyślnie is_approved=False
             new_user = Users(
                 imie=request.form.get("imie"), 
                 nazwisko=request.form.get("nazwisko"), 
@@ -295,18 +306,41 @@ def auth_process():
                 password=password,
                 role='user',
                 uproszczony=False,
-                is_approved=False,  # Nowy użytkownik musi zostać zatwierdzony
-                registration_ip=user_ip,
+                is_approved=False,
+                registration_ip=resolved_ip_str,
                 latitude=final_lat,
                 longitude=final_lng
             )
             db.session.add(new_user)
             db.session.commit()
-            # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
+            
             flash("Konto stworzone. Poczekaj na weryfikację przez administratora.", "success")
             return redirect(url_for('login_page'))
 
     return redirect(url_for('login_page'))
+
+@app.route('/admin/edit_user/<int:user_id>', methods=['POST'])
+def admin_edit_user(user_id):
+    if session.get('role') != 'admin' and session.get('user_role') != 'admin':
+        flash('Brak uprawnień bazy szefa!', 'danger')
+        return redirect(url_for('login_page'))
+        
+    user = Users.query.get_or_404(user_id)
+    user.imie = request.form.get('imie')
+    user.nazwisko = request.form.get('nazwisko')
+    user.username = request.form.get('username')
+    user.role = request.form.get('role')
+    user.is_approved = request.form.get('is_approved') == 'true'
+    user.uproszczony = request.form.get('uproszczony') == 'true'
+    
+    try:
+        db.session.commit()
+        flash(f'Dane użytkownika {user.imie} {user.nazwisko} zostały zaktualizowane!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Wystąpił błąd podczas zapisu danych (prawdopodobnie login jest zajęty).', 'danger')
+        
+    return redirect(url_for('admin_page'))
 
 @app.route('/verify-2fa', methods=['GET', 'POST'])
 def two_factor_page():
@@ -315,7 +349,9 @@ def two_factor_page():
         
     if request.method == 'POST':
         wpisany_kod = request.form.get("kod_2fa").strip()
-        admin = Users.query.get(session['pending_admin_id'])
+        
+        # POPRAWKA: Usunięcie przestarzałego wywołania query.get() na rzecz rekomendowanego session.get()
+        admin = db.session.get(Users, session['pending_admin_id'])
         
         if admin and admin.two_factor_code == wpisany_kod and datetime.now() < admin.two_factor_expiry:
             admin.two_factor_code = None
@@ -328,20 +364,16 @@ def two_factor_page():
             session['user_role'] = 'admin'
             session['uproszczony'] = False
             
-            # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
             flash("Autoryzacja 2FA pomyślna. Witaj, Szefie!", "success")
             return redirect(url_for('admin_page'))
         else:
-            # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
             flash("Wpisany kod 2FA jest niepoprawny lub wygasł.", "danger")
             
     return render_template('verify_2fa.html')
 
-# --- TRASY OBSŁUGI WERYFIKACJI DLA ADMINISTRATORA ---
 @app.route('/admin/weryfikacja')
 def panel_weryfikacji():
     if session.get('user_role') != 'admin':
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash("Brak uprawnień do przeglądania tej sekcji.", "danger")
         return redirect(url_for('login_page'))
         
@@ -358,14 +390,12 @@ def przetworz_weryfikacje(user_id, akcja):
     if akcja == 'zatwierdz':
         uzytkownik.is_approved = True
         db.session.commit()
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash(f"Konto użytkownika {uzytkownik.username} zostało zatwierdzone.", "success")
     elif akcja == 'odrzuc':
         Attendance.query.filter_by(user_id=user_id).delete()
         Schedule.query.filter_by(user_id=user_id).delete()
         db.session.delete(uzytkownik)
         db.session.commit()
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash(f"Rejestracja użytkownika {uzytkownik.username} została odrzucona.", "warning")
         
     return redirect(url_for('panel_weryfikacji'))
@@ -373,7 +403,7 @@ def przetworz_weryfikacje(user_id, akcja):
 @app.route('/reset-admin-password', methods=['POST'])
 def reset_admin_password():
     username = request.form.get("username")
-    env_admin_name = os.getenv("admin_name")
+    env_admin_name = os.getenv("admin_name") or os.getenv("ADMIN_NAME") or "AdminGreg"
     
     if username == env_admin_name:
         admin = Users.query.filter_by(username=username).first()
@@ -391,16 +421,12 @@ def reset_admin_password():
                 )
                 thr = Thread(target=send_telegram_alert, args=[reset_text])
                 thr.start()
-                # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
                 flash("Nowe hasło administratora wysłane na Telegram.", "success")
             except Exception as e:
-                # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
                 flash("Coś poszło nie tak przy wysyłaniu powiadomienia.", "danger")
         else:
-            # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
             flash("Admin nie został jeszcze w pełni zainicjalizowany.", "danger")
     else:
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash("Ta opcja jest dostępna tylko dla Głównego Administratora.", "danger")
         
     return redirect(url_for('login_page'))
@@ -422,7 +448,6 @@ def add_attendance():
         hard_limit = date(2026, 4, 12)
 
         if wybrana_data > dzisiaj or wybrana_data < max(wczoraj, hard_limit):
-            # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
             flash("Wybrana data służby jest nieprawidłowa.", "danger")
             return redirect(url_for('dashboard_page'))
 
@@ -433,7 +458,6 @@ def add_attendance():
         ).first()
 
         if istniejaca:
-            # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
             flash("Masz już zgłoszoną służbę o tej godzinie.", "danger")
             return redirect(url_for('dashboard_page'))
 
@@ -446,11 +470,9 @@ def add_attendance():
         )
         db.session.add(nowa)
         db.session.commit()
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash("Obecność na służbie zapisana pomyślnie.", "success")
     except Exception as e:
         db.session.rollback()
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash("Coś poszło nie tak przy zapisywaniu służby.", "danger")
 
     return redirect(url_for('dashboard_page'))
@@ -464,41 +486,33 @@ def delete_user(id):
     Schedule.query.filter_by(user_id=id).delete()
     db.session.delete(user_to_del)
     db.session.commit()
-    # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
     flash(f"Użytkownik {user_to_del.username} został trwale usunięty.", "success")
     return redirect(url_for('admin_page'))
 
-@app.route('/admin/edit_user/<int:id>', methods=['POST'])
-def edit_user(id):
+@app.route('/edit_user/<int:user_id>', methods=['POST'])
+def edit_user(user_id):
     if session.get('user_role') != 'admin':
+        flash("Brak uprawnień do edycji użytkowników.", "danger")
         return redirect(url_for('login_page'))
-    u = Users.query.get_or_404(id)
-    u.imie = request.form.get('imie')
-    u.nazwisko = request.form.get('nazwisko')
-    u.username = request.form.get('username')
+        
+    user = Users.query.get_or_404(user_id)
+    user.imie = request.form.get('imie')
+    user.nazwisko = request.form.get('nazwisko')
+    user.username = request.form.get('username')
     
-    nowe_haslo = request.form.get('password')
-    env_admin_name = os.getenv("admin_name", "AdminGreg")
+    new_role = request.form.get('role')
+    user.role = new_role
+    user.is_approved = True if request.form.get('is_approved') == 'true' else False
     
-    if u.role == 'admin' or u.username == env_admin_name:
-        if nowe_haslo and not nowe_haslo.startswith('pbkdf2:sha256:'):
-            u.password = generate_password_hash(nowe_haslo, method='pbkdf2:sha256')
-        else:
-            u.password = nowe_haslo
+    new_password = request.form.get('password')
+    if new_role == 'admin' or user.username == os.getenv("ADMIN_NAME", "AdminGreg"):
+        if new_password != user.password and not new_password.startswith('pbkdf2:'):
+            user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
     else:
-        u.password = nowe_haslo
+        user.password = new_password
 
-    u.role = request.form.get('role') 
-    u.uproszczony = True if request.form.get('uproszczony') == 'on' else False
-    
-    try:
-        db.session.commit()
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
-        flash("Dane użytkownika zostały zaktualizowane pomyślnie.", "success")
-    except:
-        db.session.rollback()
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
-        flash("Coś poszło nie tak przy edycji danych.", "danger")
+    db.session.commit()
+    flash(f"Pomyślnie zaktualizowano dane użytkownika {user.username}!", "success")
     return redirect(url_for('admin_page'))
 
 @app.route('/admin/delete/<int:id>')
@@ -509,11 +523,9 @@ def delete_attendance(id):
     try:
         db.session.delete(entry)
         db.session.commit()
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash("Wpis o służbie został usunięty.", "success")
     except:
         db.session.rollback()
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash("Coś poszło nie tak przy usuwaniu wpisu.", "danger")
     return redirect(url_for('admin_page'))
 
@@ -529,11 +541,9 @@ def edit_entry(id):
         entry.typ_mszy = request.form.get('typ_mszy')
         entry.nazwa_inna = request.form.get('nazwa_inna') if entry.typ_mszy == 'inna' else None
         db.session.commit()
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash("Wpis o służbie został zaktualizowany.", "success")
     except:
         db.session.rollback()
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash("Coś poszło nie tak przy aktualizacji wpisu.", "danger")
     return redirect(url_for('admin_page'))
 
@@ -542,7 +552,7 @@ def add_attendance_admin():
     if session.get('user_role') != 'admin':
         return redirect(url_for('login_page'))
     user_id = request.form.get("user_id")
-    data_str = request.form.get("date")
+    data_str = request.form.get("data_sluzby")
     typ_mszy = request.form.get("typ_mszy")
     nazwa_inna = request.form.get("nazwa_inna")
     godzina = request.form.get("godzina")
@@ -558,11 +568,9 @@ def add_attendance_admin():
         )
         db.session.add(nowa_sluzba)
         db.session.commit()
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash("Służba dodana pomyślnie przez Administratora.", "success")
     except Exception as e:
         db.session.rollback()
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash("Coś poszło nie tak przy dodawaniu służby.", "danger")
 
     return redirect(url_for('admin_page'))
@@ -575,7 +583,6 @@ def add_announcement():
     nowe = Announcement(tytul=tytul_val, tresc=request.form.get('tresc'))
     db.session.add(nowe)
     db.session.commit()
-    # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
     flash("Nowe ogłoszenie dodane pomyślnie.", "success")
     if session.get('user_role') == 'ksiądz':
         return redirect(url_for('ksDash'))
@@ -589,7 +596,6 @@ def edit_announcement(id):
     ogloszenie.tytul = request.form.get('tytul') or ogloszenie.tytul
     ogloszenie.tresc = request.form.get('tresc')
     db.session.commit()
-    # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
     flash("Ogłoszenie zaktualizowane.", "success")
     return redirect(url_for('admin_page'))
 
@@ -600,42 +606,66 @@ def delete_announcement(id):
     ogloszenie = Announcement.query.get_or_404(id)
     db.session.delete(ogloszenie)
     db.session.commit()
-    # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
     flash("Ogłoszenie usunięte.", "warning")
     return redirect(url_for('admin_page'))
 
 @app.route('/admin/add_schedule', methods=['POST'])
 def add_schedule():
-    if session.get('user_role') not in ['admin', 'ksiądz']:
+    if 'user_id' not in session:
+        flash("Brak dostępu! Zaloguj się ponownie.", "danger")
         return redirect(url_for('login_page'))
-    nowy_dyzur = Schedule(
-        user_id=request.form.get("user_id"),
-        dzien_tygodnia=request.form.get("dzien"),
-        godzina=request.form.get("godzina")
-    )
-    db.session.add(nowy_dyzur)
-    db.session.commit()
-    # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
-    flash("Stały dyżur dodany do planu.", "success")
-    if session.get('user_role') == 'ksiądz':
-        return redirect(url_for('ksDash'))
-    return redirect(url_for('admin_page'))
-
-@app.route('/admin/delete_schedule/<int:id>')
-def delete_schedule(id):
-    if session.get('user_role') not in ['admin', 'ksiądz']:
-        return redirect(url_for('login_page'))
-    dyzur = Schedule.query.get(id)
-    if dyzur:
-        db.session.delete(dyzur)
+        
+    aktualny_uzytkownik = db.session.get(Users, session['user_id'])
+    
+    if not aktualny_uzytkownik or aktualny_uzytkownik.role not in ['admin', 'ksiądz']:
+        flash("Brak dostępu! Nie masz uprawnień do zarządzania dyżurami.", "danger")
+        return redirect(url_for('dashboard_page'))
+        
+    user_id = request.form.get('user_id')
+    dzien = request.form.get('dzien')
+    godzina = request.form.get('godzina')
+    
+    if not user_id or not dzien or not godzina:
+        flash("Nie udało się zapisać. Wypełnij wszystkie pola formularza!", "warning")
+        return redirect(url_for('admin_page'))
+        
+    try:
+        nowy_dyzur = Schedule(
+            user_id=int(user_id),
+            dzien_tygodnia=dzien,
+            godzina=godzina
+        )
+        db.session.add(nowy_dyzur)
         db.session.commit()
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
-        flash("Stały dyżur usunięty z planu.", "warning")
-    if session.get('user_role') == 'ksiądz':
-        return redirect(url_for('ksDash'))
+        flash("Służba dodana pomyślnie przez Administratora.", "success")
+        return redirect(url_for('admin_page'))
+    except Exception as e:
+        db.session.rollback()
+        flash("Coś poszło nie tak przy dodawaniu służby.", "danger")
+        return redirect(url_for('admin_page'))
+
+@app.route('/admin/delete_schedule/<int:id>', methods=['GET', 'POST'])
+def delete_schedule(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login_page'))
+        
+    aktualny_uzytkownik = db.session.get(Users, session['user_id'])
+    if not aktualny_uzytkownik or aktualny_uzytkownik.role not in ['admin', 'ksiądz']:
+        flash("Brak uprawnień!", "danger")
+        return redirect(url_for('dashboard_page'))
+        
+    dyzur = db.session.get(Schedule, id)
+    if dyzur:
+        try:
+            db.session.delete(dyzur)
+            db.session.commit()
+            flash("Służba została usunięta z grafiku.", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash("Błąd podczas usuwania służby.", "danger")
+            
     return redirect(url_for('admin_page'))
 
-# Znajdź i podmień funkcję admin_page:
 @app.route('/admin')
 def admin_page():
     if session.get('user_role') != 'admin':
@@ -645,14 +675,14 @@ def admin_page():
         Attendance.data_sluzby.desc(), Attendance.godzina.desc()
     ).all()
     
-    # Rozdzielamy użytkowników na zatwierdzonych i oczekujących
     all_users = Users.query.filter_by(is_approved=True).all()
     pending_users = Users.query.filter_by(is_approved=False).order_by(Users.created_at.desc()).all()
-    
     all_announcements = Announcement.query.order_by(Announcement.data_dodania.desc()).all()
     schedules = db.session.query(Schedule, Users).join(Users, Schedule.user_id == Users.id).all()
+
+    wszystkie_dyzury = Schedule.query.all()
+    aktualny_uzytkownik = db.session.get(Users, session['user_id'])
     
-    # ... reszta logiki statystyk (zostaje bez zmian) ...
     plan_tygodnia = {'Poniedziałek': {}, 'Wtorek': {}, 'Środa': {}, 'Czwartek': {}, 'Piątek': {}, 'Sobota': {}, 'Niedziela': {}}
     plan_liczniki = {}
     for sch, u in schedules:
@@ -664,9 +694,14 @@ def admin_page():
         plan_tygodnia[dzien] = dict(sorted(plan_tygodnia[dzien].items()))
         plan_liczniki[dzien] = sum(len(servers) for servers in plan_tygodnia[dzien].values())
 
+    all_atts = Attendance.query.all()
+    atts_by_user = defaultdict(list)
+    for att in all_atts:
+        atts_by_user[att.user_id].append(att)
+
     user_stats = []
     for u in all_users:
-        his_atts = Attendance.query.filter_by(user_id=u.id).all()
+        his_atts = atts_by_user[u.id]
         total = len(his_atts)
         morning = sum(1 for a in his_atts if a.typ_mszy == 'poranna')
         evening = sum(1 for a in his_atts if a.typ_mszy == 'wieczorna')
@@ -675,19 +710,69 @@ def admin_page():
             'full_name': f"{u.imie} {u.nazwisko}", 'uproszczony': u.uproszczony,
             'total': total, 'morning': morning, 'evening': evening, 'other': total - (morning + evening)
         })
+
+    unapproved_users = Users.query.filter_by(is_approved=False).all()
+    unapproved_count = len(unapproved_users)
+    all_users = Users.query.order_by(Users.created_at.desc()).all()
     
     return render_template(
         "admin.html", 
         attendances=all_attendance, 
         users=all_users, 
-        pending_users=pending_users, # Przesyłamy oczekujących
+        pending_users=pending_users,
         announcements=all_announcements, 
         stats=user_stats, 
         plan=plan_tygodnia, 
-        liczniki=plan_liczniki
+        liczniki=plan_liczniki,
+        unapproved_users=unapproved_users,
+        unapproved_count=unapproved_count,
+        dyzury=wszystkie_dyzury,
+        dyzury_count=len(wszystkie_dyzury),
+        user=aktualny_uzytkownik.username
     )
 
-# Poprawiona trasa weryfikacji (z przekierowaniem do panelu):
+@app.route('/admin/change_password_inline/<int:user_id>', methods=['POST'])
+def admin_change_password_inline(user_id):
+    if session.get('role') != 'admin' and session.get('user_role') != 'admin':
+        flash('Brak uprawnień bazy szefa!', 'danger')
+        return redirect(url_for('login_page'))
+        
+    user = Users.query.get_or_404(user_id)
+    nowe_haslo = request.form.get('new_password')
+    
+    if nowe_haslo and nowe_haslo.strip() != "":
+        user.password = generate_password_hash(nowe_haslo, method='pbkdf2:sha256')
+        db.session.commit()
+        flash(f'Hasło użytkownika {user.imie} {user.nazwisko} zostało zaktualizowane! 🔑', 'success')
+    else:
+        flash('Hasło nie może być puste!', 'danger')
+        
+    return redirect(url_for('admin_page'))
+
+@app.route('/admin/approve_user/<int:user_id>')
+def approve_user(user_id):
+    if session.get('user_role') != 'admin':
+        flash('Brak uprawnień!', 'danger')
+        return redirect(url_for('login_page'))
+    
+    user = Users.query.get_or_404(user_id)
+    user.is_approved = True
+    db.session.commit()
+    flash(f'Konto użytkownika {user.username} zostało zatwierdzone!', 'success')
+    return redirect(url_for('admin_page'))
+
+@app.route('/admin/reject_user/<int:user_id>')
+def reject_user(user_id):
+    if session.get('user_role') != 'admin':
+        flash('Brak uprawnień!', 'danger')
+        return redirect(url_for('login_page'))
+    
+    user = Users.query.get_or_404(user_id)
+    db.session.delete(user)
+    db.session.commit()
+    flash(f'Konto użytkownika {user.username} zostało odrzucone i usunięte.', 'warning')
+    return redirect(url_for('admin_page'))
+
 @app.route('/admin/verify_action/<int:user_id>/<string:akcja>', methods=['POST'])
 def verify_action(user_id, akcja):
     if session.get('user_role') != 'admin':
@@ -715,10 +800,8 @@ def delete_bulk_users():
                 Schedule.query.filter_by(user_id=uid).delete()
                 db.session.delete(user_to_del)
         db.session.commit()
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash("Wybrani użytkownicy zostali trwale usunięci.", "success")
     else:
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash("Proszę zaznaczyć użytkowników do usunięcia.", "warning")
     return redirect(url_for('admin_page'))
 
@@ -733,17 +816,14 @@ def delete_bulk_attendances():
             if entry:
                 db.session.delete(entry)
         db.session.commit()
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash("Wybrane wpisy o służbach zostały usunięte.", "success")
     else:
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash("Proszę zaznaczyć służby do usunięcia.", "warning")
     return redirect(url_for('admin_page'))
 
 @app.route('/ksDash')
 def ksDash():
     if session.get('user_role') not in ['admin', 'ksiądz']: 
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash("Brak uprawnień do panelu duszpasterskiego.", "danger")
         return redirect(url_for('dashboard_page'))
     
@@ -809,8 +889,10 @@ def dashboard_page():
         return redirect(url_for('login_page'))
     
     user_id = session['user_id']
-    user_obj = Users.query.get(user_id)
-    
+    aktualny_uzytkownik = db.session.get(Users, user_id)
+    if not aktualny_uzytkownik:
+        return redirect(url_for('logout'))
+
     if request.method == 'POST':
         data_sluzby_str = request.form.get('data_sluzby')
         godzina = request.form.get('godzina')
@@ -855,9 +937,28 @@ def dashboard_page():
     announcements = Announcement.query.order_by(Announcement.id.desc()).all()
     attendances = Attendance.query.filter_by(user_id=user_id).order_by(Attendance.data_sluzby.desc()).all()
     
-    if user_obj.uproszczony:
-        return render_template('dash_uproszczony.html', user=user_obj.username, announcements=announcements, attendances=attendances)
-    return render_template('dashboard.html', user=user_obj.username, announcements=announcements, attendances=attendances)  
+    moje_dyzury = Schedule.query.filter_by(user_id=user_id).order_by(Schedule.dzien_tygodnia, Schedule.godzina).all()
+    schedules = Schedule.query.options(joinedload(Schedule.user)).all()
+    
+    dni_kolejnosc = ['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota', 'Niedziela']
+    plan_tygodnia = {dzien: {} for dzien in dni_kolejnosc}
+    plan_liczniki = {dzien: 0 for dzien in dni_kolejnosc}
+    
+    for sch in schedules:
+        dzien = sch.dzien_tygodnia
+        godzina = sch.godzina
+        if dzien in plan_tygodnia:
+            if godzina not in plan_tygodnia[dzien]:
+                plan_tygodnia[dzien][godzina] = []
+            plan_tygodnia[dzien][godzina].append(sch.user)
+            plan_liczniki[dzien] += 1
+            
+    for dzien in plan_tygodnia:
+        plan_tygodnia[dzien] = dict(sorted(plan_tygodnia[dzien].items()))
+    
+    if aktualny_uzytkownik.uproszczony:
+        return render_template('dash_uproszczony.html', user=aktualny_uzytkownik.username, announcements=announcements, attendances=attendances)
+    return render_template('dashboard.html', user=aktualny_uzytkownik.username, announcements=announcements, attendances=attendances, moje_dyzury=moje_dyzury, plan=plan_tygodnia, liczniki=plan_liczniki)
 
 @app.route('/delete_my_attendance/<int:id>')
 def delete_my_attendance(id):
@@ -865,17 +966,14 @@ def delete_my_attendance(id):
         return redirect(url_for('login_page'))
     entry = Attendance.query.get_or_404(id)
     if entry.user_id != session['user_id']:
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash("Coś poszło nie tak. Nie można usunąć wpisu.", "danger")
         return redirect(url_for('dashboard_page'))
     try:
         db.session.delete(entry)
         db.session.commit()
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash("Wpis o Twojej służbie został usunięty.", "success")
     except:
         db.session.rollback()
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash("Coś poszło nie tak przy usuwaniu służby.", "danger")
     return redirect(url_for('dashboard_page'))
 
@@ -918,7 +1016,6 @@ def sitemap_from_root():
 @app.route('/export_raport')
 def export_raport():
     if session.get('user_role') not in ['admin', 'ksiądz']: 
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash("Brak uprawnień do eksportu raportów.", "danger")
         return redirect(url_for('dashboard_page'))
 
@@ -961,7 +1058,6 @@ def export_raport():
 @app.route('/export_schedule')
 def export_schedule():
     if 'user_id' not in session: 
-        # POPRAWIONO TREŚĆ KOMUNIKATU (wzór: image_0.png)
         flash("Proszę się zalogować, aby pobrać plan.", "danger")
         return redirect(url_for('login_page'))
 
@@ -994,31 +1090,6 @@ def export_schedule():
     nazwa_pliku = f"Plan_Sluzb_{date.today().strftime('%Y-%m-%d')}.xlsx"
     return send_file(output, download_name=nazwa_pliku, as_attachment=True)
 
-@app.route('/admin/approve/<int:id>', methods=['GET', 'POST'])
-def approve_user(id):
-    if session.get('user_role') != 'admin':
-        return redirect(url_for('login_page'))
-    user = Users.query.get_or_404(id)
-    user.is_approved = True
-    db.session.commit()
-    flash(f"Konto użytkownika {user.imie} {user.nazwisko} (@{user.username}) zostało pomyślnie zatwierdzone!", "success")
-    return redirect(url_for('admin_page'))
-
-
-@app.route('/admin/reject/<int:id>', methods=['GET', 'POST'])
-def reject_user(id):
-    if session.get('user_role') != 'admin':
-        return redirect(url_for('login_page'))
-    user = Users.query.get_or_404(id)
-    username_tmp = user.username
-    Attendance.query.filter_by(user_id=id).delete()
-    Schedule.query.filter_by(user_id=id).delete()
-    db.session.delete(user)
-    db.session.commit()
-    flash(f"Konto użytkownika @{username_tmp} zostało odrzucone i usunięte z systemu.", "warning")
-    return redirect(url_for('admin_page'))
-
-
 @app.route('/admin/toggle_uproszczony/<int:id>', methods=['GET', 'POST'])
 def toggle_uproszczony(id):
     if session.get('user_role') != 'admin':
@@ -1045,7 +1116,6 @@ def pomoc_page():
 
 with app.app_context(): 
     db.create_all()
-    # Inicjalizacja admina na poziomie modułu dla Gunicorn/Render
     env_admin_name = os.getenv("ADMIN_NAME") or os.getenv("admin_name") or "AdminGreg"
     env_admin_pass = os.getenv("ADMIN_PASSWORD") or os.getenv("admin_password") or "Lego2012"
     
