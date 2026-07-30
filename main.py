@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, flash, redirect, url_for, session, send_from_directory, send_file, abort
 from models import Users, Attendance, Announcement, Schedule, db, PasswordResetRequest
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 import os
 import secrets
 from dotenv import load_dotenv
@@ -226,7 +226,7 @@ def telegram_webhook():
         return "OK", 200
 
     # Szukamy aktywnej (PENDING) prośby z ostatnich 5 minut
-    piec_minut_temu = datetime.now() - timedelta(minutes=5)
+    piec_minut_temu = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=5)
     pending_request = PasswordResetRequest.query.filter(
         PasswordResetRequest.user_id == admin.id,
         PasswordResetRequest.status == 'PENDING',
@@ -545,16 +545,28 @@ def reset_admin_password():
     if username == env_admin_name:
         admin = Users.query.filter_by(username=username).first()
         if admin:
+            # Używamy świadomego stref czasowych datetime.now(timezone.utc)
+            teraz_utc = datetime.now(timezone.utc)
+
             # 1. Sprawdzenie limitu czasowego (Max 1 próba na 5 minut)
             ostatnia_prosoba = PasswordResetRequest.query.filter_by(
                 user_id=admin.id, 
                 status='PENDING'
             ).order_by(PasswordResetRequest.created_at.desc()).first()
 
-            if ostatnia_prosoba and (datetime.now() - ostatnia_prosoba.created_at) < timedelta(minutes=5):
-                roznica = 300 - int((datetime.now() - ostatnia_prosoba.created_at).total_seconds())
-                flash(f"⚠️ Prośba o zmianę hasła została już wysłana! Odczekaj {roznica} sek. przed kolejną próbą.", "warning")
-                return redirect(url_for('login_page'))
+            if ostatnia_prosoba:
+                # Upewniamy się, że data z bazy ma przypisaną strefę UTC do poprawnego porównania
+                created_at_utc = ostatnia_prosoba.created_at
+                if created_at_utc.tzinfo is None:
+                    created_at_utc = created_at_utc.replace(tzinfo=timezone.utc)
+
+                roznica_czasu = teraz_utc - created_at_utc
+
+                if roznica_czasu < timedelta(minutes=5):
+                    sekundy_minely = int(roznica_czasu.total_seconds())
+                    roznica = max(0, 300 - sekundy_minely)
+                    flash(f"⚠️ Prośba o zmianę hasła została już wysłana! Odczekaj {roznica} sek. przed kolejną próbą.", "warning")
+                    return redirect(url_for('login_page'))
 
             # Pobranie danych o połączeniu
             if request.headers.getlist("X-Forwarded-For"):
@@ -566,9 +578,10 @@ def reset_admin_password():
             resolved_ip_str = ip_data["display"]
             device_info = parse_user_agent(request.headers.get('User-Agent', ''))
             
-            teraz = datetime.now()
-            data_str = teraz.strftime("%d.%m.%Y")
-            godzina_str = teraz.strftime("%H:%M:%S")
+            # Formatowanie lokalnej daty do wiadomości
+            teraz_lokalnie = datetime.now()
+            data_str = teraz_lokalnie.strftime("%d.%m.%Y")
+            godzina_str = teraz_lokalnie.strftime("%H:%M:%S")
 
             browser_lat = (request.form.get("geo_lat") or "").strip()
             browser_lng = (request.form.get("geo_lng") or "").strip()
@@ -581,7 +594,7 @@ def reset_admin_password():
                     f"⛔ ODRZUCONO PROŚBĘ RESETU HASŁA (BRAK GPS)!\n\n"
                     f"Ktoś próbował wywołać reset hasła administratora (`{username}`), "
                     f"ale zgoda na geolokalizację została zablokowana lub odrzucona!\n\n"
-                    f"📌 DANE POLĄCZENIA:\n"
+                    f"📌 DANE POŁĄCZENIA:\n"
                     f"📅 Data: {data_str}\n"
                     f"⏰ Godzina: {godzina_str}\n"
                     f"🌐 Adres IP: {user_ip}\n"
@@ -598,11 +611,12 @@ def reset_admin_password():
             maps_url = f"https://www.google.com/maps/search/?api=1&query={browser_lat},{browser_lng}"
             user_agent_raw = request.headers.get('User-Agent', 'Nieznana przeglądarka')
 
-            # 2. Zapisanie żądania w bazie
+            # 2. Zapisanie żądania w bazie (zapis bez strefy dla wstecznej kompatybilności SQLite/PostgreSQL)
             nowa_prosoba = PasswordResetRequest(
                 user_id=admin.id,
                 ip_address=resolved_ip_str,
-                status='PENDING'
+                status='PENDING',
+                created_at=datetime.now(timezone.utc).replace(tzinfo=None)
             )
             db.session.add(nowa_prosoba)
             db.session.commit()
