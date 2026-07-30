@@ -51,3 +51,12 @@ class Schedule(db.Model):
     godzina = db.Column(db.String(5), nullable=False)
 
     user = db.relationship('Users', backref=db.backref('schedules', lazy=True))
+
+# Dodatek do models.py (lub app.py jeśli tam masz modele)
+class PasswordResetRequest(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    ip_address = db.Column(db.String(100))
+    status = db.Column(db.String(20), default='PENDING') # PENDING, APPROVED, REJECTED
+    proposed_password = db.Column(db.String(255), nullable=True)

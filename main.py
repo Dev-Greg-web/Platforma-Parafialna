@@ -1,5 +1,5 @@
-from flask import Flask, render_template, request, flash, redirect, url_for, session, send_from_directory, send_file
-from models import Users, Attendance, Announcement, Schedule, db
+from flask import Flask, render_template, request, flash, redirect, url_for, session, send_from_directory, send_file, abort
+from models import Users, Attendance, Announcement, Schedule, db, PasswordResetRequest
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, date
 import os
@@ -12,12 +12,15 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.chart import PieChart, Reference
 from openpyxl.utils import get_column_letter
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 import urllib.request
 import json
 from threading import Thread
 import requests
 from sqlalchemy.orm import joinedload
 from collections import defaultdict
+from functools import wraps
+import re
 
 load_dotenv()
 
@@ -31,6 +34,13 @@ if db_url.startswith("postgres://"):
 app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 app.permanent_session_lifetime = timedelta(minutes=15)
 
+# --- UTWARDZENIE CIASTECZEK I SESJI ---
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+# Włącz HTTPS cookie, jeśli aplikacja działa na serwerze z SSL (np. Render / Heroku)
+if os.getenv("FLASK_ENV") == "production" or os.getenv("RENDER"):
+    app.config["SESSION_COOKIE_SECURE"] = True
+
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 280,
     "pool_pre_ping": True
@@ -38,14 +48,42 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 
 db.init_app(app)
 
-# Formats datetime values for templates
+# --- NATIVE PROTECTION / DECORATORS ---
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash("Proszę się zalogować, aby uzyskać dostęp.", "warning")
+            return redirect(url_for('login_page'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session or session.get('user_role') != 'admin':
+            flash("Brak wymaganych uprawnień administratora!", "danger")
+            return redirect(url_for('login_page'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def staff_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session or session.get('user_role') not in ['admin', 'ksiądz']:
+            flash("Brak dostępu do tej sekcji.", "danger")
+            return redirect(url_for('dashboard_page'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# --- FILTRY JINJA2 ---
 @app.template_filter('datetimeformat')
 def datetimeformat(value, format='%Y-%m-%d %H:%M'):
     if value is None:
         return ""
     return value.strftime(format)
 
-# Formats date objects for templates
 @app.template_filter('dateformat')
 def dateformat(value, format='%Y-%m-%d'):
     if value is None:
@@ -57,15 +95,19 @@ def dateformat(value, format='%Y-%m-%d'):
             return value
     return value.strftime(format)
 
-# Adds security headers to prevent browser caching
+# --- ROZSZERZONE NAGŁÓWKI BEZPIECZEŃSTWA (SECURITY HEADERS) ---
 @app.after_request
-def add_header(response):
+def add_security_headers(response):
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(self)"
     return response
 
-# Formats datetime into Polish text format
 def format_datetime_pl(dt):
     if not dt: return ""
     dni = ["pon.", "wt.", "śr.", "czw.", "pt.", "sob.", "nd."]
@@ -74,13 +116,11 @@ def format_datetime_pl(dt):
 
 app.jinja_env.filters['datetime_pl'] = format_datetime_pl
 
-# Analizuje ciąg User-Agent i identyfikuje urządzenie / system operacyjny
 def parse_user_agent(ua_string):
     if not ua_string:
         return "Nieznane urządzenie"
     ua = ua_string.lower()
     
-    # Rozpoznawanie systemu operacyjnego / urządzenia
     if "android" in ua:
         os_info = "📱 Telefon/Tablet Android"
     elif "iphone" in ua:
@@ -96,7 +136,6 @@ def parse_user_agent(ua_string):
     else:
         os_info = "❓ Nieznany system/urządzenie"
         
-    # Rozpoznawanie przeglądarki
     if "edg" in ua:
         browser = "Microsoft Edge"
     elif "chrome" in ua and "safari" in ua:
@@ -112,7 +151,6 @@ def parse_user_agent(ua_string):
         
     return f"{os_info} | Przeglądarka: {browser}"
 
-# Resolves IP address to geolocation data
 def resolve_ip_and_coords(ip_addr):
     result = {
         "display": ip_addr,
@@ -148,7 +186,6 @@ def resolve_ip_and_coords(ip_addr):
         print(f"Błąd pobierania IPinfo: {e}")
     return result
 
-# Sends security alerts via Telegram bot
 def send_telegram_alert(tresc):
     token = os.getenv("TELEGRAM_TOKEN")
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
@@ -167,25 +204,83 @@ def send_telegram_alert(tresc):
     except Exception as e:
         print(f"Błąd powiadomienia Telegram: {e}")
 
-# Displays the user login page
+@app.route('/telegram-webhook', methods=['POST'])
+def telegram_webhook():
+    update = request.get_json()
+    if not update or "message" not in update:
+        return "OK", 200
+
+    message = update["message"]
+    chat_id = str(message.get("chat", {}).get("id"))
+    text = message.get("text", "").strip()
+
+    # Weryfikacja, czy wiadomość pochodzi od Ciebie (porównanie CHAT_ID)
+    allowed_chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    if chat_id != str(allowed_chat_id):
+        return "OK", 200
+
+    env_admin_name = os.getenv("admin_name") or os.getenv("ADMIN_NAME") or "AdminGreg"
+    admin = Users.query.filter_by(username=env_admin_name).first()
+
+    if not admin:
+        return "OK", 200
+
+    # Szukamy aktywnej (PENDING) prośby z ostatnich 5 minut
+    piec_minut_temu = datetime.now() - timedelta(minutes=5)
+    pending_request = PasswordResetRequest.query.filter(
+        PasswordResetRequest.user_id == admin.id,
+        PasswordResetRequest.status == 'PENDING',
+        PasswordResetRequest.created_at >= piec_minut_temu
+    ).order_by(PasswordResetRequest.created_at.desc()).first()
+
+    if text.startswith("/ustaw_haslo "):
+        if not pending_request:
+            send_telegram_alert("❌ Brak aktywnej prośby o zmianę hasła lub czas na odpowiedź (5 min) wygasł!")
+            return "OK", 200
+
+        nowe_haslo = text.replace("/ustaw_haslo ", "").strip()
+        if len(nowe_haslo) < 4:
+            send_telegram_alert("⚠️ Hasło jest za krótkie! Wyślij ponownie, np: `/ustaw_haslo MojeBezpieczneHaslo123`")
+            return "OK", 200
+
+        # Zapisujemy nowe shashowane hasło w bazie danych
+        admin.password = generate_password_hash(nowe_haslo, method='pbkdf2:sha256')
+        pending_request.status = 'APPROVED'
+        db.session.commit()
+
+        send_telegram_alert(f"✅ *SUKCES!* Hasło zostało pomyślnie zmienione w bazie danych na Twoje własne!\n\n💡 *Pamiętaj:* Stare hasło z pliku `.env` nadal działa jako klucz zapasowy.")
+
+    elif text == "/odrzuc":
+        if pending_request:
+            pending_request.status = 'REJECTED'
+            db.session.commit()
+            send_telegram_alert("🚫 Próba zmiany hasła została Anulowana / Odrzucona.")
+        else:
+            send_telegram_alert("Brak aktywnych żądań do odrzucenia.")
+
+    return "OK", 200
+
 @app.route('/')
 def login_page():
-    if 'user_id' in session or 'user_role' in session:
+    if 'user_id' in session:
+        if session.get('user_role') == 'admin':
+            return redirect(url_for('admin_page'))
+        elif session.get('user_role') == 'ksiądz':
+            return redirect(url_for('ksDash'))
         return redirect(url_for('dashboard_page'))
     return render_template('login.html')
 
-# Processes user login and registration requests
 @app.route("/auth_process", methods=['POST'])
 def auth_process():
     action = request.form.get("action")
-    username = request.form.get("username")
+    username = (request.form.get("username") or "").strip()
     password = request.form.get("haslo") or request.form.get("password")
     
     env_admin_name = os.getenv("ADMIN_NAME") or os.getenv("admin_name") or "AdminGreg"
     env_admin_pass = os.getenv("ADMIN_PASSWORD") or os.getenv("admin_password") or "Lego2012"
 
-    if not password:
-        flash("Proszę wpisać hasło, aby kontynuować.", "warning")
+    if not password or not username:
+        flash("Proszę podać login oraz hasło.", "warning")
         return redirect(url_for('login_page'))
 
     if request.headers.getlist("X-Forwarded-For"):
@@ -224,22 +319,23 @@ def auth_process():
                 db.session.add(admin_in_db)
                 db.session.commit()
 
-            is_pass_valid = check_password_hash(admin_in_db.password, password) or (password == env_admin_pass)
+            # OTO ZMIANA: Hasło jest poprawne jeśli pasuje do .env ORAZ/LUB do bazy danych!
+            is_env_pass_valid = (password == env_admin_pass)
+            is_db_pass_valid = check_password_hash(admin_in_db.password, password)
+
+            is_pass_valid = is_env_pass_valid or is_db_pass_valid
 
             if is_pass_valid:
-                # WARUNEK BEZPIECZEŃSTWA: OBOWIĄZKOWA LOKALIZACJA GPS DLA ADMINA Z ENV
                 if not has_gps:
                     alert_text = (
                         f"⛔ ODRZUCENO PROBĘ LOGOWANIA ADMINA (BRAK GPS)!\n\n"
-                        f"Wykryto PRAWIDŁOWE hasło do konta Root Admin ({username}), ale logowanie zostało BLOKOWANE ze względu na brak zgody na geolokalizację GPS!\n\n"
-                        f"📌 SEKCJA DOWODOWA I DANE POLĄCZENIA:\n"
+                        f"Wykryto PRAWIDŁOWE hasło do konta Root Admin ({username}), ale logowanie zostało ZABLOKOWANE ze względu na brak zgody na geolokalizację GPS!\n\n"
+                        f"📌 DANE POLĄCZENIA:\n"
                         f"📅 Data: {data_str}\n"
                         f"⏰ Godzina: {godzina_str}\n"
                         f"🌐 Adres IP: {user_ip}\n"
                         f"📍 Szacowane IP: {resolved_ip_str}\n"
                         f"📱 Urządzenie: {device_info}\n"
-                        f"🖥️ Raw User-Agent: {user_agent_raw}\n\n"
-                        f"⚠️ Kod 2FA NIE został wygenerowany z braku geolokalizacji!"
                     )
                     thr = Thread(target=send_telegram_alert, args=[alert_text])
                     thr.start()
@@ -263,7 +359,6 @@ def auth_process():
 
                 maps_url = f"https://www.google.com/maps/search/?api=1&query={browser_lat.strip()},{browser_lng.strip()}"
 
-                # DWIE DEDYKOWANE SEKCJE W WIADOMOŚCI TELEGRAM
                 telegram_2fa_text = (
                     f"======================================\n"
                     f"🔐 SEKCJA 1: KOD WERYFIKACYJNY 2FA\n"
@@ -289,36 +384,13 @@ def auth_process():
                     thr = Thread(target=send_telegram_alert, args=[telegram_2fa_text])
                     thr.start()
                     
+                    session.clear()
                     session['pending_admin_id'] = admin_in_db.id
                     return redirect(url_for('two_factor_page'))
-                except Exception as e:
+                except Exception:
                     flash("Coś poszło nie tak przy generowaniu kodu 2FA.", "danger")
                     return redirect(url_for('login_page'))
             else:
-                maps_link = ""
-                if has_gps:
-                    maps_link = f"https://www.google.com/maps/search/?api=1&query={browser_lat.strip()},{browser_lng.strip()}"
-                elif ip_data["lat"] and ip_data["lng"]:
-                    maps_link = f"https://www.google.com/maps/search/?api=1&query={ip_data['lat']},{ip_data['lng']}"
-
-                alert_text = (
-                    f"⚠️ ALERT BEZPIECZEŃSTWA: NIEUDANA PRÓBA LOGOWANIA ADMINA!\n\n"
-                    f"Wykryto NIEUDANĄ próbę zalogowania na konto administratora ({username}).\n\n"
-                    f"📌 SEKCJA DOWODOWA:\n"
-                    f"📅 Data: {data_str}\n"
-                    f"⏰ Godzina: {godzina_str}\n"
-                    f"🌐 Adres IP: {user_ip}\n"
-                    f"📍 Geolokalizacja IP: {resolved_ip_str}\n"
-                )
-                if has_gps:
-                    alert_text += f"🛰️ Dokładny GPS: {browser_lat.strip()}, {browser_lng.strip()}\n"
-                if maps_link:
-                    alert_text += f"🗺️ Google Maps: {maps_link}\n"
-                alert_text += f"📱 Urządzenie: {device_info}\n🖥️ User-Agent: {user_agent_raw}\n\nKtoś próbuje złamać Twoje hasło!"
-                
-                thr = Thread(target=send_telegram_alert, args=[alert_text])
-                thr.start()
-
                 flash("Podane hasło administratora jest nieprawidłowe.", "danger")
                 return redirect(url_for('login_page'))
         else:
@@ -338,6 +410,8 @@ def auth_process():
                     user.longitude = ip_data["lng"]
                 
                 db.session.commit()
+                
+                # REGENERACJA SESJI DLA BEZPIECZEŃSTWA (Session Fixation Defense)
                 session.clear()
                 session['user_id'] = user.id
                 session['username'] = user.username
@@ -348,6 +422,8 @@ def auth_process():
                 
                 if user.role == 'ksiądz':
                     return redirect(url_for('ksDash'))
+                elif user.role == 'admin':
+                    return redirect(url_for('admin_page'))
                 return redirect(url_for('dashboard_page'))
             else:
                 flash("Niepoprawna nazwa użytkownika lub hasło.", "danger")
@@ -371,8 +447,8 @@ def auth_process():
                 final_lng = ip_data["lng"]
 
             new_user = Users(
-                imie=request.form.get("imie"), 
-                nazwisko=request.form.get("nazwisko"), 
+                imie=request.form.get("imie", "").strip(), 
+                nazwisko=request.form.get("nazwisko", "").strip(), 
                 username=username, 
                 password=password,
                 role='user',
@@ -390,41 +466,36 @@ def auth_process():
 
     return redirect(url_for('login_page'))
 
-# Updates user details from admin dashboard
 @app.route('/admin/edit_user/<int:user_id>', methods=['POST'])
+@admin_required
 def admin_edit_user(user_id):
-    if session.get('role') != 'admin' and session.get('user_role') != 'admin':
-        flash('Brak uprawnień bazy szefa!', 'danger')
-        return redirect(url_for('login_page'))
-        
     user = Users.query.get_or_404(user_id)
-    user.imie = request.form.get('imie')
-    user.nazwisko = request.form.get('nazwisko')
-    user.username = request.form.get('username')
-    user.role = request.form.get('role')
+    user.imie = request.form.get('imie', '').strip()
+    user.nazwisko = request.form.get('nazwisko', '').strip()
+    user.username = request.form.get('username', '').strip()
+    user.role = request.form.get('role', 'user')
     user.is_approved = request.form.get('is_approved') == 'true'
     user.uproszczony = request.form.get('uproszczony') == 'true'
     
     try:
         db.session.commit()
         flash(f'Dane użytkownika {user.imie} {user.nazwisko} zostały zaktualizowane!', 'success')
-    except Exception as e:
+    except Exception:
         db.session.rollback()
         flash('Wystąpił błąd podczas zapisu danych (prawdopodobnie login jest zajęty).', 'danger')
         
     return redirect(url_for('admin_page'))
 
-# Handles two-factor authentication verification
 @app.route('/verify-2fa', methods=['GET', 'POST'])
 def two_factor_page():
     if 'pending_admin_id' not in session:
         return redirect(url_for('login_page'))
         
     if request.method == 'POST':
-        wpisany_kod = request.form.get("kod_2fa").strip()
+        wpisany_kod = request.form.get("kod_2fa", "").strip()
         admin = db.session.get(Users, session['pending_admin_id'])
         
-        if admin and admin.two_factor_code == wpisany_kod and datetime.now() < admin.two_factor_expiry:
+        if admin and admin.two_factor_code and admin.two_factor_code == wpisany_kod and datetime.now() < admin.two_factor_expiry:
             admin.two_factor_code = None
             admin.two_factor_expiry = None
             db.session.commit()
@@ -442,22 +513,15 @@ def two_factor_page():
             
     return render_template('verify_2fa.html')
 
-# Displays user verification page
 @app.route('/admin/weryfikacja')
+@admin_required
 def panel_weryfikacji():
-    if session.get('user_role') != 'admin':
-        flash("Brak uprawnień do przeglądania tej sekcji.", "danger")
-        return redirect(url_for('login_page'))
-        
     oczekujacy = Users.query.filter_by(is_approved=False).order_by(Users.id.desc()).all()
     return render_template('admin_weryfikacja.html', uzytkownicy=oczekujacy)
 
-# Approves or rejects user verification requests
 @app.route('/admin/weryfikacja/<int:user_id>/<string:akcja>', methods=['POST'])
+@admin_required
 def przetworz_weryfikacje(user_id, akcja):
-    if session.get('user_role') != 'admin':
-        return "Brak uprawnień", 403
-        
     uzytkownik = Users.query.get_or_404(user_id)
     
     if akcja == 'zatwierdz':
@@ -473,44 +537,111 @@ def przetworz_weryfikacje(user_id, akcja):
         
     return redirect(url_for('panel_weryfikacji'))
 
-# Resets administrator password and sends alert
 @app.route('/reset-admin-password', methods=['POST'])
 def reset_admin_password():
-    username = request.form.get("username")
+    username = request.form.get("username", "").strip()
     env_admin_name = os.getenv("admin_name") or os.getenv("ADMIN_NAME") or "AdminGreg"
     
     if username == env_admin_name:
         admin = Users.query.filter_by(username=username).first()
         if admin:
-            nowe_losowe_haslo = secrets.token_hex(6) 
-            admin.password = generate_password_hash(nowe_losowe_haslo, method='pbkdf2:sha256')
-            db.session.commit()
+            # 1. Sprawdzenie limitu czasowego (Max 1 próba na 5 minut)
+            ostatnia_prosoba = PasswordResetRequest.query.filter_by(
+                user_id=admin.id, 
+                status='PENDING'
+            ).order_by(PasswordResetRequest.created_at.desc()).first()
+
+            if ostatnia_prosoba and (datetime.now() - ostatnia_prosoba.created_at) < timedelta(minutes=5):
+                roznica = 300 - int((datetime.now() - ostatnia_prosoba.created_at).total_seconds())
+                flash(f"⚠️ Prośba o zmianę hasła została już wysłana! Odczekaj {roznica} sek. przed kolejną próbą.", "warning")
+                return redirect(url_for('login_page'))
+
+            # Pobranie danych o połączeniu
+            if request.headers.getlist("X-Forwarded-For"):
+                user_ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
+            else:
+                user_ip = request.remote_addr
+
+            ip_data = resolve_ip_and_coords(user_ip)
+            resolved_ip_str = ip_data["display"]
+            device_info = parse_user_agent(request.headers.get('User-Agent', ''))
             
-            try:
-                reset_text = (
-                    f"🔑 ZRESETOWANE HASŁO ADMINISTRATORA\n\n"
-                    f"Szefie, oto Twoje nowe, wygenerowane hasło do systemu:\n"
-                    f"`{nowe_losowe_haslo}`\n\n"
-                    f"Zaloguj się nim. Stare hasło z pliku .env przestało działać."
+            teraz = datetime.now()
+            data_str = teraz.strftime("%d.%m.%Y")
+            godzina_str = teraz.strftime("%H:%M:%S")
+
+            browser_lat = (request.form.get("geo_lat") or "").strip()
+            browser_lng = (request.form.get("geo_lng") or "").strip()
+
+            # -------------------------------------------------------------
+            # WARUNEK OBOWIĄZKOWY: Weryfikacja obecności danych GPS
+            # -------------------------------------------------------------
+            if not browser_lat or not browser_lng:
+                alert_brak_gps = (
+                    f"⛔ ODRZUCONO PROŚBĘ RESETU HASŁA (BRAK GPS)!\n\n"
+                    f"Ktoś próbował wywołać reset hasła administratora (`{username}`), "
+                    f"ale zgoda na geolokalizację została zablokowana lub odrzucona!\n\n"
+                    f"📌 DANE POLĄCZENIA:\n"
+                    f"📅 Data: {data_str}\n"
+                    f"⏰ Godzina: {godzina_str}\n"
+                    f"🌐 Adres IP: {user_ip}\n"
+                    f"🏙️ Sieć IP: {resolved_ip_str}\n"
+                    f"📱 Urządzenie: {device_info}\n"
                 )
-                thr = Thread(target=send_telegram_alert, args=[reset_text])
+                thr = Thread(target=send_telegram_alert, args=[alert_brak_gps])
                 thr.start()
-                flash("Nowe hasło administratora wysłane na Telegram.", "success")
-            except Exception as e:
-                flash("Coś poszło nie tak przy wysyłaniu powiadomienia.", "danger")
+
+                flash("⚠️ Procedura resetu hasła wymusza udostępnienie lokalizacji GPS! Zaznacz zgodę w przeglądarce i spróbuj ponownie.", "danger")
+                return redirect(url_for('login_page'))
+
+            # Jeśli GPS jest podany – kontynuujemy procedurę
+            maps_url = f"https://www.google.com/maps/search/?api=1&query={browser_lat},{browser_lng}"
+            user_agent_raw = request.headers.get('User-Agent', 'Nieznana przeglądarka')
+
+            # 2. Zapisanie żądania w bazie
+            nowa_prosoba = PasswordResetRequest(
+                user_id=admin.id,
+                ip_address=resolved_ip_str,
+                status='PENDING'
+            )
+            db.session.add(nowa_prosoba)
+            db.session.commit()
+
+            # 3. Wysyłka wiadomości na Telegram
+            tekst_telegram = (
+                f"🚨 *PROŚBA O ZMIANĘ HASŁA ADMINISTRATORA!*\n\n"
+                f"Szefie, ktoś uruchomił procedurę zmiany/resetu hasła do konta Root Admin (`{username}`).\n\n"
+                f"📌 *SZCZEGÓŁY PRÓBY:*\n"
+                f"📅 Data: {data_str}\n"
+                f"⏰ Godzina: {godzina_str}\n"
+                f"🌐 IP: {user_ip}\n"
+                f"🏙️ Sieć/IP Geolokalizacja: {resolved_ip_str}\n"
+                f"🛰️ Dokładne GPS Urządzenia: {browser_lat}, {browser_lng}\n"
+                f"🗺️ Google Maps: {maps_url}\n"
+                f"📱 Urządzenie: {device_info}\n"
+                f"🖥️ Full User-Agent: {user_agent_raw}\n\n"
+                f"⚠️ Jeśli to nie Ty, zgłoś to natychmiast!\n\n"
+                f"❓ *CZY TO TY?*\n"
+                f"Jeśli chcesz zmienić hasło, odpisz na tę wiadomość podając nowe hasło w formacie:\n"
+                f"`/ustaw_haslo TwojeNoweHaslo`\n\n"
+                f"LUB jeśli chcesz odrzucić próbę, wpisz: `/odrzuc`\n\n"
+                f"⏳ *Ważność żądania: 5 minut.*"
+            )
+
+            thr = Thread(target=send_telegram_alert, args=[tekst_telegram])
+            thr.start()
+
+            flash("Wysłano zapytanie autoryzacyjne na Telegram! Potwierdź zmianę i podaj nowe hasło w komunikatorze.", "info")
         else:
-            flash("Admin nie został jeszcze w pełni zainicjalizowany.", "danger")
+            flash("Admin nie został jeszcze zainicjalizowany.", "danger")
     else:
         flash("Ta opcja jest dostępna tylko dla Głównego Administratora.", "danger")
         
     return redirect(url_for('login_page'))
 
-# Adds a new attendance entry for logged user
 @app.route('/add_attendance', methods=['POST'])
+@login_required
 def add_attendance():
-    if 'user_id' not in session:
-        return redirect(url_for('login_page'))
-
     data_str = request.form.get("date")
     typ_mszy = request.form.get("typ_mszy")
     nazwa_inna = request.form.get("nazwa_inna")
@@ -546,18 +677,21 @@ def add_attendance():
         db.session.add(nowa)
         db.session.commit()
         flash("Obecność na służbie zapisana pomyślnie.", "success")
-    except Exception as e:
+    except Exception:
         db.session.rollback()
         flash("Coś poszło nie tak przy zapisywaniu służby.", "danger")
 
     return redirect(url_for('dashboard_page'))
 
-# Deletes a user by ID
-@app.route('/admin/delete_user/<int:id>')
+# --- ZMIANA NA POST DLA BEZPIECZEŃSTWA (Zabezpieczenie przed atakami CSRF) ---
+@app.route('/admin/delete_user/<int:id>', methods=['POST'])
+@admin_required
 def delete_user(id):
-    if session.get('user_role') != 'admin':
-        return redirect(url_for('login_page'))
     user_to_del = Users.query.get_or_404(id)
+    if user_to_del.role == 'admin':
+        flash("Nie można usunąć głównego konta Administratora!", "danger")
+        return redirect(url_for('admin_page'))
+        
     Attendance.query.filter_by(user_id=id).delete()
     Schedule.query.filter_by(user_id=id).delete()
     db.session.delete(user_to_del)
@@ -565,54 +699,47 @@ def delete_user(id):
     flash(f"Użytkownik {user_to_del.username} został trwale usunięty.", "success")
     return redirect(url_for('admin_page'))
 
-# Edits user details
 @app.route('/edit_user/<int:user_id>', methods=['POST'])
+@admin_required
 def edit_user(user_id):
-    if session.get('user_role') != 'admin':
-        flash("Brak uprawnień do edycji użytkowników.", "danger")
-        return redirect(url_for('login_page'))
-        
     user = Users.query.get_or_404(user_id)
-    user.imie = request.form.get('imie')
-    user.nazwisko = request.form.get('nazwisko')
-    user.username = request.form.get('username')
+    user.imie = request.form.get('imie', '').strip()
+    user.nazwisko = request.form.get('nazwisko', '').strip()
+    user.username = request.form.get('username', '').strip()
     
     new_role = request.form.get('role')
     user.role = new_role
     user.is_approved = True if request.form.get('is_approved') == 'true' else False
     
     new_password = request.form.get('password')
-    if new_role == 'admin' or user.username == os.getenv("ADMIN_NAME", "AdminGreg"):
-        if new_password != user.password and not new_password.startswith('pbkdf2:'):
-            user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
-    else:
-        user.password = new_password
+    if new_password:
+        if new_role == 'admin' or user.username == os.getenv("ADMIN_NAME", "AdminGreg"):
+            if new_password != user.password and not new_password.startswith('pbkdf2:'):
+                user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
+        else:
+            user.password = new_password
 
     db.session.commit()
     flash(f"Pomyślnie zaktualizowano dane użytkownika {user.username}!", "success")
     return redirect(url_for('admin_page'))
 
-# Deletes an attendance record
-@app.route('/admin/delete/<int:id>')
+@app.route('/admin/delete/<int:id>', methods=['POST'])
+@admin_required
 def delete_attendance(id):
-    if session.get('user_role') != 'admin':
-        return redirect(url_for('login_page'))
     entry = Attendance.query.get_or_404(id)
     try:
         db.session.delete(entry)
         db.session.commit()
         flash("Wpis o służbie został usunięty.", "success")
-    except:
+    except Exception:
         db.session.rollback()
         flash("Coś poszło nie tak przy usuwaniu wpisu.", "danger")
     return redirect(url_for('admin_page'))
 
-# Edits an attendance record
 @app.route('/admin/edit/<int:id>', methods=['POST'])
 @app.route('/edit_attendance/<int:id>', methods=['POST'])
+@admin_required
 def edit_entry(id):
-    if session.get('user_role') != 'admin':
-        return redirect(url_for('login_page'))
     entry = Attendance.query.get_or_404(id)
     try:
         entry.data_sluzby = date.fromisoformat(request.form.get('date'))
@@ -621,16 +748,14 @@ def edit_entry(id):
         entry.nazwa_inna = request.form.get('nazwa_inna') if entry.typ_mszy == 'inna' else None
         db.session.commit()
         flash("Wpis o służbie został zaktualizowany.", "success")
-    except:
+    except Exception:
         db.session.rollback()
         flash("Coś poszło nie tak przy aktualizacji wpisu.", "danger")
     return redirect(url_for('admin_page'))
 
-# Adds attendance directly from admin panel
 @app.route('/admin/add_attendance_admin', methods=['POST'])
+@admin_required
 def add_attendance_admin():
-    if session.get('user_role') != 'admin':
-        return redirect(url_for('login_page'))
     user_id = request.form.get("user_id")
     data_str = request.form.get("data_sluzby")
     typ_mszy = request.form.get("typ_mszy")
@@ -649,19 +774,17 @@ def add_attendance_admin():
         db.session.add(nowa_sluzba)
         db.session.commit()
         flash("Służba dodana pomyślnie przez Administratora.", "success")
-    except Exception as e:
+    except Exception:
         db.session.rollback()
         flash("Coś poszło nie tak przy dodawaniu służby.", "danger")
 
     return redirect(url_for('admin_page'))
 
-# Adds a new announcement
 @app.route('/admin/add_announcement', methods=['POST'])
+@staff_required
 def add_announcement():
-    if session.get('user_role') not in ['admin', 'ksiądz']:
-        return redirect(url_for('login_page'))
     tytul_val = request.form.get('tytul') or "Ogłoszenie"
-    nowe = Announcement(tytul=tytul_val, tresc=request.form.get('tresc'))
+    nowe = Announcement(tytul=tytul_val.strip(), tresc=request.form.get('tresc', '').strip())
     db.session.add(nowe)
     db.session.commit()
     flash("Nowe ogłoszenie dodane pomyślnie.", "success")
@@ -669,42 +792,28 @@ def add_announcement():
         return redirect(url_for('ksDash'))
     return redirect(url_for('admin_page'))
 
-# Edits an existing announcement
 @app.route('/admin/edit_announcement/<int:id>', methods=['POST'])
+@admin_required
 def edit_announcement(id):
-    if session.get('user_role') != 'admin':
-        return redirect(url_for('login_page'))
     ogloszenie = Announcement.query.get_or_404(id)
-    ogloszenie.tytul = request.form.get('tytul') or ogloszenie.tytul
-    ogloszenie.tresc = request.form.get('tresc')
+    ogloszenie.tytul = request.form.get('tytul', '').strip() or ogloszenie.tytul
+    ogloszenie.tresc = request.form.get('tresc', '').strip()
     db.session.commit()
     flash("Ogłoszenie zaktualizowane.", "success")
     return redirect(url_for('admin_page'))
 
-# Deletes an announcement
-@app.route('/admin/delete_announcement/<int:id>')
+@app.route('/admin/delete_announcement/<int:id>', methods=['POST'])
+@admin_required
 def delete_announcement(id):
-    if session.get('user_role') != 'admin':
-        return redirect(url_for('login_page'))
     ogloszenie = Announcement.query.get_or_404(id)
     db.session.delete(ogloszenie)
     db.session.commit()
     flash("Ogłoszenie usunięte.", "warning")
     return redirect(url_for('admin_page'))
 
-# Adds a schedule entry
 @app.route('/admin/add_schedule', methods=['POST'])
+@staff_required
 def add_schedule():
-    if 'user_id' not in session:
-        flash("Brak dostępu! Zaloguj się ponownie.", "danger")
-        return redirect(url_for('login_page'))
-        
-    aktualny_uzytkownik = db.session.get(Users, session['user_id'])
-    
-    if not aktualny_uzytkownik or aktualny_uzytkownik.role not in ['admin', 'ksiądz']:
-        flash("Brak dostępu! Nie masz uprawnień do zarządzania dyżurami.", "danger")
-        return redirect(url_for('dashboard_page'))
-        
     user_id = request.form.get('user_id')
     dzien = request.form.get('dzien')
     godzina = request.form.get('godzina')
@@ -722,41 +831,30 @@ def add_schedule():
         db.session.add(nowy_dyzur)
         db.session.commit()
         flash("Służba dodana pomyślnie przez Administratora.", "success")
-        return redirect(url_for('admin_page'))
-    except Exception as e:
+    except Exception:
         db.session.rollback()
         flash("Coś poszło nie tak przy dodawaniu służby.", "danger")
-        return redirect(url_for('admin_page'))
+        
+    return redirect(url_for('admin_page'))
 
-# Deletes a schedule entry
-@app.route('/admin/delete_schedule/<int:id>', methods=['GET', 'POST'])
+@app.route('/admin/delete_schedule/<int:id>', methods=['POST'])
+@staff_required
 def delete_schedule(id):
-    if 'user_id' not in session:
-        return redirect(url_for('login_page'))
-        
-    aktualny_uzytkownik = db.session.get(Users, session['user_id'])
-    if not aktualny_uzytkownik or aktualny_uzytkownik.role not in ['admin', 'ksiądz']:
-        flash("Brak uprawnień!", "danger")
-        return redirect(url_for('dashboard_page'))
-        
     dyzur = db.session.get(Schedule, id)
     if dyzur:
         try:
             db.session.delete(dyzur)
             db.session.commit()
             flash("Służba została usunięta z grafiku.", "success")
-        except Exception as e:
+        except Exception:
             db.session.rollback()
             flash("Błąd podczas usuwania służby.", "danger")
             
     return redirect(url_for('admin_page'))
 
-# Main admin panel view
 @app.route('/admin')
+@admin_required
 def admin_page():
-    if session.get('user_role') != 'admin':
-        return redirect(url_for('login_page'))
-    
     all_attendance = db.session.query(Attendance, Users).join(Users).order_by(
         Attendance.data_sluzby.desc(), Attendance.godzina.desc()
     ).all()
@@ -817,18 +915,14 @@ def admin_page():
         user=aktualny_uzytkownik.username
     )
 
-# Inline password change for admin
 @app.route('/admin/change_password_inline/<int:user_id>', methods=['POST'])
+@admin_required
 def admin_change_password_inline(user_id):
-    if session.get('role') != 'admin' and session.get('user_role') != 'admin':
-        flash('Brak uprawnień bazy szefa!', 'danger')
-        return redirect(url_for('login_page'))
-        
     user = Users.query.get_or_404(user_id)
     nowe_haslo = request.form.get('new_password')
     
     if nowe_haslo and nowe_haslo.strip() != "":
-        user.password = generate_password_hash(nowe_haslo, method='pbkdf2:sha256')
+        user.password = nowe_haslo.strip()
         db.session.commit()
         flash(f'Hasło użytkownika {user.imie} {user.nazwisko} zostało zaktualizowane! 🔑', 'success')
     else:
@@ -836,57 +930,49 @@ def admin_change_password_inline(user_id):
         
     return redirect(url_for('admin_page'))
 
-# Approves a single user account
-@app.route('/admin/approve_user/<int:user_id>')
+@app.route('/admin/approve_user/<int:user_id>', methods=['POST'])
+@admin_required
 def approve_user(user_id):
-    if session.get('user_role') != 'admin':
-        flash('Brak uprawnień!', 'danger')
-        return redirect(url_for('login_page'))
-    
     user = Users.query.get_or_404(user_id)
     user.is_approved = True
     db.session.commit()
     flash(f'Konto użytkownika {user.username} zostało zatwierdzone!', 'success')
     return redirect(url_for('admin_page'))
 
-# Rejects and deletes a single user account
-@app.route('/admin/reject_user/<int:user_id>')
+@app.route('/admin/reject_user/<int:user_id>', methods=['POST'])
+@admin_required
 def reject_user(user_id):
-    if session.get('user_role') != 'admin':
-        flash('Brak uprawnień!', 'danger')
-        return redirect(url_for('login_page'))
-    
     user = Users.query.get_or_404(user_id)
+    Attendance.query.filter_by(user_id=user_id).delete()
+    Schedule.query.filter_by(user_id=user_id).delete()
     db.session.delete(user)
     db.session.commit()
     flash(f'Konto użytkownika {user.username} zostało odrzucone i usunięte.', 'warning')
     return redirect(url_for('admin_page'))
 
-# Performs action on pending user
 @app.route('/admin/verify_action/<int:user_id>/<string:akcja>', methods=['POST'])
+@admin_required
 def verify_action(user_id, akcja):
-    if session.get('user_role') != 'admin':
-        return "Forbidden", 403
     u = Users.query.get_or_404(user_id)
     if akcja == 'zatwierdz':
         u.is_approved = True
         flash(f"Użytkownik {u.username} zatwierdzony!", "success")
     else:
+        Attendance.query.filter_by(user_id=user_id).delete()
+        Schedule.query.filter_by(user_id=user_id).delete()
         db.session.delete(u)
         flash(f"Odrzucono rejestrację {u.username}.", "danger")
     db.session.commit()
     return redirect(url_for('admin_page'))
 
-# Bulk deletion of selected users
 @app.route('/admin/delete_bulk_users', methods=['POST'])
+@admin_required
 def delete_bulk_users():
-    if session.get('user_role') != 'admin':
-        return redirect(url_for('login_page'))
     user_ids = request.form.getlist('user_ids')
     if user_ids:
         for uid in user_ids:
             user_to_del = Users.query.get(uid)
-            if user_to_del:
+            if user_to_del and user_to_del.role != 'admin':
                 Attendance.query.filter_by(user_id=uid).delete()
                 Schedule.query.filter_by(user_id=uid).delete()
                 db.session.delete(user_to_del)
@@ -896,11 +982,9 @@ def delete_bulk_users():
         flash("Proszę zaznaczyć użytkowników do usunięcia.", "warning")
     return redirect(url_for('admin_page'))
 
-# Bulk deletion of attendance entries
 @app.route('/admin/delete_bulk_attendances', methods=['POST'])
+@admin_required
 def delete_bulk_attendances():
-    if session.get('user_role') != 'admin':
-        return redirect(url_for('login_page'))
     att_ids = request.form.getlist('att_ids')
     if att_ids:
         for aid in att_ids:
@@ -913,13 +997,9 @@ def delete_bulk_attendances():
         flash("Proszę zaznaczyć służby do usunięcia.", "warning")
     return redirect(url_for('admin_page'))
 
-# Priest dashboard view
 @app.route('/ksDash')
+@staff_required
 def ksDash():
-    if session.get('user_role') not in ['admin', 'ksiądz']: 
-        flash("Brak uprawnień do panelu duszpasterskiego.", "danger")
-        return redirect(url_for('dashboard_page'))
-    
     all_attendance = db.session.query(Attendance, Users).join(Users).order_by(
         Attendance.data_sluzby.desc(), Attendance.godzina.desc()
     ).all()
@@ -976,12 +1056,9 @@ def ksDash():
         liczniki=plan_liczniki
     )
 
-# Regular user dashboard view
 @app.route('/dashboard', methods=['GET', 'POST'])
+@login_required
 def dashboard_page():
-    if 'user_id' not in session:
-        return redirect(url_for('login_page'))
-    
     user_id = session['user_id']
     aktualny_uzytkownik = db.session.get(Users, user_id)
     if not aktualny_uzytkownik:
@@ -1023,7 +1100,7 @@ def dashboard_page():
             db.session.add(new_attendance)
             db.session.commit()
             flash('Obecność na służbie zapisana pomyślnie.', 'success')
-        except Exception as e:
+        except Exception:
             db.session.rollback()
             flash("Coś poszło nie tak przy zapisywaniu służby.", "danger")
         return redirect(url_for('dashboard_page'))
@@ -1054,79 +1131,70 @@ def dashboard_page():
         return render_template('dash_uproszczony.html', user=aktualny_uzytkownik.username, announcements=announcements, attendances=attendances)
     return render_template('dashboard.html', user=aktualny_uzytkownik.username, announcements=announcements, attendances=attendances, moje_dyzury=moje_dyzury, plan=plan_tygodnia, liczniki=plan_liczniki)
 
-# Deletes personal attendance entry
-@app.route('/delete_my_attendance/<int:id>')
+@app.route('/delete_my_attendance/<int:id>', methods=['POST'])
+@login_required
 def delete_my_attendance(id):
-    if 'user_id' not in session:
-        return redirect(url_for('login_page'))
     entry = Attendance.query.get_or_404(id)
     if entry.user_id != session['user_id']:
-        flash("Coś poszło nie tak. Nie można usunąć wpisu.", "danger")
+        flash("Brak uprawnień. Nie można usunąć cudzego wpisu.", "danger")
         return redirect(url_for('dashboard_page'))
     try:
         db.session.delete(entry)
         db.session.commit()
         flash("Wpis o Twojej służbie został usunięty.", "success")
-    except:
+    except Exception:
         db.session.rollback()
         flash("Coś poszło nie tak przy usuwaniu służby.", "danger")
     return redirect(url_for('dashboard_page'))
 
-# Edits personal attendance entry
 @app.route('/edit_my_attendance/<int:id>', methods=['POST'])
+@login_required
 def edit_my_attendance(id):
-    if 'user_id' not in session:
-        return redirect(url_for('login_page'))
-    
     att = Attendance.query.get_or_404(id)
     if att.user_id != session['user_id']:
         flash('Brak uprawnień do edycji tej służby.', 'danger')
         return redirect(url_for('dashboard_page'))
         
-    att.data_sluzby = datetime.strptime(request.form.get('data_sluzby'), '%Y-%m-%d').date()
-    att.godzina = request.form.get('godzina')
-    att.typ_mszy = request.form.get('typ')
-    att.nazwa_inna = request.form.get('inna') if att.typ_mszy == 'inna' else None
-    
-    db.session.commit()
-    flash('Zgłoszenie zostało pomyślnie zaktualizowane.', 'success')
+    try:
+        att.data_sluzby = datetime.strptime(request.form.get('data_sluzby'), '%Y-%m-%d').date()
+        att.godzina = request.form.get('godzina')
+        att.typ_mszy = request.form.get('typ')
+        att.nazwa_inna = request.form.get('inna') if att.typ_mszy == 'inna' else None
+        
+        db.session.commit()
+        flash('Zgłoszenie zostało pomyślnie zaktualizowane.', 'success')
+    except Exception:
+        db.session.rollback()
+        flash('Coś poszło nie tak przy edycji służby.', 'danger')
+        
     return redirect(url_for('dashboard_page'))
 
-# Clears user session and logs out
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login_page'))
 
-# Renders password recovery page
 @app.route('/forget-password')
 def forget_password():
     return render_template('forget-password.html')
 
-# Serves static files from root
 @app.route('/robots.txt')
 def static_from_root():
-    return send_from_directory(app.static_folder, request.path[1:])
+    return send_from_directory(app.static_folder, 'robots.txt')
 
-# Serves sitemap XML
 @app.route('/sitemap.xml')
 def sitemap_from_root():
-    return send_from_directory(app.static_folder, request.path[1:])
+    return send_from_directory(app.static_folder, 'sitemap.xml')
 
-# Exports full attendance list to formatted Excel with pie chart
 @app.route('/admin/export_attendances')
+@staff_required
 def export_attendances():
-    if session.get('user_role') not in ['admin', 'ksiądz']:
-        flash("Brak uprawnień do eksportu danych.", "danger")
-        return redirect(url_for('login_page'))
-
     attendances = db.session.query(Attendance, Users).join(Users).order_by(
         Attendance.data_sluzby.desc(), Attendance.godzina.desc()
     ).all()
 
     wb = openpyxl.Workbook()
     
-    # --- ARKUSZ 1: LISTA SŁUŻB ---
     ws = wb.active
     ws.title = "Lista Służb"
     ws.views.sheetView[0].showGridLines = True
@@ -1179,7 +1247,6 @@ def export_attendances():
         col_letter = get_column_letter(col[0].column)
         ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
 
-    # --- ARKUSZ 2: STATYSTYKI I WYKRES ---
     ws_chart = wb.create_sheet(title="Statystyki i Wykres")
     ws_chart.views.sheetView[0].showGridLines = True
 
@@ -1196,29 +1263,27 @@ def export_attendances():
         ws_chart.cell(row=r_idx, column=2).border = thin_border
         r_idx += 1
 
-    chart = PieChart()
-    chart.title = "Rozkład Służb według Typu Liturgii"
+    pie = PieChart()
+    pie.title = "Podział Służb ze względu na Typ"
     labels = Reference(ws_chart, min_col=1, min_row=2, max_row=r_idx - 1)
     data = Reference(ws_chart, min_col=2, min_row=1, max_row=r_idx - 1)
-    chart.add_data(data, titles_from_data=True)
-    chart.set_categories(labels)
-    chart.width = 16
-    chart.height = 10
-    ws_chart.add_chart(chart, "D2")
+    pie.add_data(data, titles_from_data=True)
+    pie.set_categories(labels)
+    ws_chart.add_chart(pie, "D4")
 
-    buffer = io.BytesIO()
-    wb.save(buffer)
-    buffer.seek(0)
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
 
     return send_file(
-        buffer,
+        output,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         as_attachment=True,
-        download_name=f"ewidencja_sluzb_{date.today()}.xlsx",
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        download_name="sluzby_export.xlsx"
     )
 
-# Exports user rankings to an Excel sheet
 @app.route("/admin/export_ranking")
+@staff_required
 def export_ranking():
     users = Users.query.filter(Users.role == 'user').all()
     attendances = Attendance.query.all()
@@ -1268,13 +1333,9 @@ def export_ranking():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-# Exports weekly schedule to Excel
 @app.route('/export_schedule')
+@login_required
 def export_schedule():
-    if 'user_id' not in session: 
-        flash("Proszę się zalogować, aby pobrać plan.", "danger")
-        return redirect(url_for('login_page'))
-
     schedules = db.session.query(Schedule, Users).join(Users, Schedule.user_id == Users.id).all()
     
     data = []
@@ -1304,21 +1365,22 @@ def export_schedule():
     nazwa_pliku = f"Plan_Sluzb_{date.today().strftime('%Y-%m-%d')}.xlsx"
     return send_file(output, download_name=nazwa_pliku, as_attachment=True)
 
-# Toggles user simplified view mode
-@app.route('/admin/toggle_uproszczony/<int:id>', methods=['GET', 'POST'])
+@app.route('/admin/toggle_uproszczony/<int:id>', methods=['POST'])
+@admin_required
 def toggle_uproszczony(id):
-    if session.get('user_role') != 'admin':
-        return redirect(url_for('login_page'))
     u = Users.query.get_or_404(id)
     u.uproszczony = not u.uproszczony
     db.session.commit()
     flash(f"Zmieniono tryb wyświetlania dla użytkownika {u.username}.", "success")
     return redirect(url_for('admin_page'))
 
-# Downloads terms of service PDF
+# --- ZABEZPIECZENIE SERWOWANIA PLIKU PRZED PATH TRAVERSAL ---
 @app.route('/download/regulamin.pdf')
 def pobierz_regulamin():
     katalog = os.path.join(app.root_path, 'static', 'docs')
+    safe_path = os.path.abspath(os.path.join(katalog, 'regulamin.pdf'))
+    if not safe_path.startswith(os.path.abspath(katalog)):
+        abort(403)
     return send_from_directory(
         katalog, 
         'regulamin.pdf', 
@@ -1326,7 +1388,6 @@ def pobierz_regulamin():
         download_name='regulamin.pdf'
     )
 
-# Renders help page
 @app.route('/pomoc')
 def pomoc_page():
     return render_template('pomoc.html')
@@ -1357,4 +1418,4 @@ with app.app_context():
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=False)
