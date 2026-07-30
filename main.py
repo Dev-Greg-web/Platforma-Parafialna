@@ -214,7 +214,7 @@ def telegram_webhook():
     chat_id = str(message.get("chat", {}).get("id"))
     text = message.get("text", "").strip()
 
-    # Weryfikacja, czy wiadomość pochodzi od Ciebie (porównanie CHAT_ID)
+    # Weryfikacja, czy wiadomość pochodzi od uprawnionego administratora
     allowed_chat_id = os.getenv("TELEGRAM_CHAT_ID")
     if chat_id != str(allowed_chat_id):
         return "OK", 200
@@ -233,14 +233,18 @@ def telegram_webhook():
         PasswordResetRequest.created_at >= piec_minut_temu
     ).order_by(PasswordResetRequest.created_at.desc()).first()
 
+    # Normalizacja tekstu do małych liter dla łatwiejszego porównywania
+    text_clean = text.lower().strip()
+
+    # 1. Próba ustawienia nowego hasła z wartością (np. /ustaw_haslo MojeHaslo123)
     if text.startswith("/ustaw_haslo "):
         if not pending_request:
-            send_telegram_alert("❌ Brak aktywnej prośby o zmianę hasła lub czas na odpowiedź (5 min) wygasł!")
+            send_telegram_alert("❌ Brak aktywnej prośby o zmianę hasła lub czas na odpowiedź (5 min) wygasł! Wywołaj najpierw reset na stronie.")
             return "OK", 200
 
         nowe_haslo = text.replace("/ustaw_haslo ", "").strip()
         if len(nowe_haslo) < 4:
-            send_telegram_alert("⚠️ Hasło jest za krótkie! Wyślij ponownie, np: `/ustaw_haslo MojeBezpieczneHaslo123`")
+            send_telegram_alert("⚠️ Hasło jest za krótkie! Wyślij ponownie w formacie:\n`/ustaw_haslo MojeBezpieczneHaslo123`")
             return "OK", 200
 
         # Zapisujemy nowe shashowane hasło w bazie danych
@@ -248,15 +252,23 @@ def telegram_webhook():
         pending_request.status = 'APPROVED'
         db.session.commit()
 
-        send_telegram_alert(f"✅ *SUKCES!* Hasło zostało pomyślnie zmienione w bazie danych na Twoje własne!\n\n💡 *Pamiętaj:* Stare hasło z pliku `.env` nadal działa jako klucz zapasowy.")
+        send_telegram_alert("✅ *SUKCES!* Hasło zostało pomyślnie zmienione w bazie danych na Twoje własne!\n\n💡 *Pamiętaj:* Stare hasło z pliku `.env` nadal działa jako klucz zapasowy.")
 
-    elif text == "/odrzuc":
+    # 2. Samo "ustaw hasło" / "/ustaw_haslo" (poinstruowanie użytkownika)
+    elif text_clean in ["ustaw hasło", "ustaw haslo", "ustaw_haslo", "/ustaw_haslo"]:
+        if pending_request:
+            send_telegram_alert("🔑 Aby ustawić nowe hasło, dopisz je po spacji w poleceniu, np.:\n\n`/ustaw_haslo MojeTajneHaslo123`")
+        else:
+            send_telegram_alert("ℹ️ Brak aktywnej prośby o reset. Aby zmienić hasło, kliknij najpierw przycisk 'Wyślij Hasło' na stronie logowania.")
+
+    # 3. Odrzucenie prośby (obsługuje: /odrzuc, /odrzuć, odrzuc, odrzuć, odrzut)
+    elif text_clean in ["/odrzuc", "/odrzuć", "odrzuc", "odrzuć", "odrzut"]:
         if pending_request:
             pending_request.status = 'REJECTED'
             db.session.commit()
-            send_telegram_alert("🚫 Próba zmiany hasła została Anulowana / Odrzucona.")
+            send_telegram_alert("🚫 *PROŚBA ODRZUCONA!* Próba zmiany hasła została pomyślnie anulowana.")
         else:
-            send_telegram_alert("Brak aktywnych żądań do odrzucenia.")
+            send_telegram_alert("ℹ️ Brak aktywnych żądań resetu hasła do odrzucenia.")
 
     return "OK", 200
 
