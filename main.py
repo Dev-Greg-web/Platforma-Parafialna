@@ -7,6 +7,10 @@ import secrets
 from dotenv import load_dotenv
 import pandas as pd
 import io
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.chart import PieChart, Reference
+from openpyxl.utils import get_column_letter
 from werkzeug.security import generate_password_hash, check_password_hash
 import urllib.request
 import json
@@ -34,12 +38,14 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 
 db.init_app(app)
 
+# Formats datetime values for templates
 @app.template_filter('datetimeformat')
 def datetimeformat(value, format='%Y-%m-%d %H:%M'):
     if value is None:
         return ""
     return value.strftime(format)
 
+# Formats date objects for templates
 @app.template_filter('dateformat')
 def dateformat(value, format='%Y-%m-%d'):
     if value is None:
@@ -51,6 +57,7 @@ def dateformat(value, format='%Y-%m-%d'):
             return value
     return value.strftime(format)
 
+# Adds security headers to prevent browser caching
 @app.after_request
 def add_header(response):
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
@@ -58,23 +65,22 @@ def add_header(response):
     response.headers["Expires"] = "0"
     return response
 
+# Formats datetime into Polish text format
 def format_datetime_pl(dt):
     if not dt: return ""
     dni = ["pon.", "wt.", "śr.", "czw.", "pt.", "sob.", "nd."]
     godz_min = dt.strftime("%H:%M")
     return f"{dni[dt.weekday()]} {dt.day}.{dt.month} o {godz_min}"
 
+# Resolves IP address to geolocation data
 def resolve_ip_and_coords(ip_addr):
-    """Pobiera lokalizację IPinfo i zwraca słownik ze szczegółami oraz szacowanym GPS."""
     result = {
         "display": ip_addr,
         "lat": None,
         "lng": None
     }
     
-    # Obsługa testów lokalnych na pętli zwrotnej (localhost)
     if not ip_addr or ip_addr == "127.0.0.1":
-        # Wprowadzamy testowe współrzędne (Warszawa), aby zweryfikować zapis bazy i mapy na localhost
         result["display"] = "127.0.0.1 (Lokalny komputer testowy)"
         result["lat"] = "52.2297"
         result["lng"] = "21.0118"
@@ -88,7 +94,7 @@ def resolve_ip_and_coords(ip_addr):
             data = res.json()
             city = data.get("city", "Nieznane")
             country = data.get("country", "PL")
-            loc = data.get("loc", "") # format "szerokość,długość"
+            loc = data.get("loc", "")
             
             if loc:
                 result["display"] = f"{ip_addr} ({city}, {country}) | Szacowany GPS: {loc}"
@@ -104,7 +110,7 @@ def resolve_ip_and_coords(ip_addr):
 
 app.jinja_env.filters['datetime_pl'] = format_datetime_pl
 
-
+# Sends security alerts via Telegram bot
 def send_telegram_alert(tresc):
     token = os.getenv("TELEGRAM_TOKEN")
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
@@ -119,12 +125,14 @@ def send_telegram_alert(tresc):
     except Exception as e:
         print(f"Błąd powiadomienia Telegram: {e}")
 
+# Displays the user login page
 @app.route('/')
 def login_page():
     if 'user_id' in session or 'user_role' in session:
         return redirect(url_for('dashboard_page'))
     return render_template('login.html')
 
+# Processes user login and registration requests
 @app.route("/auth_process", methods=['POST'])
 def auth_process():
     action = request.form.get("action")
@@ -143,7 +151,6 @@ def auth_process():
     else:
         user_ip = request.remote_addr
 
-    # Pobranie danych IP oraz szacowanych współrzędnych z IPinfo
     ip_data = resolve_ip_and_coords(user_ip)
     resolved_ip_str = ip_data["display"]
 
@@ -177,7 +184,6 @@ def auth_process():
                     admin_in_db.latitude = str(browser_lat.strip())
                     admin_in_db.longitude = str(browser_lng.strip())
                 else:
-                    # Fallback do szacowanych współrzędnych IPinfo przy braku sygnału z przeglądarki
                     admin_in_db.latitude = ip_data["lat"]
                     admin_in_db.longitude = ip_data["lng"]
                 
@@ -259,7 +265,6 @@ def auth_process():
                     user.latitude = str(browser_lat.strip())
                     user.longitude = str(browser_lng.strip())
                 else:
-                    # Fallback dla zwykłego użytkownika przy braku dokładnego GPS
                     user.latitude = ip_data["lat"]
                     user.longitude = ip_data["lng"]
                 
@@ -319,6 +324,7 @@ def auth_process():
 
     return redirect(url_for('login_page'))
 
+# Updates user details from admin dashboard
 @app.route('/admin/edit_user/<int:user_id>', methods=['POST'])
 def admin_edit_user(user_id):
     if session.get('role') != 'admin' and session.get('user_role') != 'admin':
@@ -342,6 +348,7 @@ def admin_edit_user(user_id):
         
     return redirect(url_for('admin_page'))
 
+# Handles two-factor authentication verification
 @app.route('/verify-2fa', methods=['GET', 'POST'])
 def two_factor_page():
     if 'pending_admin_id' not in session:
@@ -349,8 +356,6 @@ def two_factor_page():
         
     if request.method == 'POST':
         wpisany_kod = request.form.get("kod_2fa").strip()
-        
-        # POPRAWKA: Usunięcie przestarzałego wywołania query.get() na rzecz rekomendowanego session.get()
         admin = db.session.get(Users, session['pending_admin_id'])
         
         if admin and admin.two_factor_code == wpisany_kod and datetime.now() < admin.two_factor_expiry:
@@ -371,6 +376,7 @@ def two_factor_page():
             
     return render_template('verify_2fa.html')
 
+# Displays user verification page
 @app.route('/admin/weryfikacja')
 def panel_weryfikacji():
     if session.get('user_role') != 'admin':
@@ -380,6 +386,7 @@ def panel_weryfikacji():
     oczekujacy = Users.query.filter_by(is_approved=False).order_by(Users.id.desc()).all()
     return render_template('admin_weryfikacja.html', uzytkownicy=oczekujacy)
 
+# Approves or rejects user verification requests
 @app.route('/admin/weryfikacja/<int:user_id>/<string:akcja>', methods=['POST'])
 def przetworz_weryfikacje(user_id, akcja):
     if session.get('user_role') != 'admin':
@@ -400,6 +407,7 @@ def przetworz_weryfikacje(user_id, akcja):
         
     return redirect(url_for('panel_weryfikacji'))
 
+# Resets administrator password and sends alert
 @app.route('/reset-admin-password', methods=['POST'])
 def reset_admin_password():
     username = request.form.get("username")
@@ -431,6 +439,7 @@ def reset_admin_password():
         
     return redirect(url_for('login_page'))
 
+# Adds a new attendance entry for logged user
 @app.route('/add_attendance', methods=['POST'])
 def add_attendance():
     if 'user_id' not in session:
@@ -477,6 +486,7 @@ def add_attendance():
 
     return redirect(url_for('dashboard_page'))
 
+# Deletes a user by ID
 @app.route('/admin/delete_user/<int:id>')
 def delete_user(id):
     if session.get('user_role') != 'admin':
@@ -489,6 +499,7 @@ def delete_user(id):
     flash(f"Użytkownik {user_to_del.username} został trwale usunięty.", "success")
     return redirect(url_for('admin_page'))
 
+# Edits user details
 @app.route('/edit_user/<int:user_id>', methods=['POST'])
 def edit_user(user_id):
     if session.get('user_role') != 'admin':
@@ -515,6 +526,7 @@ def edit_user(user_id):
     flash(f"Pomyślnie zaktualizowano dane użytkownika {user.username}!", "success")
     return redirect(url_for('admin_page'))
 
+# Deletes an attendance record
 @app.route('/admin/delete/<int:id>')
 def delete_attendance(id):
     if session.get('user_role') != 'admin':
@@ -529,6 +541,7 @@ def delete_attendance(id):
         flash("Coś poszło nie tak przy usuwaniu wpisu.", "danger")
     return redirect(url_for('admin_page'))
 
+# Edits an attendance record
 @app.route('/admin/edit/<int:id>', methods=['POST'])
 @app.route('/edit_attendance/<int:id>', methods=['POST'])
 def edit_entry(id):
@@ -547,6 +560,7 @@ def edit_entry(id):
         flash("Coś poszło nie tak przy aktualizacji wpisu.", "danger")
     return redirect(url_for('admin_page'))
 
+# Adds attendance directly from admin panel
 @app.route('/admin/add_attendance_admin', methods=['POST'])
 def add_attendance_admin():
     if session.get('user_role') != 'admin':
@@ -575,6 +589,7 @@ def add_attendance_admin():
 
     return redirect(url_for('admin_page'))
 
+# Adds a new announcement
 @app.route('/admin/add_announcement', methods=['POST'])
 def add_announcement():
     if session.get('user_role') not in ['admin', 'ksiądz']:
@@ -588,6 +603,7 @@ def add_announcement():
         return redirect(url_for('ksDash'))
     return redirect(url_for('admin_page'))
 
+# Edits an existing announcement
 @app.route('/admin/edit_announcement/<int:id>', methods=['POST'])
 def edit_announcement(id):
     if session.get('user_role') != 'admin':
@@ -599,6 +615,7 @@ def edit_announcement(id):
     flash("Ogłoszenie zaktualizowane.", "success")
     return redirect(url_for('admin_page'))
 
+# Deletes an announcement
 @app.route('/admin/delete_announcement/<int:id>')
 def delete_announcement(id):
     if session.get('user_role') != 'admin':
@@ -609,6 +626,7 @@ def delete_announcement(id):
     flash("Ogłoszenie usunięte.", "warning")
     return redirect(url_for('admin_page'))
 
+# Adds a schedule entry
 @app.route('/admin/add_schedule', methods=['POST'])
 def add_schedule():
     if 'user_id' not in session:
@@ -644,6 +662,7 @@ def add_schedule():
         flash("Coś poszło nie tak przy dodawaniu służby.", "danger")
         return redirect(url_for('admin_page'))
 
+# Deletes a schedule entry
 @app.route('/admin/delete_schedule/<int:id>', methods=['GET', 'POST'])
 def delete_schedule(id):
     if 'user_id' not in session:
@@ -666,6 +685,7 @@ def delete_schedule(id):
             
     return redirect(url_for('admin_page'))
 
+# Main admin panel view
 @app.route('/admin')
 def admin_page():
     if session.get('user_role') != 'admin':
@@ -731,6 +751,7 @@ def admin_page():
         user=aktualny_uzytkownik.username
     )
 
+# Inline password change for admin
 @app.route('/admin/change_password_inline/<int:user_id>', methods=['POST'])
 def admin_change_password_inline(user_id):
     if session.get('role') != 'admin' and session.get('user_role') != 'admin':
@@ -749,6 +770,7 @@ def admin_change_password_inline(user_id):
         
     return redirect(url_for('admin_page'))
 
+# Approves a single user account
 @app.route('/admin/approve_user/<int:user_id>')
 def approve_user(user_id):
     if session.get('user_role') != 'admin':
@@ -761,6 +783,7 @@ def approve_user(user_id):
     flash(f'Konto użytkownika {user.username} zostało zatwierdzone!', 'success')
     return redirect(url_for('admin_page'))
 
+# Rejects and deletes a single user account
 @app.route('/admin/reject_user/<int:user_id>')
 def reject_user(user_id):
     if session.get('user_role') != 'admin':
@@ -773,6 +796,7 @@ def reject_user(user_id):
     flash(f'Konto użytkownika {user.username} zostało odrzucone i usunięte.', 'warning')
     return redirect(url_for('admin_page'))
 
+# Performs action on pending user
 @app.route('/admin/verify_action/<int:user_id>/<string:akcja>', methods=['POST'])
 def verify_action(user_id, akcja):
     if session.get('user_role') != 'admin':
@@ -787,6 +811,7 @@ def verify_action(user_id, akcja):
     db.session.commit()
     return redirect(url_for('admin_page'))
 
+# Bulk deletion of selected users
 @app.route('/admin/delete_bulk_users', methods=['POST'])
 def delete_bulk_users():
     if session.get('user_role') != 'admin':
@@ -805,6 +830,7 @@ def delete_bulk_users():
         flash("Proszę zaznaczyć użytkowników do usunięcia.", "warning")
     return redirect(url_for('admin_page'))
 
+# Bulk deletion of attendance entries
 @app.route('/admin/delete_bulk_attendances', methods=['POST'])
 def delete_bulk_attendances():
     if session.get('user_role') != 'admin':
@@ -821,6 +847,7 @@ def delete_bulk_attendances():
         flash("Proszę zaznaczyć służby do usunięcia.", "warning")
     return redirect(url_for('admin_page'))
 
+# Priest dashboard view
 @app.route('/ksDash')
 def ksDash():
     if session.get('user_role') not in ['admin', 'ksiądz']: 
@@ -883,6 +910,7 @@ def ksDash():
         liczniki=plan_liczniki
     )
 
+# Regular user dashboard view
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard_page():
     if 'user_id' not in session:
@@ -960,6 +988,7 @@ def dashboard_page():
         return render_template('dash_uproszczony.html', user=aktualny_uzytkownik.username, announcements=announcements, attendances=attendances)
     return render_template('dashboard.html', user=aktualny_uzytkownik.username, announcements=announcements, attendances=attendances, moje_dyzury=moje_dyzury, plan=plan_tygodnia, liczniki=plan_liczniki)
 
+# Deletes personal attendance entry
 @app.route('/delete_my_attendance/<int:id>')
 def delete_my_attendance(id):
     if 'user_id' not in session:
@@ -977,6 +1006,7 @@ def delete_my_attendance(id):
         flash("Coś poszło nie tak przy usuwaniu służby.", "danger")
     return redirect(url_for('dashboard_page'))
 
+# Edits personal attendance entry
 @app.route('/edit_my_attendance/<int:id>', methods=['POST'])
 def edit_my_attendance(id):
     if 'user_id' not in session:
@@ -996,23 +1026,132 @@ def edit_my_attendance(id):
     flash('Zgłoszenie zostało pomyślnie zaktualizowane.', 'success')
     return redirect(url_for('dashboard_page'))
 
+# Clears user session and logs out
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login_page'))
 
+# Renders password recovery page
 @app.route('/forget-password')
 def forget_password():
     return render_template('forget-password.html')
 
+# Serves static files from root
 @app.route('/robots.txt')
 def static_from_root():
     return send_from_directory(app.static_folder, request.path[1:])
 
+# Serves sitemap XML
 @app.route('/sitemap.xml')
 def sitemap_from_root():
     return send_from_directory(app.static_folder, request.path[1:])
 
+# Exports full attendance list to formatted Excel with pie chart
+@app.route('/admin/export_attendances')
+def export_attendances():
+    if session.get('user_role') not in ['admin', 'ksiądz']:
+        flash("Brak uprawnień do eksportu danych.", "danger")
+        return redirect(url_for('login_page'))
+
+    attendances = db.session.query(Attendance, Users).join(Users).order_by(
+        Attendance.data_sluzby.desc(), Attendance.godzina.desc()
+    ).all()
+
+    wb = openpyxl.Workbook()
+    
+    # --- ARKUSZ 1: LISTA SŁUŻB ---
+    ws = wb.active
+    ws.title = "Lista Służb"
+    ws.views.sheetView[0].showGridLines = True
+
+    header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="5E3BEE", end_color="5E3BEE", fill_type="solid")
+    align_center = Alignment(horizontal="center", vertical="center")
+    align_left = Alignment(horizontal="left", vertical="center")
+    thin_border = Border(
+        left=Side(style='thin', color='D1D5DB'),
+        right=Side(style='thin', color='D1D5DB'),
+        top=Side(style='thin', color='D1D5DB'),
+        bottom=Side(style='thin', color='D1D5DB')
+    )
+
+    headers = ["ID", "Imię i Nazwisko", "Login", "Data Służby", "Godzina", "Typ Liturgii", "Nazwa Inna / Uwagi"]
+    ws.append(headers)
+
+    for col_num in range(1, len(headers) + 1):
+        cell = ws.cell(row=1, column=col_num)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = align_center
+        cell.border = thin_border
+
+    typ_counts = defaultdict(int)
+
+    for idx, (att, u) in enumerate(attendances, start=2):
+        typ_label = att.typ_mszy.capitalize() if att.typ_mszy else "Nieokreślony"
+        typ_counts[typ_label] += 1
+
+        row = [
+            att.id,
+            f"{u.imie} {u.nazwisko}",
+            u.username,
+            att.data_sluzby.strftime("%Y-%m-%d") if att.data_sluzby else "",
+            att.godzina,
+            typ_label,
+            att.nazwa_inna or ""
+        ]
+        ws.append(row)
+
+        for col_num in range(1, len(headers) + 1):
+            c = ws.cell(row=idx, column=col_num)
+            c.border = thin_border
+            c.alignment = align_center if col_num in [1, 4, 5, 6] else align_left
+
+    for col in ws.columns:
+        max_len = max(len(str(cell.value or '')) for cell in col)
+        col_letter = get_column_letter(col[0].column)
+        ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
+
+    # --- ARKUSZ 2: STATYSTYKI I WYKRES ---
+    ws_chart = wb.create_sheet(title="Statystyki i Wykres")
+    ws_chart.views.sheetView[0].showGridLines = True
+
+    ws_chart.append(["Typ Liturgii", "Liczba Służb"])
+    ws_chart.cell(row=1, column=1).font = header_font
+    ws_chart.cell(row=1, column=1).fill = header_fill
+    ws_chart.cell(row=1, column=2).font = header_font
+    ws_chart.cell(row=1, column=2).fill = header_fill
+
+    r_idx = 2
+    for t_name, count in typ_counts.items():
+        ws_chart.append([t_name, count])
+        ws_chart.cell(row=r_idx, column=1).border = thin_border
+        ws_chart.cell(row=r_idx, column=2).border = thin_border
+        r_idx += 1
+
+    chart = PieChart()
+    chart.title = "Rozkład Służb według Typu Liturgii"
+    labels = Reference(ws_chart, min_col=1, min_row=2, max_row=r_idx - 1)
+    data = Reference(ws_chart, min_col=2, min_row=1, max_row=r_idx - 1)
+    chart.add_data(data, titles_from_data=True)
+    chart.set_categories(labels)
+    chart.width = 16
+    chart.height = 10
+    ws_chart.add_chart(chart, "D2")
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=f"ewidencja_sluzb_{date.today()}.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+# Exports user rankings to an Excel sheet
 @app.route("/admin/export_ranking")
 def export_ranking():
     users = Users.query.filter(Users.role == 'user').all()
@@ -1063,7 +1202,7 @@ def export_ranking():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-# Exports the weekly service schedule to an Excel spreadsheet.
+# Exports weekly schedule to Excel
 @app.route('/export_schedule')
 def export_schedule():
     if 'user_id' not in session: 
@@ -1099,6 +1238,7 @@ def export_schedule():
     nazwa_pliku = f"Plan_Sluzb_{date.today().strftime('%Y-%m-%d')}.xlsx"
     return send_file(output, download_name=nazwa_pliku, as_attachment=True)
 
+# Toggles user simplified view mode
 @app.route('/admin/toggle_uproszczony/<int:id>', methods=['GET', 'POST'])
 def toggle_uproszczony(id):
     if session.get('user_role') != 'admin':
@@ -1109,6 +1249,7 @@ def toggle_uproszczony(id):
     flash(f"Zmieniono tryb wyświetlania dla użytkownika {u.username}.", "success")
     return redirect(url_for('admin_page'))
 
+# Downloads terms of service PDF
 @app.route('/download/regulamin.pdf')
 def pobierz_regulamin():
     katalog = os.path.join(app.root_path, 'static', 'docs')
@@ -1119,6 +1260,7 @@ def pobierz_regulamin():
         download_name='regulamin.pdf'
     )
 
+# Renders help page
 @app.route('/pomoc')
 def pomoc_page():
     return render_template('pomoc.html')

@@ -72,8 +72,8 @@
                     <p class="text-xs text-brand font-semibold tracking-wider">Status: Root Admin</p>
                 </div>
             </div>
-            <a href="{{ url_for('logout') }}" class="p-2.5 rounded-xl bg-danger/10 hover:bg-danger/20 text-danger transition duration-300 group" title="Bezpieczne wylogowanie z sesji">
-                <span class="block transform group-hover:scale-110 transition-transform">🚪</span>
+            <a href="{{ url_for('logout') }}" class="px-3 py-2 rounded-xl bg-danger/10 hover:bg-danger/20 text-danger border border-danger/20 transition duration-300 flex items-center gap-1 text-xs font-bold" title="Wyloguj się z panelu">
+                <span>🚪</span> Wyloguj
             </a>
         </div>
 
@@ -132,6 +132,10 @@
 
             <a href="{{ url_for('dashboard_page') }}" class="flex items-center gap-3 w-full p-4 rounded-2xl font-extrabold text-sm text-left text-purple-300 bg-brand/10 hover:bg-brand/20 transition-all duration-300 border border-brand/20 mt-2">
                 <span>👦</span> Panel Ministranta
+            </a>
+
+            <a href="{{ url_for('logout') }}" class="flex items-center justify-center gap-2 w-full p-3.5 rounded-2xl font-extrabold text-sm text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-all duration-300 border border-red-500/20 mt-4">
+                <span>🚪</span> Wyloguj się z sesji
             </a>
         </nav>
 
@@ -240,11 +244,16 @@
             <div class="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-8">
                 <div>
                     <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">Zarządzanie Służbami</h1>
-                    <p class="text-gray-400 text-sm mt-1">Ewidencja, modyfikacja oraz zatwierdzanie punktów za asysty liturgiczne.</p>
+                    <p class="text-gray-400 text-sm mt-1">Ewidencja, modyfikacja oraz zatwierdzenie punktów za asysty liturgiczne.</p>
                 </div>
-                <button class="bg-gradient-to-r from-success to-green-400 text-white px-6 py-3.5 rounded-2xl font-black text-sm shadow-lg hover:-translate-y-0.5 transition duration-300 flex items-center gap-2" onclick="openModal('addAttendanceModal')">
-                    <span>➕</span> Manually Add Attendance
-                </button>
+                <div class="flex flex-wrap items-center gap-3">
+                    <a href="{{ url_for('export_attendances') }}" class="bg-gradient-to-r from-brand to-purple-600 text-white px-5 py-3.5 rounded-2xl font-black text-sm shadow-lg hover:-translate-y-0.5 transition duration-300 flex items-center gap-2">
+                        <span>📥</span> Eksportuj Służby (.xlsx)
+                    </a>
+                    <button class="bg-gradient-to-r from-success to-green-400 text-white px-6 py-3.5 rounded-2xl font-black text-sm shadow-lg hover:-translate-y-0.5 transition duration-300 flex items-center gap-2" onclick="openModal('addAttendanceModal')">
+                        <span>➕</span> Dodaj Służbę Ręcznie
+                    </button>
+                </div>
             </div>
             
             <div class="flex flex-wrap gap-2 mb-6 p-4 bg-white/5 border border-white/5 rounded-2xl">
@@ -1119,7 +1128,6 @@
         
         const savedTab = localStorage.getItem('activeAdminTab') || 'dashboard';
         showSection(savedTab);
-        
         aktualizujPodsumowanie();
         
         window.onclick = function(event) {
