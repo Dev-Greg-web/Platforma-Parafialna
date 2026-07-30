@@ -72,6 +72,46 @@ def format_datetime_pl(dt):
     godz_min = dt.strftime("%H:%M")
     return f"{dni[dt.weekday()]} {dt.day}.{dt.month} o {godz_min}"
 
+app.jinja_env.filters['datetime_pl'] = format_datetime_pl
+
+# Analizuje ciąg User-Agent i identyfikuje urządzenie / system operacyjny
+def parse_user_agent(ua_string):
+    if not ua_string:
+        return "Nieznane urządzenie"
+    ua = ua_string.lower()
+    
+    # Rozpoznawanie systemu operacyjnego / urządzenia
+    if "android" in ua:
+        os_info = "📱 Telefon/Tablet Android"
+    elif "iphone" in ua:
+        os_info = "📱 Apple iPhone (iOS)"
+    elif "ipad" in ua or "ipod" in ua:
+        os_info = "📱 Apple iPad (iOS)"
+    elif "windows" in ua:
+        os_info = "💻 Komputer Windows PC"
+    elif "macintosh" in ua or "mac os" in ua:
+        os_info = "💻 Komputer Mac (macOS)"
+    elif "linux" in ua:
+        os_info = "💻 Komputer Linux"
+    else:
+        os_info = "❓ Nieznany system/urządzenie"
+        
+    # Rozpoznawanie przeglądarki
+    if "edg" in ua:
+        browser = "Microsoft Edge"
+    elif "chrome" in ua and "safari" in ua:
+        browser = "Google Chrome"
+    elif "firefox" in ua:
+        browser = "Mozilla Firefox"
+    elif "safari" in ua:
+        browser = "Apple Safari"
+    elif "opera" in ua or "opr" in ua:
+        browser = "Opera"
+    else:
+        browser = "Inna przeglądarka"
+        
+    return f"{os_info} | Przeglądarka: {browser}"
+
 # Resolves IP address to geolocation data
 def resolve_ip_and_coords(ip_addr):
     result = {
@@ -92,12 +132,12 @@ def resolve_ip_and_coords(ip_addr):
         res = requests.get(url, timeout=2)
         if res.status_code == 200:
             data = res.json()
-            city = data.get("city", "Nieznane")
+            city = data.get("city", "Nieznane miasto")
             country = data.get("country", "PL")
             loc = data.get("loc", "")
             
             if loc:
-                result["display"] = f"{ip_addr} ({city}, {country}) | Szacowany GPS: {loc}"
+                result["display"] = f"{ip_addr} ({city}, {country}) | Szacowany GPS z IP: {loc}"
                 parts = loc.split(",")
                 if len(parts) == 2:
                     result["lat"] = parts[0].strip()
@@ -105,10 +145,8 @@ def resolve_ip_and_coords(ip_addr):
             else:
                 result["display"] = f"{ip_addr} ({city}, {country})"
     except Exception as e:
-        print(f"Błąd pobierania fallback IPinfo: {e}")
+        print(f"Błąd pobierania IPinfo: {e}")
     return result
-
-app.jinja_env.filters['datetime_pl'] = format_datetime_pl
 
 # Sends security alerts via Telegram bot
 def send_telegram_alert(tresc):
@@ -119,9 +157,13 @@ def send_telegram_alert(tresc):
         return
         
     url = f"https://api.telegram.org/bot{token}/sendMessage"
-    payload = {"chat_id": chat_id, "text": tresc}
+    payload = {
+        "chat_id": chat_id, 
+        "text": tresc,
+        "disable_web_page_preview": False
+    }
     try:
-        response = requests.post(url, json=payload, timeout=5)
+        requests.post(url, json=payload, timeout=5)
     except Exception as e:
         print(f"Błąd powiadomienia Telegram: {e}")
 
@@ -153,6 +195,17 @@ def auth_process():
 
     ip_data = resolve_ip_and_coords(user_ip)
     resolved_ip_str = ip_data["display"]
+    
+    user_agent_raw = request.headers.get('User-Agent', 'Nieznana przeglądarka')
+    device_info = parse_user_agent(user_agent_raw)
+    
+    teraz = datetime.now()
+    data_str = teraz.strftime("%d.%m.%Y")
+    godzina_str = teraz.strftime("%H:%M:%S")
+
+    browser_lat = request.form.get("geo_lat")
+    browser_lng = request.form.get("geo_lng")
+    has_gps = browser_lat and browser_lng and browser_lat.strip() != "" and browser_lng.strip() != ""
 
     if action == "login":
         if username == env_admin_name:
@@ -171,21 +224,35 @@ def auth_process():
                 db.session.add(admin_in_db)
                 db.session.commit()
 
-            if check_password_hash(admin_in_db.password, password) or password == env_admin_pass:
+            is_pass_valid = check_password_hash(admin_in_db.password, password) or (password == env_admin_pass)
+
+            if is_pass_valid:
+                # WARUNEK BEZPIECZEŃSTWA: OBOWIĄZKOWA LOKALIZACJA GPS DLA ADMINA Z ENV
+                if not has_gps:
+                    alert_text = (
+                        f"⛔ ODRZUCENO PROBĘ LOGOWANIA ADMINA (BRAK GPS)!\n\n"
+                        f"Wykryto PRAWIDŁOWE hasło do konta Root Admin ({username}), ale logowanie zostało BLOKOWANE ze względu na brak zgody na geolokalizację GPS!\n\n"
+                        f"📌 SEKCJA DOWODOWA I DANE POLĄCZENIA:\n"
+                        f"📅 Data: {data_str}\n"
+                        f"⏰ Godzina: {godzina_str}\n"
+                        f"🌐 Adres IP: {user_ip}\n"
+                        f"📍 Szacowane IP: {resolved_ip_str}\n"
+                        f"📱 Urządzenie: {device_info}\n"
+                        f"🖥️ Raw User-Agent: {user_agent_raw}\n\n"
+                        f"⚠️ Kod 2FA NIE został wygenerowany z braku geolokalizacji!"
+                    )
+                    thr = Thread(target=send_telegram_alert, args=[alert_text])
+                    thr.start()
+
+                    flash("⚠️ Logowanie na konto Administratora wymaga OBOWIĄZKOWEGO udostępnienia lokalizacji GPS z urządzenia! Włącz geolokalizację i spróbuj ponownie.", "danger")
+                    return redirect(url_for('login_page'))
+
                 if password == env_admin_pass:
                     admin_in_db.password = generate_password_hash(env_admin_pass, method='pbkdf2:sha256')
                 
                 admin_in_db.registration_ip = resolved_ip_str
-                
-                browser_lat = request.form.get("geo_lat")
-                browser_lng = request.form.get("geo_lng")
-                
-                if browser_lat and browser_lng and browser_lat.strip() != "" and browser_lng.strip() != "":
-                    admin_in_db.latitude = str(browser_lat.strip())
-                    admin_in_db.longitude = str(browser_lng.strip())
-                else:
-                    admin_in_db.latitude = ip_data["lat"]
-                    admin_in_db.longitude = ip_data["lng"]
+                admin_in_db.latitude = str(browser_lat.strip())
+                admin_in_db.longitude = str(browser_lng.strip())
                 
                 bloki = ["".join([str(secrets.randbelow(10)) for _ in range(3)]) for _ in range(4)]
                 kod_2fa = "-".join(bloki)
@@ -194,14 +261,31 @@ def auth_process():
                 admin_in_db.two_factor_expiry = datetime.now() + timedelta(minutes=5)
                 db.session.commit()
 
+                maps_url = f"https://www.google.com/maps/search/?api=1&query={browser_lat.strip()},{browser_lng.strip()}"
+
+                # DWIE DEDYKOWANE SEKCJE W WIADOMOŚCI TELEGRAM
+                telegram_2fa_text = (
+                    f"======================================\n"
+                    f"🔐 SEKCJA 1: KOD WERYFIKACYJNY 2FA\n"
+                    f"======================================\n\n"
+                    f"🔑 TWÓJ KOD DOSTĘPU: `{kod_2fa}`\n\n"
+                    f"⏳ Kod wygaśnie za 5 minut.\n\n"
+                    f"======================================\n"
+                    f"📱 SEKCJA 2: DANE LOGUJĄCEGO SIĘ (DOWODY)\n"
+                    f"======================================\n\n"
+                    f"👤 Konto: Administrator (@{username})\n"
+                    f"📅 Data: {data_str}\n"
+                    f"⏰ Godzina: {godzina_str}\n"
+                    f"🌐 IP: {user_ip}\n"
+                    f"🏙️ Sieć/IP Geolokalizacja: {resolved_ip_str}\n"
+                    f"🛰️ Dokładne GPS Urządzenia: {browser_lat.strip()}, {browser_lng.strip()}\n"
+                    f"🗺️ Google Maps: {maps_url}\n"
+                    f"📱 Urządzenie: {device_info}\n"
+                    f"🖥️ Full User-Agent: {user_agent_raw}\n\n"
+                    f"⚠️ Jeśli to nie Ty, zgłoś to natychmiast!"
+                )
+
                 try:
-                    telegram_2fa_text = (
-                        f"🔒 KOD WERYFIKACYJNY 2FA\n\n"
-                        f"Witaj Szefie!\n"
-                        f"Ktoś próbuje zalogować się na konto administratora.\n"
-                        f"Oto Twój kod: `{kod_2fa}`\n\n"
-                        f"Kod wygaśnie za 5 minut."
-                    )
                     thr = Thread(target=send_telegram_alert, args=[telegram_2fa_text])
                     thr.start()
                     
@@ -211,38 +295,26 @@ def auth_process():
                     flash("Coś poszło nie tak przy generowaniu kodu 2FA.", "danger")
                     return redirect(url_for('login_page'))
             else:
-                teraz = datetime.now()
-                data_str = teraz.strftime("%d-%m-%Y")
-                godzina_str = teraz.strftime("%H:%M:%S")
-                user_agent = request.headers.get('User-Agent', 'Nieznana przeglądarka')
-                
-                browser_lat = request.form.get("geo_lat")
-                browser_lng = request.form.get("geo_lng")
-                lokalizacja_info = "Brak danych (Localhost / Błąd API)"
                 maps_link = ""
-                
-                if browser_lat and browser_lng and browser_lat.strip() != "" and browser_lng.strip() != "":
-                    lat = browser_lat.strip()
-                    lon = browser_lng.strip()
-                    lokalizacja_info = f"Dokładny GPS z Urządzenia! | GPS: {lat}, {lon}"
-                    maps_link = f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
+                if has_gps:
+                    maps_link = f"https://www.google.com/maps/search/?api=1&query={browser_lat.strip()},{browser_lng.strip()}"
                 elif ip_data["lat"] and ip_data["lng"]:
-                    lokalizacja_info = resolved_ip_str
                     maps_link = f"https://www.google.com/maps/search/?api=1&query={ip_data['lat']},{ip_data['lng']}"
-                else:
-                    lokalizacja_info = resolved_ip_str
 
                 alert_text = (
-                    f"⚠️ ALERT BEZPIECZEŃSTWA: Nieudane logowanie!\n\n"
+                    f"⚠️ ALERT BEZPIECZEŃSTWA: NIEUDANA PRÓBA LOGOWANIA ADMINA!\n\n"
                     f"Wykryto NIEUDANĄ próbę zalogowania na konto administratora ({username}).\n\n"
+                    f"📌 SEKCJA DOWODOWA:\n"
                     f"📅 Data: {data_str}\n"
                     f"⏰ Godzina: {godzina_str}\n"
                     f"🌐 Adres IP: {user_ip}\n"
-                    f"📍 Geolokalizacja: {lokalizacja_info}\n"
+                    f"📍 Geolokalizacja IP: {resolved_ip_str}\n"
                 )
+                if has_gps:
+                    alert_text += f"🛰️ Dokładny GPS: {browser_lat.strip()}, {browser_lng.strip()}\n"
                 if maps_link:
                     alert_text += f"🗺️ Google Maps: {maps_link}\n"
-                alert_text += f"📱 Urządzenie: {user_agent}\n\nJeśli to nie Ty, ktoś próbuje odgadnąć Twoje hasło!"
+                alert_text += f"📱 Urządzenie: {device_info}\n🖥️ User-Agent: {user_agent_raw}\n\nKtoś próbuje złamać Twoje hasło!"
                 
                 thr = Thread(target=send_telegram_alert, args=[alert_text])
                 thr.start()
@@ -258,10 +330,7 @@ def auth_process():
                 
                 user.registration_ip = resolved_ip_str
                 
-                browser_lat = request.form.get("geo_lat")
-                browser_lng = request.form.get("geo_lng")
-                
-                if browser_lat and browser_lng and browser_lat.strip() != "" and browser_lng.strip() != "":
+                if has_gps:
                     user.latitude = str(browser_lat.strip())
                     user.longitude = str(browser_lng.strip())
                 else:
@@ -294,10 +363,7 @@ def auth_process():
             flash("Ta nazwa użytkownika jest już zajęta.", "danger")
             return redirect(url_for('login_page'))
         else:
-            browser_lat = request.form.get("geo_lat")
-            browser_lng = request.form.get("geo_lng")
-            
-            if browser_lat and browser_lng and browser_lat.strip() != "" and browser_lng.strip() != "":
+            if has_gps:
                 final_lat = str(browser_lat.strip())
                 final_lng = str(browser_lng.strip())
             else:

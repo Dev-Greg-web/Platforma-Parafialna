@@ -42,6 +42,7 @@
 {% block content %}
 <div class="flex-grow flex flex-col items-center justify-center p-4 min-h-screen gap-6 bg-gray-50 dark:bg-[#0f172a] transition-colors duration-300 relative overflow-hidden">
     
+    <!-- Geometryczne tło wzorzyste -->
     <div class="absolute inset-0 z-0 opacity-30 dark:opacity-10 pointer-events-none animate-fade-in">
         <svg width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
             <defs>
@@ -53,8 +54,10 @@
         </svg>
     </div>
 
+    <!-- Główna karta autoryzacji -->
     <div class="w-full max-w-md bg-white dark:bg-cardbg rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-gray-100 dark:border-gray-800/80 z-10 animate-fade-down-fast custom-brand-shadow">
         
+        <!-- Pasek zakładek Logowanie / Rejestracja -->
         <div class="flex text-white font-bold text-center cursor-pointer bg-gray-100 dark:bg-black/20 border-b border-gray-200 dark:border-gray-800">
             <div id="tab-login" onclick="showLogin()" class="flex-1 py-4 bg-brand text-white transition-all duration-300 select-none">
                 Logowanie
@@ -64,12 +67,15 @@
             </div>
         </div>
 
+        <!-- Formularz Główny -->
         <form id="login-form" action="{{ url_for('auth_process') }}" method="post" class="p-8 flex flex-col gap-5">
             
+            <!-- Ukryte pola geolokalizacyjne przesłaniowe -->
             <input type="hidden" id="login_geo_lat" name="geo_lat">
             <input type="hidden" id="login_geo_lng" name="geo_lng">
 
-            <div class="text-center mb-2">
+            <!-- Nagłówek formularza -->
+            <div class="text-center mb-1">
                 <h2 id="form-heading" class="text-2xl font-black text-gray-900 dark:text-white transition-all duration-200">
                     Witaj ponownie!
                 </h2>
@@ -78,14 +84,39 @@
                 </p>
             </div>
 
+            <!-- Kontener Powiadomień Flash z serwera -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flex flex-col gap-2">
+                        {% for category, message in messages %}
+                            <div class="p-3.5 rounded-2xl text-xs font-bold flex items-center gap-2.5 border transition-all duration-300
+                                {% if category == 'success' %} bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/20
+                                {% elif category == 'danger' or category == 'error' %} bg-red-500/10 text-red-500 dark:text-red-400 border-red-500/20
+                                {% elif category == 'warning' %} bg-amber-500/10 text-amber-500 dark:text-amber-400 border-amber-500/20
+                                {% else %} bg-brand/10 text-brand border-brand/20 {% endif %}">
+                                <span class="text-base shrink-0">
+                                    {% if category == 'success' %}✓
+                                    {% elif category == 'danger' or category == 'error' %}⛔
+                                    {% elif category == 'warning' %}⚠️
+                                    {% else %}ℹ️{% endif %}
+                                </span>
+                                <div class="flex-1 leading-relaxed">{{ message }}</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <!-- Pole: Nazwa Użytkownika -->
             <div class="flex flex-col gap-1.5">
                 <label class="text-xs font-bold text-gray-600 dark:text-gray-400 tracking-wide uppercase">
                     Nazwa użytkownika (Login)
                 </label>
                 <input type="text" id="username" name="username" required placeholder="np. jan_kowalski" 
-                    class="p-3.5 rounded-xl bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 focus:ring-brand transition duration-200 text-sm">
+                    class="p-3.5 rounded-xl bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 focus:ring-brand transition duration-200 text-sm font-medium">
             </div>
 
+            <!-- Pola Rejestracji (Imię i Nazwisko) -->
             <div id="register-fields-group" class="hidden flex-col gap-5">
                 
                 <div class="flex flex-col gap-1.5">
@@ -93,7 +124,7 @@
                         Imię ministranta
                     </label>
                     <input type="text" id="imie" name="imie" placeholder="np. Jan" 
-                        class="p-3.5 rounded-xl bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 focus:ring-brand transition duration-200 text-sm">
+                        class="p-3.5 rounded-xl bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 focus:ring-brand transition duration-200 text-sm font-medium">
                 </div>
                 
                 <div class="flex flex-col gap-1.5">
@@ -101,20 +132,24 @@
                         Nazwisko
                     </label>
                     <input type="text" id="nazwisko" name="nazwisko" placeholder="np. Kowalski" 
-                        class="p-3.5 rounded-xl bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 focus:ring-brand transition duration-200 text-sm">
+                        class="p-3.5 rounded-xl bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 focus:ring-brand transition duration-200 text-sm font-medium">
                 </div>
                 
             </div>
 
+            <!-- Pole: Hasło Dostępowe -->
             <div class="flex flex-col gap-1.5">
                 <div class="flex justify-between items-center">
                     <label class="text-xs font-bold text-gray-600 dark:text-gray-400 tracking-wide uppercase">
                         Hasło dostępu
                     </label>
+                    <a href="{{ url_for('forget_password') }}" class="text-[11px] text-brand hover:underline font-bold">
+                        Zapomniałeś?
+                    </a>
                 </div>
                 <div class="relative w-full">
                     <input type="password" id="password" name="password" required placeholder="••••••••••••" 
-                        class="w-full p-3.5 pr-11 rounded-xl bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 focus:ring-brand transition duration-200 text-sm">
+                        class="w-full p-3.5 pr-11 rounded-xl bg-gray-50 dark:bg-darkbg text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 focus:ring-brand transition duration-200 text-sm font-medium">
                     <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors focus:outline-none">
                         <svg id="eye-open-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
@@ -127,38 +162,93 @@
                 </div>
             </div>
 
-            <div class="flex items-start gap-3 mt-4 mb-2 px-1">
+            <!-- Akceptacja regulaminu -->
+            <div class="flex items-start gap-3 mt-2 px-1">
                 <input type="checkbox" id="regulamin" name="regulamin" required 
                     class="mt-1 accent-brand h-4 w-4 rounded border-white/10 bg-darkbg text-brand focus:ring-brand focus:ring-offset-darkbg transition-all cursor-pointer">
-                <label for="regulamin" class="text-xs text-gray-400 leading-relaxed cursor-pointer select-none">
+                <label for="regulamin" class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed cursor-pointer select-none">
                     Oświadczam, że zapoznałem się i akceptuję 
-                    <a href="{{ url_for('pobierz_regulamin') }}" 
-                    class="text-brand hover:text-indigo-400 font-black underline transition-colors tracking-wide shadow-brand-glow">
+                    <a href="{{ url_for('pobierz_regulamin') }}" target="_blank"
+                    class="text-brand hover:text-indigo-400 font-black underline transition-colors tracking-wide">
                         Regulamin Systemu Liturgicznego
                     </a>
                 </label>
             </div>
 
+            <!-- Przycisk Zgłoszenia -->
             <button type="button" onclick="pobierzLokalizacjeIWyślij()" id="submit-btn"
                 class="mt-2 w-full py-3.5 bg-brand hover:bg-brand/90 text-white font-extrabold rounded-xl shadow-lg shadow-brand/20 transition duration-200 transform active:scale-[0.98] text-sm">
                 Zaloguj do systemu
             </button>
 
         </form>
+
+        <!-- Awaryjny Reset Hasła Administratora -->
+        <div class="px-8 pb-6 text-center border-t border-gray-100 dark:border-gray-800/80 pt-4">
+            <button type="button" onclick="openResetModal()" class="text-[11px] text-gray-400 hover:text-red-400 transition font-medium">
+                🚨 Zapomniałeś hasła Administratora? Wyślij nowe na Telegram
+            </button>
+        </div>
+
     </div>
     
-    <div class="text-sm font-semibold z-10 text-gray-500 dark:text-gray-400">
-        Masz problem z kontem? Przejdź do <a href="/pomoc" class="text-brand hover:underline">Centrum Pomocy</a>
+    <!-- Link Pomocy -->
+    <div class="text-sm font-semibold z-10 text-gray-500 dark:text-gray-400 text-center">
+        Masz problem z kontem? Przejdź do <a href="/pomoc" class="text-brand hover:underline font-bold">Centrum Pomocy</a>
+    </div>
+</div>
+
+<!-- Modal Zgody na Geolokalizację GPS -->
+<div id="geo-consent-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div class="w-full max-w-md bg-white dark:bg-cardbg border border-brand/30 p-6 md:p-8 rounded-3xl shadow-[0_0_50px_rgba(94,59,238,0.25)] text-center transform scale-95 transition-all duration-300">
+        <div class="w-14 h-14 bg-brand/20 text-brand rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl shadow-brand-glow">
+            📍
+        </div>
+        <h3 class="text-lg font-black text-gray-900 dark:text-white uppercase tracking-wider mb-2">Dostęp do lokalizacji GPS</h3>
+        <p class="text-xs text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
+            Nasz system wykorzystuje weryfikację GPS w celu potwierdzenia Twojej obecności oraz dla ochrony bezpieczeństwa kont administracyjnych. Wyrażenie zgody pobierze dokładne współrzędne z Twojego urządzenia.
+        </p>
+        <div class="flex gap-3">
+            <button type="button" onclick="handleGeoResponse(false)" 
+                class="flex-1 py-3 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 font-bold text-xs rounded-xl border border-gray-200 dark:border-white/10 transition-all">
+                Nie, pomiń
+            </button>
+            <button type="button" onclick="handleGeoResponse(true)" 
+                class="flex-1 py-3 bg-brand hover:bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-brand-glow transition-all">
+                Tak, zgadzam się
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Awaryjnego Resetu Hasła Szefa -->
+<div id="adminResetModal" class="fixed inset-0 z-[105] hidden items-center justify-center bg-black/80 backdrop-blur-md p-4">
+    <div class="bg-white dark:bg-cardbg border border-gray-200 dark:border-white/10 rounded-3xl w-full max-w-sm p-6 shadow-2xl">
+        <h3 class="text-lg font-black text-gray-900 dark:text-white mb-2">🔑 Reset Hasła Admina</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4 leading-relaxed">
+            Wpisz login Głównego Szefa z pliku .env. Nowe, losowo wygenerowane hasło zostanie natychmiast wysłane na Twój połączony kanał Telegram.
+        </p>
+        
+        <form action="{{ url_for('reset_admin_password') }}" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold uppercase text-gray-600 dark:text-gray-400 mb-1">Login Administratora</label>
+                <input type="text" name="username" required placeholder="np. AdminGreg" class="w-full bg-gray-50 dark:bg-darkbg border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white focus:border-brand focus:outline-none">
+            </div>
+            <div class="flex gap-2">
+                <button type="button" onclick="closeResetModal()" class="flex-1 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 font-bold py-3 rounded-xl text-xs transition">Anuluj</button>
+                <button type="submit" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl text-xs transition shadow-lg shadow-red-600/20">Wyślij Hasło</button>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // Zmienna globalna przechowująca aktualny kontekst karty (login / register)
+    // Zmienna przechowywująca kontekst akcji (login / register)
     let currentTab = 'login';
 
-    // DODANO: Funkcja do przełączania widoczności hasła (pokazanie/ukrycie i zmiana ikonki)
+    // Pokazywanie i ukrywanie hasła z dynamiczną zmianą ikony oka
     function togglePasswordVisibility() {
         const passwordInput = document.getElementById('password');
         const eyeOpenIcon = document.getElementById('eye-open-icon');
@@ -175,63 +265,67 @@
         }
     }
 
-    // Przełączenie interfejsu w tryb klasycznego logowania użytkownika
+    // Przełączenie interfejsu w tryb logowania
     function showLogin() {
         currentTab = 'login';
         
-        // Zmiana stylów CSS zakładek dla zasygnalizowania aktywności tabulatora
         document.getElementById('tab-login').className = "flex-1 py-4 bg-brand text-white transition-all duration-300 select-none";
         document.getElementById('tab-register').className = "flex-1 py-4 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-300 select-none bg-transparent";
         
-        // Ukrycie kontenerów wejściowych rejestracji za pomocą Tailwind .hidden
         document.getElementById('register-fields-group').classList.add('hidden');
         document.getElementById('register-fields-group').classList.remove('flex');
         
-        // Modyfikacja warstwy tekstowej komponentów informacyjnych karty
         document.getElementById('form-heading').innerText = "Witaj ponownie!";
         document.getElementById('form-subheading').innerText = "Zaloguj się, aby uzyskać dostęp do panelu służb.";
         document.getElementById('submit-btn').innerText = "Zaloguj do systemu";
         
-        // Usunięcie walidacji pól rejestracyjnych na poziomie przeglądarki
         document.getElementById('imie').required = false;
         document.getElementById('nazwisko').required = false;
     }
 
-    // Przełączenie interfejsu w tryb rejestracji nowego konta ministranta
+    // Przełączenie interfejsu w tryb rejestracji nowego konta
     function showRegister() {
         currentTab = 'register';
         
-        // Aktualizacja klas CSS przycisków wyboru zakładki autoryzacyjnej
         document.getElementById('tab-login').className = "flex-1 py-4 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-300 select-none bg-transparent";
         document.getElementById('tab-register').className = "flex-1 py-4 bg-brand text-white transition-all duration-300 select-none";
         
-        // Wyświetlenie dodatkowych pól formularza poprzez dodanie flex i usunięcie hidden
         document.getElementById('register-fields-group').classList.remove('hidden');
         document.getElementById('register-fields-group').classList.add('flex');
         
-        // Aktualizacja interfejsu tekstowego dedykowanego pod zakładkę rejestracji
         document.getElementById('form-heading').innerText = "Utwórz konto ministranta";
         document.getElementById('form-subheading').innerText = "Wypełnij dane, aby zarejestrować się w strukturach parafii.";
         document.getElementById('submit-btn').innerText = "Zarejestruj się";
         
-        // Nadanie flagi wymagalności pól wejściowych dla przeglądarki internetowej
         document.getElementById('imie').required = true;
         document.getElementById('nazwisko').required = true;
     }
 
-    // Funkcja zarządzająca weryfikacją geolokalizacyjną ministranta przed submitowaniem
+    // Inicjalizacja procedury wysyłki - sprawdzenie wypełnienia pól i wywołanie modala
     function pobierzLokalizacjeIWyślij() {
-        if (!document.getElementById('username').value || !document.getElementById('password').value) {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const regulamin = document.getElementById('regulamin').checked;
+        
+        if (!username || !password) {
             alert("Proszę uzupełnić login oraz hasło.");
             return;
         }
-        
-        if (currentTab === 'register' && (!document.getElementById('imie').value || !document.getElementById('nazwisko').value)) {
-            alert("Proszę uzupełnić imię i nazwisko wymagane do rejestracji.");
+
+        if (!regulamin) {
+            alert("Musisz zaakceptować regulamin, aby kontynuować.");
             return;
         }
+        
+        if (currentTab === 'register') {
+            const imie = document.getElementById('imie').value;
+            const nazwisko = document.getElementById('nazwisko').value;
+            if (!imie || !nazwisko) {
+                alert("Proszę uzupełnić imię i nazwisko wymagane do rejestracji.");
+                return;
+            }
+        }
 
-        // KROK 1: Najpierw pokazujemy ładne okno zgody aplikacji przed wysłaniem zapytania systemowego
         const modal = document.getElementById('geo-consent-modal');
         if (modal) {
             modal.classList.remove('hidden');
@@ -241,16 +335,7 @@
         }
     }
 
-    // Budowanie ukrytego elementu akcji oraz ostateczne przesłanie danych POST do serwera
-    function wyslijFormularz() {
-        // Zamiast od razu wysyłać, pokazujemy modal ze zgodą
-        const modal = document.getElementById('geo-consent-modal');
-        if (modal) {
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-    }
-
+    // Obsługa decyzji użytkownika w modalu geolokalizacji
     function handleGeoResponse(consentGranted) {
         const modal = document.getElementById('geo-consent-modal');
         if (modal) {
@@ -259,6 +344,9 @@
         }
 
         if (consentGranted && navigator.geolocation) {
+            const btn = document.getElementById('submit-btn');
+            if (btn) btn.innerText = "Pobieranie GPS...";
+
             navigator.geolocation.getCurrentPosition(
                 function(pos) {
                     document.getElementById('login_geo_lat').value = pos.coords.latitude;
@@ -266,8 +354,9 @@
                     finalizujWysylke();
                 }, 
                 function(err) {
-                    // Diagnostyka lokalna w konsoli przeglądarki przy braku odpowiedzi sprzętowej GPS
-                    console.warn("Brak precyzyjnych współrzędnych z urządzenia. Szczegóły błędu:", err.message, "Kod błędu:", err.code);
+                    console.warn("Brak precyzyjnych współrzędnych z urządzenia. Błąd:", err.message);
+                    document.getElementById('login_geo_lat').value = "";
+                    document.getElementById('login_geo_lng').value = "";
                     finalizujWysylke();
                 },
                 { 
@@ -282,39 +371,38 @@
         }
     }
 
+    // Przypięcie ukrytego parametru akcji oraz fizyczna wysyłka formularza POST
     function finalizujWysylke() {
         const form = document.getElementById('login-form');
         if (!form) return;
         
-        const hiddenAction = document.createElement('input');
-        hiddenAction.type = 'hidden';
-        hiddenAction.name = 'action';
-        hiddenAction.value = currentTab;
+        let existingAction = form.querySelector('input[name="action"]');
+        if (!existingAction) {
+            existingAction = document.createElement('input');
+            existingAction.type = 'hidden';
+            existingAction.name = 'action';
+            form.appendChild(existingAction);
+        }
+        existingAction.value = currentTab;
         
-        form.appendChild(hiddenAction);
         form.submit();
     }
-</script>
 
-<div id="geo-consent-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-darkbg/80 backdrop-blur-md animate-fade-in">
-    <div class="w-full max-w-md bg-cardbg border border-brand/30 p-6 rounded-3xl shadow-[0_0_50px_rgba(94,59,238,0.2)] text-center transform scale-95 transition-all duration-300">
-        <div class="w-12 h-12 bg-brand/20 text-brand rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-brand-glow">
-            📍
-        </div>
-        <h3 class="text-lg font-black text-white uppercase tracking-wider mb-2">Dostęp do lokalizacji</h3>
-        <p class="text-xs text-gray-400 mb-6 leading-relaxed">
-            Nasz system wykorzystuje geolokalizację w celu weryfikacji Twojej obecności podczas zbiórek i Mszy Świętych oraz dla zapewnienia bezpieczeństwa Twojego konta. Czy wyrażasz zgodę na udostępnianie współrzędnych?
-        </p>
-        <div class="flex gap-3">
-            <button type="button" onclick="handleGeoResponse(false)" 
-                class="flex-1 py-3 bg-white/5 hover:bg-white/10 text-gray-300 font-bold text-xs rounded-xl border border-white/10 transition-all">
-                Nie, pomiń
-            </button>
-            <button type="button" onclick="handleGeoResponse(true)" 
-                class="flex-1 py-3 bg-brand hover:bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-brand-glow transition-all">
-                Tak, zgadzam się
-            </button>
-        </div>
-    </div>
-</div>
+    // Funkcje otwarcia / zamknięcia modala resetu hasła admina
+    function openResetModal() {
+        const m = document.getElementById('adminResetModal');
+        if (m) {
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+        }
+    }
+
+    function closeResetModal() {
+        const m = document.getElementById('adminResetModal');
+        if (m) {
+            m.classList.remove('flex');
+            m.classList.add('hidden');
+        }
+    }
+</script>
 {% endblock %}
