@@ -1013,57 +1013,48 @@ def static_from_root():
 def sitemap_from_root():
     return send_from_directory(app.static_folder, request.path[1:])
 
-@app.route("/admin/export_ranking")
-def export_ranking():
-    users = Users.query.filter(Users.role == 'user').all()
-    attendances = Attendance.query.all()
+@app.route('/export_raport')
+def export_raport():
+    if session.get('user_role') not in ['admin', 'ksiądz']: 
+        flash("Brak uprawnień do eksportu raportów.", "danger")
+        return redirect(url_for('dashboard_page'))
+
+    all_attendance = db.session.query(Attendance, Users).join(Users).all()
+    all_users = Users.query.all()
     
-    morning_count = defaultdict(int)
-    evening_count = defaultdict(int)
-    other_count = defaultdict(int)
-    total_count = defaultdict(int)
-    
-    for att in attendances:
-        total_count[att.user_id] += 1
-        time_str = att.godzina.replace(":", "")
-        try:
-            hour_val = int(time_str[:2])
-            if hour_val < 12:
-                morning_count[att.user_id] += 1
-            elif hour_val >= 17:
-                evening_count[att.user_id] += 1
-            else:
-                other_count[att.user_id] += 1
-        except ValueError:
-            other_count[att.user_id] += 1
+    user_atts_map = {u.id: [] for u in all_users}
+    for att, usr in all_attendance:
+        if usr.id in user_atts_map:
+            user_atts_map[usr.id].append(att)
 
     data = []
-    for u in users:
-        tot = total_count[u.id]
-        level = "LIDER" if tot >= 20 else ("AKTYWNY" if tot >= 5 else "POCZĄTKUJĄCY")
-        data.append({
-            "Login": u.username,
-            "Imię i Nazwisko": f"{u.imie} {u.nazwisko}",
-            "Suma Służb (Punkty)": tot,
-            "Służby Poranne": morning_count[u.id],
-            "Służby Wieczorne": evening_count[u.id],
-            "Inne / Dodatkowe": other_count[u.id],
-            "Status Aktywności": level
-        })
+    for u in all_users:
+        his_atts = user_atts_map.get(u.id, [])
+        total = len(his_atts)
+        morning = sum(1 for a in his_atts if a.typ_mszy == 'poranna')
+        evening = sum(1 for a in his_atts if a.typ_mszy == 'wieczorna')
+        other = total - (morning + evening)
         
-    df = pd.DataFrame(data).sort_values(by="Suma Służb (Punkty)", ascending=False)
-    buffer = io.BytesIO()
-    df.to_excel(buffer, index=False, sheet_name="Cyfrowy Ranking")
-    buffer.seek(0)
-    
-    return send_file(
-        buffer,
-        as_attachment=True,
-        download_name=f"cyfrowy_ranking_{date.today()}.xlsx",
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+        data.append({
+            'Imię i Nazwisko': f"{u.imie} {u.nazwisko}",
+            'Pseudonim (Login)': u.username,
+            'Suma Służb': total,
+            'Poranne': morning,
+            'Wieczorne': evening,
+            'Inne': other
+        })
 
-# Exports the weekly service schedule to an Excel spreadsheet.
+    df = pd.DataFrame(data)
+    df = df.sort_values(by='Suma Służb', ascending=False)
+
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Ranking_Ministrantow')
+    
+    output.seek(0)
+    nazwa_pliku = f"Raport_Ministranci_{date.today().strftime('%Y-%m-%d')}.xlsx"
+    return send_file(output, download_name=nazwa_pliku, as_attachment=True)
+
 @app.route('/export_schedule')
 def export_schedule():
     if 'user_id' not in session: 

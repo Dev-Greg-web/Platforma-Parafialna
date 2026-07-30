@@ -243,7 +243,7 @@
                     <p class="text-gray-400 text-sm mt-1">Ewidencja, modyfikacja oraz zatwierdzanie punktów za asysty liturgiczne.</p>
                 </div>
                 <button class="bg-gradient-to-r from-success to-green-400 text-white px-6 py-3.5 rounded-2xl font-black text-sm shadow-lg hover:-translate-y-0.5 transition duration-300 flex items-center gap-2" onclick="openModal('addAttendanceModal')">
-                    <span>➕</span> Manually Add Attendance
+                    <span>＋</span> Manually Add Attendance
                 </button>
             </div>
             
@@ -307,14 +307,9 @@
 
         <!-- SEKCJA RANKING -->
         <section id="section-ranking" class="admin-section hidden animate-section">
-            <div class="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-8">
-                <div>
-                    <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">Cyfrowy Ranking</h1>
-                    <p class="text-gray-400 text-sm mt-1">Automatycznie generowany system punktowy klasyfikujący ministrantów na podstawie frekwencji.</p>
-                </div>
-                <a href="{{ url_for('export_ranking') }}" class="bg-gradient-to-r from-brand to-purple-500 hover:from-brand/90 text-white px-6 py-3.5 rounded-2xl font-black text-sm shadow-lg hover:-translate-y-0.5 transition duration-300 flex items-center gap-2">
-                    📥 Eksportuj Ranking (.xlsx)
-                </a>
+            <div class="mb-8">
+                <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">Cyfrowy Ranking</h1>
+                <p class="text-gray-400 text-sm mt-1">Automatycznie generowany system punktowy klasyfikujący ministrantów na podstawie frekwencji.</p>
             </div>
 
             <div class="glass-card rounded-3xl overflow-hidden border border-white/5 shadow-2xl">
@@ -848,7 +843,7 @@
     </div>
 </div>
 
-<!-- MODAL EDYCYJI OGŁOSZENIA -->
+<!-- MODAL EDYCJI OGŁOSZENIA -->
 <div id="editOgModal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden items-center justify-center z-50 p-4">
     <div class="glass-card rounded-3xl p-6 md:p-8 max-w-md w-full border border-white/10 shadow-2xl animate-section">
         <div class="flex justify-between items-center mb-6">
