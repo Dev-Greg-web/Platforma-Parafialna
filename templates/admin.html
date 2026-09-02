@@ -247,6 +247,9 @@
                     <p class="text-gray-400 text-sm mt-1">Ewidencja, modyfikacja oraz zatwierdzenie punktów za asysty liturgiczne.</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
+                    <button type="button" onclick="submitBulkDeleteAttendances()" class="bg-danger/20 hover:bg-danger/30 text-danger border border-danger/30 px-5 py-3.5 rounded-2xl font-bold text-xs transition duration-300 flex items-center gap-2 shadow-lg hover:-translate-y-0.5">
+                        <span>🗑️</span> Usuń Zaznaczone (<span id="selected-att-count">0</span>)
+                    </button>
                     <a href="{{ url_for('export_attendances') }}" class="bg-gradient-to-r from-brand to-purple-600 text-white px-5 py-3.5 rounded-2xl font-black text-sm shadow-lg hover:-translate-y-0.5 transition duration-300 flex items-center gap-2">
                         <span>📥</span> Eksportuj Służby (.xlsx)
                     </a>
@@ -256,62 +259,77 @@
                 </div>
             </div>
             
-            <div class="flex flex-wrap gap-2 mb-6 p-4 bg-white/5 border border-white/5 rounded-2xl">
-                <button class="filter-btn bg-brand text-white border border-brand px-4 py-2 rounded-xl font-bold text-xs transition-all duration-300 shadow-brand-glow" onclick="filterUser('all', this)">Wszyscy</button>
-                {% for u in users %}
-                    <button class="filter-btn bg-white/5 text-gray-300 border border-white/5 px-4 py-2 rounded-xl font-bold text-xs transition-all duration-300 hover:bg-white/10" onclick="filterUser('{{ u.username }}', this)">{{ u.imie }} {{ u.nazwisko }}</button>
-                {% endfor %}
-            </div>
-
-            <div class="glass-card rounded-3xl overflow-hidden border border-white/5 shadow-2xl">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-white/5 border-b border-white/5 text-gray-300 font-bold text-xs uppercase tracking-wider">
-                                <th class="p-4 md:p-5">Id</th>
-                                <th class="p-4 md:p-5">Użytkownik</th>
-                                <th class="p-4 md:p-5">Data Służby</th>
-                                <th class="p-4 md:p-5">Godzina</th>
-                                <th class="p-4 md:p-5">Typ Liturgii</th>
-                                <th class="p-4 md:p-5 text-center">Akcje</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-white/5 text-sm">
-                            {% for att, uzytkownik in attendances %}
-                            <tr class="attendance-row hover:bg-white/5 transition duration-200 text-gray-200" data-username="{{ uzytkownik.username }}">
-                                <td class="p-4 md:p-5 font-mono text-xs text-gray-500">#{{ att.id }}</td>
-                                <td class="p-4 md:p-5 font-bold text-white">
-                                    {{ uzytkownik.imie }} {{ uzytkownik.nazwisko }} <span class="text-brand font-normal text-xs block">@{{ uzytkownik.username }}</span>
-                                </td>
-                                <td class="p-4 md:p-5 font-medium font-mono">{{ att.data_sluzby }}</td>
-                                <td class="p-4 md:p-5 font-bold font-mono text-brand">{{ att.godzina }}</td>
-                                <td class="p-4 md:p-5">
-                                    {% if att.typ_mszy == 'inna' %}
-                                        <span class="bg-purple-500/10 text-purple-400 border border-purple-500/20 px-3 py-1 rounded-lg text-xs font-bold">Inna: {{ att.nazwa_inna }}</span>
-                                    {% else %}
-                                        <span class="bg-brand/10 text-brand-400 border border-brand/20 px-3 py-1 rounded-lg text-xs font-bold uppercase">{{ att.typ_mszy }}</span>
-                                    {% endif %}
-                                </td>
-                                <td class="p-4 md:p-5">
-                                    <div class="flex items-center justify-center gap-2">
-                                        <button type="button" 
-                                                onclick="openAdminEditModal('{{ att.id }}', '{{ att.data_sluzby }}', '{{ att.godzina }}', '{{ att.typ_mszy }}', '{{ att.nazwa_inna }}' || '')"
-                                                class="bg-brand/20 hover:bg-brand text-white text-xs font-bold px-3 py-2 rounded-xl transition">
-                                            ✏️ Edytuj
-                                        </button>
-                                        <a href="{{ url_for('delete_attendance', id=att.id) }}" 
-                                           class="bg-danger/10 hover:bg-danger/20 text-danger p-2 rounded-xl transition duration-300 text-xs font-bold"
-                                           onclick="return confirm('Czy na pewno bezpowrotnie skasować ten rekord obecności?')">
-                                            🗑️ Usuń
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <div class="flex flex-wrap gap-2 mb-6 p-4 bg-white/5 border border-white/5 rounded-2xl items-center justify-between">
+                <div class="flex flex-wrap gap-2 items-center">
+                    <button class="filter-btn bg-brand text-white border border-brand px-4 py-2 rounded-xl font-bold text-xs transition-all duration-300 shadow-brand-glow" onclick="filterUser('all', this)">Wszyscy</button>
+                    {% for u in users %}
+                        <button class="filter-btn bg-white/5 text-gray-300 border border-white/5 px-4 py-2 rounded-xl font-bold text-xs transition-all duration-300 hover:bg-white/10" onclick="filterUser('{{ u.username }}', this)">{{ u.imie }} {{ u.nazwisko }}</button>
+                    {% endfor %}
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="toggleSelectAllAttendancesBtn()" class="bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 px-3.5 py-2 rounded-xl font-bold text-xs transition flex items-center gap-1.5">
+                        <span id="select-all-atts-btn-icon">☑️</span> <span id="select-all-atts-btn-text">Zaznacz widoczne</span>
+                    </button>
                 </div>
             </div>
+
+            <form id="bulk-att-form" action="{{ url_for('delete_bulk_attendances') }}" method="POST">
+                <div class="glass-card rounded-3xl overflow-hidden border border-white/5 shadow-2xl">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-white/5 border-b border-white/5 text-gray-300 font-bold text-xs uppercase tracking-wider">
+                                    <th class="p-4 md:p-5 w-12 text-center">
+                                        <input type="checkbox" id="select-all-atts" onchange="toggleAllAttendances(this)" class="w-4 h-4 rounded accent-brand cursor-pointer" title="Zaznacz wszystkie widoczne">
+                                    </th>
+                                    <th class="p-4 md:p-5">Id</th>
+                                    <th class="p-4 md:p-5">Użytkownik</th>
+                                    <th class="p-4 md:p-5">Data Służby</th>
+                                    <th class="p-4 md:p-5">Godzina</th>
+                                    <th class="p-4 md:p-5">Typ Liturgii</th>
+                                    <th class="p-4 md:p-5 text-center">Akcje</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5 text-sm">
+                                {% for att, uzytkownik in attendances %}
+                                <tr class="attendance-row hover:bg-white/5 transition duration-200 text-gray-200" data-username="{{ uzytkownik.username }}">
+                                    <td class="p-4 md:p-5 text-center">
+                                        <input type="checkbox" name="att_ids" value="{{ att.id }}" onchange="updateAttSelectionCount()" class="att-checkbox w-4 h-4 rounded accent-brand cursor-pointer">
+                                    </td>
+                                    <td class="p-4 md:p-5 font-mono text-xs text-gray-500">#{{ att.id }}</td>
+                                    <td class="p-4 md:p-5 font-bold text-white">
+                                        {{ uzytkownik.imie }} {{ uzytkownik.nazwisko }} <span class="text-brand font-normal text-xs block">@{{ uzytkownik.username }}</span>
+                                    </td>
+                                    <td class="p-4 md:p-5 font-medium font-mono">{{ att.data_sluzby }}</td>
+                                    <td class="p-4 md:p-5 font-bold font-mono text-brand">{{ att.godzina }}</td>
+                                    <td class="p-4 md:p-5">
+                                        {% if att.typ_mszy == 'inna' %}
+                                            <span class="bg-purple-500/10 text-purple-400 border border-purple-500/20 px-3 py-1 rounded-lg text-xs font-bold">Inna: {{ att.nazwa_inna }}</span>
+                                        {% else %}
+                                            <span class="bg-brand/10 text-brand-400 border border-brand/20 px-3 py-1 rounded-lg text-xs font-bold uppercase">{{ att.typ_mszy }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="p-4 md:p-5">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <button type="button" 
+                                                    onclick="openAdminEditModal('{{ att.id }}', '{{ att.data_sluzby }}', '{{ att.godzina }}', '{{ att.typ_mszy }}', '{{ att.nazwa_inna }}' || '')"
+                                                    class="bg-brand/20 hover:bg-brand text-white text-xs font-bold px-3 py-2 rounded-xl transition">
+                                                ✏️ Edytuj
+                                            </button>
+                                            <a href="{{ url_for('delete_attendance', id=att.id) }}" 
+                                               class="bg-danger/10 hover:bg-danger/20 text-danger p-2 rounded-xl transition duration-300 text-xs font-bold"
+                                               onclick="return confirm('Czy na pewno bezpowrotnie skasować ten rekord obecności?')">
+                                                🗑️ Usuń
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </form>
         </section>
 
         <!-- SEKCJA RANKING -->
@@ -496,108 +514,130 @@
 
         <!-- SEKCJA REJESTR KONT -->
         <section id="section-uzytkownicy" class="admin-section hidden animate-section">
-            <div class="mb-8">
-                <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">Rejestr Kont Użytkowników</h1>
-                <p class="text-gray-400 text-sm mt-1">Zarządzanie profilami, nadawanie uprawnień oraz autoryzacja kont oczekujących.</p>
-            </div>
-
-            <div class="glass-card rounded-3xl overflow-hidden border border-white/5 shadow-2xl">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-white/5 border-b border-white/5 text-gray-300 font-bold text-xs uppercase tracking-wider">
-                                <th class="p-5">Użytkownik</th>
-                                <th class="p-5">Login / Rola</th>
-                                <th class="p-5">IP Rejestracji</th>
-                                <th class="p-5">Geolokacja</th>
-                                <th class="p-5 text-center">Hasło</th> 
-                                <th class="p-5 text-center">Zatwierdzony</th>
-                                <th class="p-5 text-center">Akcje</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-white/5 text-sm">
-                            {% for u in users %}
-                            <tr class="hover:bg-white/5 transition duration-200">
-                                <td class="p-5">
-                                    <div class="font-black text-white text-base">{{ u.imie }} {{ u.nazwisko }}</div>
-                                    <div class="text-xs text-gray-400 mt-0.5">Utworzono: {{ u.created_at|datetimeformat if u.created_at else 'Brak danych' }}</div>
-                                </td>
-                                <td class="p-5">
-                                    <div class="font-mono text-brand font-bold">@{{ u.username }}</div>
-                                    <div class="mt-1">
-                                        {% if u.role == 'admin' %}
-                                            <span class="bg-danger/10 text-danger border border-danger/20 text-[10px] uppercase font-black px-2 py-0.5 rounded-md">Szef (Admin)</span>
-                                        {% elif u.role == 'ksiadz' %}
-                                            <span class="bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] uppercase font-black px-2 py-0.5 rounded-md">Ksiądz</span>
-                                        {% else %}
-                                            <span class="bg-white/5 text-gray-300 border border-white/5 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md">Ministrant</span>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                                <td class="p-5 font-mono text-xs text-gray-400">
-                                    {{ u.registration_ip or 'Brak logu IP' }}
-                                </td>
-                                <td class="p-5 font-mono text-xs text-gray-400">
-                                    {% if u.latitude and u.longitude %}
-                                        <span class="text-success font-bold flex items-center gap-1">🛰️ GPS Aktywny</span>
-                                        <a href="https://www.google.com/maps/search/?api=1&query={{ u.latitude|trim }},{{ u.longitude|trim }}" 
-                                           target="_blank" 
-                                           class="text-brand hover:underline font-bold text-[11px] mt-1 inline-flex items-center gap-1"
-                                           title="Otwórz lokalizację w Google Maps">
-                                            🗺️ Pokaż na mapie
-                                        </a>
-                                    {% else %}
-                                        <span class="text-gray-500 italic">Brak współrzędnych</span>
-                                    {% endif %}
-                                </td>
-                                <td class="p-5 text-center text-gray-400 text-xs font-mono max-w-[160px] truncate" title="{{ u.password }}">
-                                    {{ u.password }}
-                                </td>
-                                <td class="p-5 text-center">
-                                    {% if u.is_approved %}
-                                        <span class="bg-success/10 text-success border border-success/20 text-xs font-bold px-3 py-1 rounded-full">✓ Tak</span>
-                                    {% else %}
-                                        <span class="bg-warning/10 text-warning border border-warning/20 text-xs font-bold px-3 py-1 rounded-full animate-pulse">⏳ Oczekuje</span>
-                                    {% endif %}
-                                </td>
-                                <td class="p-5">
-                                    <div class="flex justify-center items-center gap-2">
-                                        {% if not u.is_approved %}
-                                        <a href="{{ url_for('approve_user', user_id=u.id) }}" class="bg-success/20 hover:bg-success/30 text-success px-3 py-1.5 rounded-xl font-bold text-xs transition">
-                                            Zatwierdź
-                                        </a>
-                                        {% endif %}
-                                        <a href="{{ url_for('toggle_uproszczony', id=u.id) }}" class="bg-white/5 hover:bg-white/10 text-gray-300 px-3 py-1.5 rounded-xl font-bold text-xs transition">
-                                            Tryb: {{ 'Uproszczony' if u.uproszczony else 'Pełny' }}
-                                        </a>
-                                        {% if u.username != session.get('username') %}
-                                        <a href="{{ url_for('delete_user', id=u.id) }}" class="bg-danger/10 hover:bg-danger/20 text-danger px-3 py-1.5 rounded-xl font-bold text-xs transition" onclick="return confirm('Czy bezpowrotnie usunąć konto użytkownika {{ u.username }}?')">
-                                            Usuń
-                                        </a>
-                                        <button type="button" 
-                                                onclick="openEditUserModal(this)"
-                                                class="bg-brand/20 hover:bg-brand/30 text-purple-400 px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1"
-                                                data-id="{{ u.id }}"
-                                                data-imie="{{ u.imie }}"
-                                                data-nazwisko="{{ u.nazwisko }}"
-                                                data-username="{{ u.username }}"
-                                                data-role="{{ u.role }}"
-                                                data-approved="{{ 'true' if u.is_approved else 'false' }}"
-                                                data-uproszczony="{{ 'true' if u.uproszczony else 'false' }}"
-                                                data-ip="{{ u.registration_ip or 'Brak' }}"
-                                                data-lat="{{ u.latitude or '' }}"
-                                                data-lng="{{ u.longitude or '' }}">
-                                            ✏️ Edytuj
-                                        </button>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <div class="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-4 mb-8">
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">Rejestr Kont Użytkowników</h1>
+                    <p class="text-gray-400 text-sm mt-1">Zarządzanie profilami, nadawanie uprawnień oraz autoryzacja kont oczekujących.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <button type="button" onclick="toggleSelectAllUsersBtn()" class="bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 px-4 py-3.5 rounded-2xl font-bold text-xs transition flex items-center gap-2">
+                        <span id="select-all-users-btn-icon">☑️</span> <span id="select-all-users-btn-text">Zaznacz wszystkich</span>
+                    </button>
+                    <button type="button" onclick="submitBulkDeleteUsers()" class="bg-danger/20 hover:bg-danger/30 text-danger border border-danger/30 px-5 py-3.5 rounded-2xl font-bold text-xs transition duration-300 flex items-center gap-2 shadow-lg hover:-translate-y-0.5">
+                        <span>🗑️</span> Usuń Zaznaczonych Użytkowników (<span id="selected-user-count">0</span>)
+                    </button>
                 </div>
             </div>
+
+            <form id="bulk-user-form" action="{{ url_for('delete_bulk_users') }}" method="POST">
+                <div class="glass-card rounded-3xl overflow-hidden border border-white/5 shadow-2xl">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-white/5 border-b border-white/5 text-gray-300 font-bold text-xs uppercase tracking-wider">
+                                    <th class="p-5 w-12 text-center">
+                                        <input type="checkbox" id="select-all-users" onchange="toggleAllUsers(this)" class="w-4 h-4 rounded accent-brand cursor-pointer" title="Zaznacz wszystkich">
+                                    </th>
+                                    <th class="p-5">Użytkownik</th>
+                                    <th class="p-5">Login / Rola</th>
+                                    <th class="p-5">IP Rejestracji</th>
+                                    <th class="p-5">Geolokacja</th>
+                                    <th class="p-5 text-center">Hasło</th> 
+                                    <th class="p-5 text-center">Zatwierdzony</th>
+                                    <th class="p-5 text-center">Akcje</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5 text-sm">
+                                {% for u in users %}
+                                <tr class="hover:bg-white/5 transition duration-200">
+                                    <td class="p-5 text-center">
+                                        {% if u.username != session.get('username') and u.role != 'admin' %}
+                                            <input type="checkbox" name="user_ids" value="{{ u.id }}" onchange="updateUserSelectionCount()" class="user-checkbox w-4 h-4 rounded accent-brand cursor-pointer">
+                                        {% else %}
+                                            <span class="text-xs text-gray-500 font-mono" title="Konto administratora / bieżąca sesja">🔒</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="p-5">
+                                        <div class="font-black text-white text-base">{{ u.imie }} {{ u.nazwisko }}</div>
+                                        <div class="text-xs text-gray-400 mt-0.5">Utworzono: {{ u.created_at|datetimeformat if u.created_at else 'Brak danych' }}</div>
+                                    </td>
+                                    <td class="p-5">
+                                        <div class="font-mono text-brand font-bold">@{{ u.username }}</div>
+                                        <div class="mt-1">
+                                            {% if u.role == 'admin' %}
+                                                <span class="bg-danger/10 text-danger border border-danger/20 text-[10px] uppercase font-black px-2 py-0.5 rounded-md">Szef (Admin)</span>
+                                            {% elif u.role == 'ksiadz' %}
+                                                <span class="bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] uppercase font-black px-2 py-0.5 rounded-md">Ksiądz</span>
+                                            {% else %}
+                                                <span class="bg-white/5 text-gray-300 border border-white/5 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md">Ministrant</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="p-5 font-mono text-xs text-gray-400">
+                                        {{ u.registration_ip or 'Brak logu IP' }}
+                                    </td>
+                                    <td class="p-5 font-mono text-xs text-gray-400">
+                                        {% if u.latitude and u.longitude %}
+                                            <span class="text-success font-bold flex items-center gap-1">🛰️ GPS Aktywny</span>
+                                            <a href="https://www.google.com/maps/search/?api=1&query={{ u.latitude|trim }},{{ u.longitude|trim }}" 
+                                               target="_blank" 
+                                               class="text-brand hover:underline font-bold text-[11px] mt-1 inline-flex items-center gap-1"
+                                               title="Otwórz lokalizację w Google Maps">
+                                                🗺️ Pokaż na mapie
+                                            </a>
+                                        {% else %}
+                                            <span class="text-gray-500 italic">Brak współrzędnych</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="p-5 text-center text-gray-400 text-xs font-mono max-w-[160px] truncate" title="{{ u.password }}">
+                                        {{ u.password }}
+                                    </td>
+                                    <td class="p-5 text-center">
+                                        {% if u.is_approved %}
+                                            <span class="bg-success/10 text-success border border-success/20 text-xs font-bold px-3 py-1 rounded-full">✓ Tak</span>
+                                        {% else %}
+                                            <span class="bg-warning/10 text-warning border border-warning/20 text-xs font-bold px-3 py-1 rounded-full animate-pulse">⏳ Oczekuje</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="p-5">
+                                        <div class="flex justify-center items-center gap-2">
+                                            {% if not u.is_approved %}
+                                            <a href="{{ url_for('approve_user', user_id=u.id) }}" class="bg-success/20 hover:bg-success/30 text-success px-3 py-1.5 rounded-xl font-bold text-xs transition">
+                                                Zatwierdź
+                                            </a>
+                                            {% endif %}
+                                            <a href="{{ url_for('toggle_uproszczony', id=u.id) }}" class="bg-white/5 hover:bg-white/10 text-gray-300 px-3 py-1.5 rounded-xl font-bold text-xs transition">
+                                                Tryb: {{ 'Uproszczony' if u.uproszczony else 'Pełny' }}
+                                            </a>
+                                            {% if u.username != session.get('username') %}
+                                            <a href="{{ url_for('delete_user', id=u.id) }}" class="bg-danger/10 hover:bg-danger/20 text-danger px-3 py-1.5 rounded-xl font-bold text-xs transition" onclick="return confirm('Czy bezpowrotnie usunąć konto użytkownika {{ u.username }}?')">
+                                                Usuń
+                                            </a>
+                                            <button type="button" 
+                                                    onclick="openEditUserModal(this)"
+                                                    class="bg-brand/20 hover:bg-brand/30 text-purple-400 px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1"
+                                                    data-id="{{ u.id }}"
+                                                    data-imie="{{ u.imie }}"
+                                                    data-nazwisko="{{ u.nazwisko }}"
+                                                    data-username="{{ u.username }}"
+                                                    data-role="{{ u.role }}"
+                                                    data-approved="{{ 'true' if u.is_approved else 'false' }}"
+                                                    data-uproszczony="{{ 'true' if u.uproszczony else 'false' }}"
+                                                    data-ip="{{ u.registration_ip or 'Brak' }}"
+                                                    data-lat="{{ u.latitude or '' }}"
+                                                    data-lng="{{ u.longitude or '' }}">
+                                                ✏️ Edytuj
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </form>
         </section>
 
         <!-- SEKCJA USTAWIENIA -->
@@ -979,6 +1019,115 @@
                 row.style.display = 'none';
             }
         });
+        updateAttSelectionCount();
+    }
+
+    // ==========================================
+    // MASOWE OPERACJE (BULK DELETE) - SŁUŻBY
+    // ==========================================
+    function toggleAllAttendances(masterCb) {
+        const rows = document.querySelectorAll('.attendance-row');
+        rows.forEach(row => {
+            if (row.style.display !== 'none') {
+                const cb = row.querySelector('.att-checkbox');
+                if (cb) cb.checked = masterCb.checked;
+            }
+        });
+        updateAttSelectionCount();
+    }
+
+    function toggleSelectAllAttendancesBtn() {
+        const visibleRows = Array.from(document.querySelectorAll('.attendance-row')).filter(r => r.style.display !== 'none');
+        const visibleCbs = visibleRows.map(r => r.querySelector('.att-checkbox')).filter(Boolean);
+        const allChecked = visibleCbs.length > 0 && visibleCbs.every(cb => cb.checked);
+        
+        visibleCbs.forEach(cb => cb.checked = !allChecked);
+        const masterCb = document.getElementById('select-all-atts');
+        if (masterCb) masterCb.checked = !allChecked;
+        
+        updateAttSelectionCount();
+    }
+
+    function updateAttSelectionCount() {
+        const visibleRows = Array.from(document.querySelectorAll('.attendance-row')).filter(r => r.style.display !== 'none');
+        const visibleCbs = visibleRows.map(r => r.querySelector('.att-checkbox')).filter(Boolean);
+        const checkedCbs = document.querySelectorAll('.att-checkbox:checked');
+        
+        const countSpan = document.getElementById('selected-att-count');
+        if (countSpan) countSpan.innerText = checkedCbs.length;
+
+        const masterCb = document.getElementById('select-all-atts');
+        const btnText = document.getElementById('select-all-atts-btn-text');
+        
+        if (masterCb && visibleCbs.length > 0) {
+            const checkedVisible = visibleCbs.filter(cb => cb.checked).length;
+            masterCb.checked = checkedVisible === visibleCbs.length;
+            masterCb.indeterminate = checkedVisible > 0 && checkedVisible < visibleCbs.length;
+            if (btnText) {
+                btnText.innerText = (checkedVisible === visibleCbs.length && visibleCbs.length > 0) ? "Odznacz widoczne" : "Zaznacz widoczne";
+            }
+        }
+    }
+
+    function submitBulkDeleteAttendances() {
+        const selected = document.querySelectorAll('.att-checkbox:checked');
+        if (selected.length === 0) {
+            alert("Proszę zaznaczyć przynajmniej jedną służbę do usunięcia.");
+            return;
+        }
+        if (confirm(`Czy na pewno chcesz bezpowrotnie usunąć ${selected.length} zaznaczonych wpisów służb?`)) {
+            document.getElementById('bulk-att-form').submit();
+        }
+    }
+
+    // ==========================================
+    // MASOWE OPERACJE (BULK DELETE) - UŻYTKOWNICY
+    // ==========================================
+    function toggleAllUsers(masterCb) {
+        const checkboxes = document.querySelectorAll('.user-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = masterCb.checked;
+        });
+        updateUserSelectionCount();
+    }
+
+    function toggleSelectAllUsersBtn() {
+        const checkboxes = Array.from(document.querySelectorAll('.user-checkbox'));
+        const allChecked = checkboxes.length > 0 && checkboxes.every(cb => cb.checked);
+        checkboxes.forEach(cb => cb.checked = !allChecked);
+        const masterCb = document.getElementById('select-all-users');
+        if (masterCb) masterCb.checked = !allChecked;
+        updateUserSelectionCount();
+    }
+
+    function updateUserSelectionCount() {
+        const checkboxes = Array.from(document.querySelectorAll('.user-checkbox'));
+        const checkedCbs = document.querySelectorAll('.user-checkbox:checked');
+        
+        const countSpan = document.getElementById('selected-user-count');
+        if (countSpan) countSpan.innerText = checkedCbs.length;
+
+        const masterCb = document.getElementById('select-all-users');
+        const btnText = document.getElementById('select-all-users-btn-text');
+        
+        if (masterCb && checkboxes.length > 0) {
+            masterCb.checked = checkedCbs.length === checkboxes.length;
+            masterCb.indeterminate = checkedCbs.length > 0 && checkedCbs.length < checkboxes.length;
+            if (btnText) {
+                btnText.innerText = (checkedCbs.length === checkboxes.length && checkboxes.length > 0) ? "Odznacz wszystkich" : "Zaznacz wszystkich";
+            }
+        }
+    }
+
+    function submitBulkDeleteUsers() {
+        const selected = document.querySelectorAll('.user-checkbox:checked');
+        if (selected.length === 0) {
+            alert("Proszę zaznaczyć przynajmniej jednego użytkownika do usunięcia.");
+            return;
+        }
+        if (confirm(`Czy na pewno chcesz bezpowrotnie usunąć ${selected.length} zaznaczonych użytkowników wraz z ich służbami i dyżurami?`)) {
+            document.getElementById('bulk-user-form').submit();
+        }
     }
 
     function toggleInna(selectId, groupId, inputId) {

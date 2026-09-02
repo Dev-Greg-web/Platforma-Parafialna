@@ -996,14 +996,25 @@ def verify_action(user_id, akcja):
 def delete_bulk_users():
     user_ids = request.form.getlist('user_ids')
     if user_ids:
-        for uid in user_ids:
-            user_to_del = Users.query.get(uid)
-            if user_to_del and user_to_del.role != 'admin':
-                Attendance.query.filter_by(user_id=uid).delete()
-                Schedule.query.filter_by(user_id=uid).delete()
-                db.session.delete(user_to_del)
-        db.session.commit()
-        flash("Wybrani użytkownicy zostali trwale usunięci.", "success")
+        deleted_count = 0
+        current_username = session.get('username')
+        try:
+            for uid in user_ids:
+                user_to_del = db.session.get(Users, int(uid)) if uid.isdigit() else Users.query.get(uid)
+                if user_to_del and user_to_del.role != 'admin' and user_to_del.username != current_username:
+                    Attendance.query.filter_by(user_id=user_to_del.id).delete()
+                    Schedule.query.filter_by(user_id=user_to_del.id).delete()
+                    db.session.delete(user_to_del)
+                    deleted_count += 1
+            db.session.commit()
+            if deleted_count > 0:
+                flash(f"Pomyślnie usunięto {deleted_count} zaznaczonych kont użytkowników.", "success")
+            else:
+                flash("Nie usunięto żadnego użytkownika (brak uprawnień do usunięcia kont administratora).", "warning")
+        except Exception as e:
+            db.session.rollback()
+            print(f"Błąd przy masowym usuwaniu użytkowników: {e}")
+            flash("Wystąpił błąd podczas usuwania wybranych użytkowników.", "danger")
     else:
         flash("Proszę zaznaczyć użytkowników do usunięcia.", "warning")
     return redirect(url_for('admin_page'))
@@ -1013,12 +1024,22 @@ def delete_bulk_users():
 def delete_bulk_attendances():
     att_ids = request.form.getlist('att_ids')
     if att_ids:
-        for aid in att_ids:
-            entry = Attendance.query.get(aid)
-            if entry:
-                db.session.delete(entry)
-        db.session.commit()
-        flash("Wybrane wpisy o służbach zostały usunięte.", "success")
+        deleted_count = 0
+        try:
+            for aid in att_ids:
+                entry = db.session.get(Attendance, int(aid)) if aid.isdigit() else Attendance.query.get(aid)
+                if entry:
+                    db.session.delete(entry)
+                    deleted_count += 1
+            db.session.commit()
+            if deleted_count > 0:
+                flash(f"Pomyślnie usunięto {deleted_count} zaznaczonych służb.", "success")
+            else:
+                flash("Nie znaleziono wskazanych służb do usunięcia.", "warning")
+        except Exception as e:
+            db.session.rollback()
+            print(f"Błąd przy masowym usuwaniu służb: {e}")
+            flash("Wystąpił błąd podczas usuwania wybranych służb.", "danger")
     else:
         flash("Proszę zaznaczyć służby do usunięcia.", "warning")
     return redirect(url_for('admin_page'))
